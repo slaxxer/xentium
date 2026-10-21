@@ -122,6 +122,62 @@ ctx.registerStatSource({
 `id` is a machine key that the browser translates. `label` is only the English fallback,
 not what's displayed. See [Translating a plugin](plugin-i18n.md).
 
+### `registerPageSource(source)`
+
+Describe your own pages for search engines, link previews and sitemaps. Core asks every
+source in turn which page an address is, and the first one that knows answers. Only
+describe what a guest can open: return `null` for members-only, hidden or unpublished
+content, and leave it out of `list()`.
+
+```ts
+ctx.registerPageSource?.({
+  id:    "my-plugin.items",
+  area:  "items",          // the indexing area the SEO plugin offers a switch for
+  label: "Items",
+  async describe(path) {
+    const m = /^\/items\/([^/]+)$/.exec(path);
+    if (!m) return null;
+    const item = await findPublicItem(m[1]);
+    return item && {
+      path, kind: "my-plugin.item", id: item.id, area: "items",
+      title: item.title, description: item.summary, image: item.cover,
+      publishedAt: item.createdAt, modifiedAt: item.updatedAt,
+      breadcrumbs: [{ name: "Home", path: "/" }, { name: "Items", path: "/items" }, { name: item.title, path }],
+    };
+  },
+  async list() {
+    return (await allPublicItems()).map((i) => ({ path: `/items/${i.slug}`, lastmod: i.updatedAt }));
+  },
+});
+```
+
+Without the SEO plugin, core turns the description into the page's title, description,
+canonical and preview tags itself. Available on cores from 1.0.0-alpha.19, so call it with
+`?.`.
+
+### `registerSeoProvider(provider)`
+
+Become the site's SEO provider: the tags of every page, `/robots.txt` and the sitemaps
+(`/sitemap.xml`, `/sitemap-<name>.xml`). There is one provider at a time; the SEO plugin
+is it. `host.seo` gives the provider what it needs: `describe(path)`, core's
+`defaults(path, info)`, `head(path)` and every page source (`sources()`).
+
+### Editor panels (`slotRegistry.registerEditorPanel`)
+
+A tab beside **Details** in a content editor. The article editor shows one for every panel
+registered for `contentKind: "article"`. Your component gets the content's kind and id
+(`null` until it has been saved once), a live summary of what is being written (title,
+excerpt, plain text, first paragraph, headings, word count, links to the site, images
+without alt text, the cover) and `setBadge`, which puts a short label on your tab. Save your
+own data through your own endpoint.
+
+```tsx
+slotRegistry.registerEditorPanel({
+  id: "my-plugin.notes", contentKind: "article", label: "Notes",
+  component: ({ contentId, draft, setBadge }) => <NotesPanel id={contentId} draft={draft} onScore={setBadge} />,
+});
+```
+
 ---
 
 ### `registerReportTarget(handler)`

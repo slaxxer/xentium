@@ -202,10 +202,6 @@
     "visMembers": "Nur Mitglieder",
     "visPrivate": "Privat",
     "seoPreview": "SEO-Vorschau",
-    "seoTitleFallback": "Artikeltitel",
-    "seoDescFallback": "Hier erscheint der Auszug.",
-    "seoTitlePlaceholder": "SEO-Titel (optional)",
-    "seoDescPlaceholder": "SEO-Beschreibung (optional)",
     "toolbar": {
       "heading1": "Überschrift 1",
       "heading2": "Überschrift 2",
@@ -273,7 +269,6 @@
     "needImage": "Zum Veröffentlichen nötig. Es ist das Kartenbild überall, wo der Artikel gelistet wird.",
     "visPublicHint": "alle",
     "visMembersHint": "angemeldet",
-    "visPrivateHint": "nur du",
-    "searchAppearance": "Suchdarstellung"
+    "visPrivateHint": "nur du"
   }
 }
