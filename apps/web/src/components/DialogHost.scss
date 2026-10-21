@@ -52,6 +52,10 @@
       margin: 0;
       font-size: 1.1875rem;
       flex-shrink: 0;
+      /* Panel dialogs (updates, announcements, plugin alerts) breathe like the online
+         dot: a soft ring in the dialog's own tone swells out and fades, every 2 s. */
+      animation: xt-icon-breathe 2s ease-in-out infinite;
+      @media (prefers-reduced-motion: reduce) { animation: none; }
     }
     .xt-dialog__title { margin: 0; flex: 1; min-width: 0; }
     .xt-dialog__actions { justify-content: flex-end; }
@@ -239,4 +243,12 @@
 
 @media (prefers-reduced-motion: reduce) {
   .xt-dialog-overlay, .xt-dialog { animation: none; }
+}
+
+/* The online dot's pulse (Avatar.scss `hearth-ava-pulse`), as a ring for a larger tile:
+   scaling a 42px tile to 2.2× would be a halo, so the ring grows by a fixed step. */
+@keyframes xt-icon-breathe {
+  0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--_dlg-c, var(--c-accent)) 40%, transparent); }
+  70%  { box-shadow: 0 0 0 12px color-mix(in srgb, var(--_dlg-c, var(--c-accent)) 0%, transparent); }
+  100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--_dlg-c, var(--c-accent)) 0%, transparent); }
 }
