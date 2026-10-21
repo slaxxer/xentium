@@ -21,6 +21,10 @@
 - The updater installs nothing but a newer Xentium release whose npm provenance shows we built
   it, and it checks every downloaded package against its published checksum.
 
+### Changed
+
+- **The installed version in the footer**, after "Powered by Xentium Community".
+
 ### Fixed
 
 - **Staying signed in during a restart.** A token refresh that reached the server while it
