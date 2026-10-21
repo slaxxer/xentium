@@ -12,7 +12,7 @@ const PATHS: Record<string, string> = {
   forum: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
   shield: '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>',
   palette: '<path d="M9.06 11.9l8.07-8.06a2.85 2.85 0 1 1 4.03 4.03l-8.06 8.08"/><path d="M7.07 14.94c-1.66 0-3 1.35-3 3.02 0 1.33-2.5 1.52-2 2.02 1.08 1.1 2.49 2.02 4 2.02 2.2 0 4-1.8 4-4.04a3.01 3.01 0 0 0-3-3.02z"/>',
-  puzzle: '<path d="M15.5 8.5V6a2 2 0 0 0-2-2h-2.5a1.5 1.5 0 0 1 0-3 1.5 1.5 0 0 1 1.5 1.5"/><path d="M9 4H6a2 2 0 0 0-2 2v3.5a1.5 1.5 0 0 1-3 0A1.5 1.5 0 0 1 2.5 8"/><path d="M4 13.5V18a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2.5a1.5 1.5 0 0 0-3 0 1.5 1.5 0 0 0 1.5 1.5"/><path d="M20 9.5V6a2 2 0 0 0-2-2h-2.5"/>',
+  puzzle: '<path d="M19.44 7.85c-.05.32.06.65.29.88l1.57 1.57c.47.47.7 1.09.7 1.7s-.23 1.23-.7 1.7l-1.61 1.61a.98.98 0 0 1-.84.28c-.47-.07-.8-.48-.97-.93a2.5 2.5 0 1 0-3.21 3.21c.45.17.86.5.93.97a.98.98 0 0 1-.28.84l-1.61 1.61a2.4 2.4 0 0 1-1.7.7 2.4 2.4 0 0 1-1.7-.7l-1.57-1.57a1.03 1.03 0 0 0-.88-.29c-.49.07-.84.5-1.02.97a2.5 2.5 0 1 1-3.24-3.24c.47-.18.9-.53.97-1.02a1.03 1.03 0 0 0-.29-.88l-1.57-1.57A2.4 2.4 0 0 1 2 12c0-.62.24-1.23.7-1.7L4.23 8.77c.24-.24.58-.35.92-.3.51.08.88.53 1.07 1.01a2.5 2.5 0 1 0 3.26-3.26c-.48-.2-.93-.56-1.01-1.07-.05-.34.06-.68.3-.92L10.3 2.7A2.4 2.4 0 0 1 12 2c.62 0 1.23.24 1.7.7l1.57 1.57c.23.23.56.34.88.29.49-.07.84-.5 1.02-.97a2.5 2.5 0 1 1 3.24 3.24c-.47.18-.9.53-.97 1.02Z"/>',
   cog: '<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>',
   sliders: '<line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="2" y1="14" x2="6" y2="14"/><line x1="10" y1="8" x2="14" y2="8"/><line x1="18" y1="16" x2="22" y2="16"/>',
   home: '<path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>',
@@ -49,6 +49,70 @@ const PATHS: Record<string, string> = {
   // "Given by a person", as opposed to `zap` for the sweep that grants on its own.
   hand: '<path d="M18 11V6a2 2 0 0 0-2-2 2 2 0 0 0-2 2"/><path d="M14 10V4a2 2 0 0 0-2-2 2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2 2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/>',
 };
+
+/**
+ * The rail's section icons (2026-10-21, "filled when active"): each is the shape
+ * that fills when its section is active (`main`), lines inside it that are cut
+ * out of the fill (`cut`), and lines outside it that stay outlines (`extra`).
+ * Drawn as plain outlines otherwise. A plugin section can name one of these
+ * (`registerPluginMeta({ acpIcon })`) so it matches core's.
+ */
+const circ = (cx: number, cy: number, r: number) => `<circle cx="${cx}" cy="${cy}" r="${r}"/>`;
+const RAIL: Record<string, { main: string; cut?: string; extra?: string }> = {
+  dashboard: { main: PATHS.dashboard! },
+  members: {
+    main: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2z"/>' + circ(9, 7, 4),
+    extra: '<path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  },
+  content: {
+    main: '<path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/>',
+    cut: '<path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8V6Z"/>',
+  },
+  moderation: { main: PATHS.shield!, cut: '<path d="m9 12 2 2 4-4"/>' },
+  appearance: {
+    main: '<path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.93 0 1.65-.75 1.65-1.69 0-.44-.18-.84-.44-1.13-.29-.29-.44-.65-.44-1.13a1.64 1.64 0 0 1 1.67-1.67h2c3.05 0 5.55-2.5 5.55-5.55C21.97 6.01 17.46 2 12 2z"/>',
+    cut: circ(13.5, 6.5, 0.6) + circ(17.5, 10.5, 0.6) + circ(8.5, 7.5, 0.6) + circ(6.5, 12.5, 0.6),
+  },
+  extensions: { main: PATHS.puzzle! },
+  system: { main: PATHS.cog!.replace(/<circle[^>]*\/>/, ""), cut: circ(12, 12, 3) },
+  // For plugins:
+  forum: {
+    main: '<path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2z"/>',
+    extra: '<path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1"/>',
+  },
+  files: {
+    main: '<path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>',
+    cut: '<path d="M12 10v6"/><path d="m9 13 3 3 3-3"/>',
+  },
+  support: {
+    main: circ(12, 12, 10),
+    cut: circ(12, 12, 4) + '<path d="m4.93 4.93 4.24 4.24"/><path d="m14.83 9.17 4.24-4.24"/><path d="m14.83 14.83 4.24 4.24"/><path d="m9.17 14.83-4.24 4.24"/>',
+  },
+  shop: { main: '<path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/>', cut: '<path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/>' },
+};
+
+export const RAIL_ICONS = Object.keys(RAIL);
+export const isRailIcon = (name: string | undefined): name is string => !!name && name in RAIL;
+
+/** A rail icon: outlines, or (active) its shape filled with the inner lines cut out. */
+export function AcpRailIcon({ name, filled = false, size = 18 }: { name: string; filled?: boolean; size?: number }) {
+  const icon = RAIL[name];
+  if (!icon) return null;
+  const html = filled
+    ? `<g fill="currentColor">${icon.main}</g>${icon.cut ? `<g class="ic-cut">${icon.cut}</g>` : ""}${icon.extra ?? ""}`
+    : `${icon.main}${icon.cut ?? ""}${icon.extra ?? ""}`;
+  return (
+    <svg className={`ic ic--rail${filled ? " is-filled" : ""}`} width={size} height={size} viewBox="0 0 24 24"
+      fill="none" stroke="currentColor" strokeWidth={filled ? 2 : 1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden
+      dangerouslySetInnerHTML={{ __html: html }} />
+  );
+}
+
+/** A nav section's icon: its rail icon when it has one (filled when it is the current
+ *  section), else whatever the section brought (an older plugin's Font Awesome glyph). */
+export function navIcon(item: { railIcon?: string; icon: React.ReactNode }, filled = false, size = 18): React.ReactNode {
+  return item.railIcon && RAIL[item.railIcon] ? <AcpRailIcon name={item.railIcon} filled={filled} size={size} /> : item.icon;
+}
 
 export type AcpIconName = keyof typeof PATHS;
 

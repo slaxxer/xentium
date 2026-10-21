@@ -261,6 +261,11 @@ An admin page, and a link in the site's nav.
 Plugin nav links always go below core's. The `position` you declare is a hint, not an
 index; admins reorder links in the ACP.
 
+A plugin with its own ACP section can give it one of the ACP's own icons, so it matches
+the core sections (outline, filled while you're in it): add `acpIcon` to
+`slotRegistry.registerPluginMeta`, with `forum`, `files`, `support` or `shop`. Without it,
+the section shows your Font Awesome `icon`.
+
 ### Blocks, layout templates and slots
 
 These are covered in [Plugin-authored layout blocks](plugin-blocks.md): `blockRegistry`

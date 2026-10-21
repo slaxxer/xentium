@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useTheme } from "../../../hooks/useTheme";
 import { faUserShield } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "../../../components/Icon";
-import { AcpIcon } from "../pages/acpIcons";
+import { AcpIcon, navIcon } from "../pages/acpIcons";
 import { type NavItem, navItemId } from "../useAcpNav";
 import { AcpUserMenu } from "./AcpUserMenu";
 import { AcpSearch } from "./AcpSearch";
@@ -89,7 +89,8 @@ export function AcpRail({ nav, activeId, flyoutId, collapsed, canDock, onPeek }:
               }}
             >
               <span className="acp-rail__bar" />
-              {item.icon}
+              {/* Outline at rest, filled when lit: the section you are in reads at a glance. */}
+              {navIcon(item, lit)}
             </button>
           );
         })}

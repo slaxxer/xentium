@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { AcpIcon } from "../pages/acpIcons";
+import { AcpIcon, navIcon } from "../pages/acpIcons";
 import { XentiumMark } from "../../../components/XentiumMark";
 import { childMatches, type NavItem } from "../useAcpNav";
 
@@ -40,7 +40,7 @@ function PrimaryCell({ item, active, openKey, setOpenKey }: {
   if (!item.children) {
     return (
       <Link to={item.to!} className={`hnav__item${active ? " is-section" : ""}`}>
-        <span className="hnav__ic">{item.icon}</span>
+        <span className="hnav__ic">{navIcon(item, active)}</span>
         <span className="hnav__lbl">{t(item.label)}</span>
       </Link>
     );
@@ -49,7 +49,7 @@ function PrimaryCell({ item, active, openKey, setOpenKey }: {
   return (
     <div className={`hnav__cell${isOpen ? " is-open" : ""}`} ref={ref}>
       <button type="button" className={`hnav__item${active ? " is-section" : ""}`} onClick={() => setOpenKey(isOpen ? null : id)}>
-        <span className="hnav__ic">{item.icon}</span>
+        <span className="hnav__ic">{navIcon(item, active)}</span>
         <span className="hnav__lbl">{t(item.label)}</span>
         <AcpIcon name="chevron" size={13} className="hnav__chev" />
       </button>
@@ -60,7 +60,7 @@ function PrimaryCell({ item, active, openKey, setOpenKey }: {
             const act = childMatches(c, path);
             return (
               <Link key={c.to} to={c.to} className={`hnav__dropitem${act ? " is-active" : ""}`} onClick={() => setOpenKey(null)}>
-                <span className="hnav__dropic">{item.icon}</span>
+                <span className="hnav__dropic">{navIcon(item)}</span>
                 <b>{t(c.label)}</b>
                 {act && <AcpIcon name="check" size={15} className="hnav__dropmark" />}
               </Link>
@@ -106,7 +106,7 @@ export function HorizontalNav({ nav }: { nav: NavItem[] }) {
       {section?.children && (
         <div className="hctx">
           <div className="hctx__id">
-            <span className="hctx__icon">{section.icon}</span>
+            <span className="hctx__icon">{navIcon(section, true)}</span>
             <span className="hctx__name">{t(section.label)}</span>
           </div>
           <span className="hctx__div" />
