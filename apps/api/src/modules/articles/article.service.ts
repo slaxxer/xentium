@@ -15,6 +15,7 @@ import { resolveAvatar } from "../../shared/utils/resolveAvatar.js";
 import { filterHiddenBadges } from "../../shared/utils/badgeVisibility.js";
 import { enforceArticleLength, enforceDailyArticleLimit } from "../../shared/middleware/contentLimits.js";
 import { getHiddenAuthorIds } from "../../shared/utils/blocks.js";
+import { profileAccess } from "../users/profilePrivacy.js";
 import { hasPermission } from "../../shared/middleware/requirePermission.js";
 import { CorePermissions } from "@xentium/contracts";
 import { contentRegistry } from "../../core/content-registry/content-registry.js";
@@ -298,13 +299,22 @@ export const articleService = {
     return shapeDetail(updated.fresh);
   },
 
-  async publish(id: string, viewerId: string): Promise<ArticleDetail> {
+  async publish(id: string, viewerId: string, viewerCanEditAny: boolean): Promise<ArticleDetail> {
     const existing = await articleRepository.findById(id);
     if (!existing || existing.deletedAt) {
       throw new XentiumError({
         code: XEC.ARTICLE_NOT_FOUND,
         httpStatus: 404,
         message: "Article not found",
+      });
+    }
+    // `article.publish` lets a member publish THEIR articles. Someone else's needs
+    // `article.edit_any` too, like editing it does.
+    if (existing.authorId !== viewerId && !viewerCanEditAny) {
+      throw new XentiumError({
+        code: XEC.PERM_DENIED,
+        httpStatus: 403,
+        message: "Cannot publish this article",
       });
     }
 
@@ -425,6 +435,11 @@ export const articleService = {
     viewerId: string | undefined,
   ): Promise<PaginatedResponse<ArticleListItem>> {
     const { page, limit, categoryId, authorId, feed, q, tag, period, length, sort, exclude } = query;
+    // One member's articles is their post history: shown only as their privacy
+    // setting allows. The articles themselves stay readable everywhere else.
+    if (authorId && authorId !== viewerId && !(await profileAccess(authorId, viewerId)).history) {
+      return { data: [], meta: buildPaginationMeta({ page, limit, total: 0 }) };
+    }
     const hiddenAuthorIds = await getHiddenAuthorIds(viewerId);
     const { data, total } = await articleRepository.listPublished({
       page,
