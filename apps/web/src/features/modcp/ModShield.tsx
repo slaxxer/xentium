@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import type { IconProp } from "@fortawesome/fontawesome-svg-core";
-import { faCheckDouble, faFlag, faGear, faShield, faShieldHalved } from "@fortawesome/free-solid-svg-icons";
+import { faCheckDouble, faFlag, faGear, faShield } from "@fortawesome/free-solid-svg-icons";
 import { TokenIcon } from "../../components/TokenIcon";
 import { FontAwesomeIcon } from "../../components/Icon";
 import { api } from "../../lib/api";
@@ -20,10 +20,11 @@ import "./ModCanvas.scss";
 
 /**
  * 2a — the moderation shield in the navbar, beside the notification bell. A red dot
- * when anything waits; the dropdown lists reports and security cases together, oldest
- * first, and a click starts working through them on the page itself (the pills).
- * Plugin sections (the forum's thread approvals) get their own group and open in a
- * dialog. Moderators only.
+ * when anything waits; the dropdown is ONE feed, newest first: reports, security cases
+ * and plugin queues (thread approvals, support tickets) mixed by when they came in,
+ * each row labelled with what it is. A click starts working through that kind on the
+ * page itself (the pills), in the same order. Legacy plugin sections (no time) close
+ * the list and open in a dialog. Moderators only.
  */
 /** `icon`: a glyph chosen in the layout editor (the `modTool` block), else the shield. */
 export function ModShield({ icon }: { icon?: string } = {}) {
@@ -79,6 +80,35 @@ export function ModShield({ icon }: { icon?: string } = {}) {
   const isAdmin = userCan(user, "admin.access");
   const nothing = !loading && reportRows.length === 0 && caseRows.length === 0 && pluginTotal === 0;
 
+  // One feed, newest first. Each kind's own list keeps the same order, so the pill's
+  // "next" walks the rows the moderator sees.
+  const newest = <T,>(xs: T[], at: (x: T) => string) => [...xs].sort((a, b) => at(b).localeCompare(at(a)));
+  const reportsByNew = newest(reportRows, (g) => g.latestAt ?? g.firstReportedAt);
+  const casesByNew = newest(caseRows, (c) => c.createdAt);
+  type Row = { key: string; at: string; kind: string; icon: IconProp; title: ReactNode; tag?: ReactNode; line?: ReactNode; hot: boolean; open: () => void };
+  const feed: Row[] = [
+    ...reportsByNew.map((g, i): Row => ({
+      key: `r:${g.key}`, at: g.latestAt ?? g.firstReportedAt, kind: t("reports"), icon: faFlag, hot: g.reports.length > 1,
+      title: topReason(g), tag: g.reports.length > 1 ? <span className="mcs__tag">×{g.reports.length}</span> : undefined,
+      line: reportLine(g, targetTypeLabel(g.targetType, g.targetId)),
+      open: () => modStore.startReports(reportsByNew.map((r) => r.key), i),
+    })),
+    ...casesByNew.map((c, i): Row => ({
+      key: `c:${c.id}`, at: c.createdAt, kind: t("security"), icon: caseIcon(c.type) as IconProp, hot: c.severity === "high",
+      title: caseTitle(c.type), tag: <span className={`mcs__tag${c.severity === "high" ? "" : " mcs__tag--neutral"}`}>{severityLabel(c.severity)}</span>,
+      line: caseSummary(c),
+      open: () => modStore.startCases(casesByNew.map((x) => x.id), i),
+    })),
+    ...queues.flatMap(({ queue, items }) => {
+      const byNew = newest(items, (x) => x.createdAt);
+      return byNew.map((item, i): Row => ({
+        key: `q:${queue.id}:${item.id}`, at: item.createdAt, kind: queue.label, icon: queue.icon as IconProp, hot: !!item.hot,
+        title: item.title, line: item.line,
+        open: () => modStore.startQueue(queue.id, byNew.map((x) => x.id), i),
+      }));
+    }),
+  ].sort((a, b) => b.at.localeCompare(a.at));
+
   return (
     <div className="mcs" ref={ref}>
       <button type="button" className={`mcs__btn${menuOpen ? " is-open" : ""}`}
@@ -92,7 +122,7 @@ export function ModShield({ icon }: { icon?: string } = {}) {
         <div className="mcs__menu xt-pop" role="menu">
           <div className="mcs__head">
             <span>{t("label")} {waiting > 0 && <em>({waiting})</em>}</span>
-            <small>{t("oldest")}</small>
+            <small>{t("newest")}</small>
           </div>
 
           <div className="mcs__list">
@@ -102,67 +132,15 @@ export function ModShield({ icon }: { icon?: string } = {}) {
               <div className="mcs__state"><FontAwesomeIcon icon={faCheckDouble} /> {t("nothing")}</div>
             ) : (
               <>
-                {reportRows.length > 0 && (
-                  <>
-                    <div className="mcs__group"><FontAwesomeIcon icon={faFlag} /> {t("reports")} <span>{reportRows.length}</span></div>
-                    {reportRows.map((g, i) => {
-                      const hot = g.reports.length > 1;
-                      return (
-                        <button key={g.key} type="button" role="menuitem" className={`mcs__row${hot ? " is-hot" : ""}`}
-                          onClick={() => modStore.startReports(reportRows.map((r) => r.key), i)}>
-                          <span className="mcs__ic"><FontAwesomeIcon icon={faFlag} /></span>
-                          <span className="mcs__body">
-                            <span className="mcs__title">
-                              {topReason(g)}
-                              {hot && <span className="mcs__tag">×{g.reports.length}</span>}
-                            </span>
-                            <span className="mcs__line">{reportLine(g, targetTypeLabel(g.targetType, g.targetId))}</span>
-                            <span className="mcs__time">{timeAgo(g.firstReportedAt)}</span>
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </>
-                )}
-
-                {caseRows.length > 0 && (
-                  <>
-                    <div className="mcs__group"><FontAwesomeIcon icon={faShieldHalved} /> {t("security")} <span>{caseRows.length}</span></div>
-                    {caseRows.map((c, i) => {
-                      const hot = c.severity === "high";
-                      return (
-                        <button key={c.id} type="button" role="menuitem" className={`mcs__row${hot ? " is-hot" : ""}`}
-                          onClick={() => modStore.startCases(caseRows.map((x) => x.id), i)}>
-                          <span className="mcs__ic"><FontAwesomeIcon icon={caseIcon(c.type)} /></span>
-                          <span className="mcs__body">
-                            <span className="mcs__title">
-                              {caseTitle(c.type)}
-                              <span className={`mcs__tag${hot ? "" : " mcs__tag--neutral"}`}>{severityLabel(c.severity)}</span>
-                            </span>
-                            <span className="mcs__line">{caseSummary(c)}</span>
-                            <span className="mcs__time">{timeAgo(c.createdAt)}</span>
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </>
-                )}
-
-                {queues.filter((q) => q.items.length > 0).map(({ queue, items }) => (
-                  <div key={queue.id}>
-                    <div className="mcs__group"><FontAwesomeIcon icon={queue.icon as IconProp} /> {queue.label} <span>{items.length}</span></div>
-                    {items.map((item, i) => (
-                      <button key={item.id} type="button" role="menuitem" className={`mcs__row${item.hot ? " is-hot" : ""}`}
-                        onClick={() => modStore.startQueue(queue.id, items.map((x) => x.id), i)}>
-                        <span className="mcs__ic"><FontAwesomeIcon icon={queue.icon as IconProp} /></span>
-                        <span className="mcs__body">
-                          <span className="mcs__title">{item.title}</span>
-                          {item.line && <span className="mcs__line">{item.line}</span>}
-                          <span className="mcs__time">{timeAgo(item.createdAt)}</span>
-                        </span>
-                      </button>
-                    ))}
-                  </div>
+                {feed.map((row) => (
+                  <button key={row.key} type="button" role="menuitem" className={`mcs__row${row.hot ? " is-hot" : ""}`} onClick={row.open}>
+                    <span className="mcs__ic"><FontAwesomeIcon icon={row.icon} /></span>
+                    <span className="mcs__body">
+                      <span className="mcs__title">{row.title}{row.tag}</span>
+                      {row.line && <span className="mcs__line">{row.line}</span>}
+                      <span className="mcs__time">{row.kind} · {timeAgo(row.at)}</span>
+                    </span>
+                  </button>
                 ))}
 
                 {/* Legacy sections (`registerModCanvasSection`) still open in a dialog. */}
