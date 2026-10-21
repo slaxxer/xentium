@@ -1,6 +1,6 @@
 {
   "name": "xentium",
-  "version": "1.0.0-alpha.17",
+  "version": "1.0.0-alpha.18",
   "description": "Install, run, check and update a Xentium site. Start with `npm create xentium`.",
   "license": "MIT",
   "author": "Xentium",
