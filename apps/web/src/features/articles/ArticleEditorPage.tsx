@@ -431,7 +431,12 @@ export function ArticleEditorPage() {
 
   const isBusy = saveMut.isPending || publishMut.isPending || unpublishMut.isPending;
   const user = authStore.user;
-  const userName = user?.username ?? "You";
+  // The byline names the article's AUTHOR. Staff editing someone else's article saw
+  // their own name here; only a new article is the viewer's.
+  const author = existingQuery.data?.author;
+  const bylineName = author?.username ?? user?.username ?? "You";
+  const bylineAvatar = author ? author.avatar : user?.avatar ?? null;
+  const bylineColor = author ? author.badgeColor : user?.visibleGroups[0]?.badgeColor ?? null;
   const onBodyJson = useCallback((json: JSONContent) => setForm((f) => ({ ...f, body: json })), []);
 
   const publishLabel = status === "published"
@@ -490,8 +495,8 @@ export function ArticleEditorPage() {
             {(triedPublish || form.title.length > 0) && need.title && <Need>{t("editor.needTitle")}</Need>}
 
             <div className="aed-byline">
-              <Avatar user={{ username: userName, avatar: user?.avatar ?? null }} size={28} />
-              <span className="aed-byline__name" style={user?.visibleGroups[0]?.badgeColor ? { color: user.visibleGroups[0].badgeColor } : undefined}>{userName}</span>
+              <Avatar user={{ username: bylineName, avatar: bylineAvatar }} size={28} />
+              <span className="aed-byline__name" style={bylineColor ? { color: bylineColor } : undefined}>{bylineName}</span>
               <span className="aed-byline__status">{t(`editor.status.${status}`)}</span>
               <span>·</span>
               <span>{serverSavedAt ? t("editor.savedAt", { when: dt.time(serverSavedAt) }) : t("editor.newDraft")}</span>
