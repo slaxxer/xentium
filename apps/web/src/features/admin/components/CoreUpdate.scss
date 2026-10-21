@@ -233,7 +233,7 @@
   animation: cur-stripes 0.8s linear infinite;
 }
 @media (prefers-reduced-motion: reduce) {
-  .cur-bar__fill.is-moving, .cur-pkg__bar .is-moving, .cur-spin, .cur-drop, .cur-reconnect { animation: none !important; }
+  .cur-bar__fill.is-moving, .cur-pkg__bar .is-moving, .cur-spin, .cur-drop, .cur-reconnect, .cur-dialog__icon { animation: none !important; }
 }
 
 .core-oneclick {
@@ -268,6 +268,9 @@
     border-radius: var(--radius-md);
     display: grid; place-items: center;
     background: var(--c-accent-soft); color: var(--c-accent);
+    /* Breathes like the online dot until the update has settled (done or failed). */
+    --_dlg-c: var(--c-accent);
+    &:not(.is-done):not(.is-failed) { animation: xt-icon-breathe 2s ease-in-out infinite; }
     &.is-done { background: var(--c-success-soft); color: var(--c-success); }
     &.is-failed { background: color-mix(in srgb, var(--c-warn) 14%, transparent); color: var(--c-warn); }
   }
