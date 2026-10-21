@@ -941,10 +941,7 @@ export const edgeExtSchema = z
   .record(z.string().regex(/^[a-z][a-z0-9-]{0,30}$/), z.record(z.string(), z.unknown()))
   .refine((v) => JSON.stringify(v).length <= EDGE_ART_LIMITS.ext, `edge ext may hold at most ${EDGE_ART_LIMITS.ext} bytes`);
 
-/** `MM-DD`. A season recurs every year, so it has no year. */
-const monthDaySchema = z.string().regex(/^(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/, 'must be MM-DD');
-
-export const edgeArtSchema = z.object({
+const edgeArtObject = z.object({
   shape:     z.union([z.enum(CORE_EDGE_SHAPES), z.string().regex(PLUGIN_EDGE_SHAPE)]) as z.ZodType<EdgeShape>,
   /** `out` hangs over the neighbour; `in` sits over the block itself. */
   direction: z.enum(['out', 'in']).default('out'),
@@ -959,9 +956,6 @@ export const edgeArtSchema = z.object({
   height:    z.number().int().min(EDGE_ART_LIMITS.height.min).max(EDGE_ART_LIMITS.height.max).default(32),
   /** Mirror horizontally. */
   mirror:    z.boolean().default(false),
-  /** Only in season: shown between these dates every year, hidden outside them. */
-  season:    z.object({ from: monthDaySchema, to: monthDaySchema }).optional(),
-
   // The options below are OPTIONAL with no default, on purpose: absent means the
   // stock look, and a document saved before they existed must not parse into one with
   // new keys — that would read as an edit nobody made.
@@ -981,6 +975,21 @@ export const edgeArtSchema = z.object({
   /** Plugin-owned settings — see `edgeExtSchema`. */
   ext:          edgeExtSchema.optional(),
 });
+
+/**
+ * Edge art as stored. A top-level `season` (core's own until 2026-10-21) now belongs to
+ * the `fx` edge namespace as `ext.fx.season`: it is carried over on every parse — a save, a
+ * `.xttheme` import — so an old document keeps its dates for the plugin, and core never
+ * reads them. The plugin checks them; core passes them through opaque like any `ext`.
+ */
+export const edgeArtSchema = z.preprocess((raw) => {
+  if (!raw || typeof raw !== 'object' || !('season' in raw)) return raw;
+  const { season, ...rest } = raw as Record<string, unknown> & { ext?: Record<string, Record<string, unknown>> };
+  if (!season || typeof season !== 'object') return rest;
+  const fx = rest.ext?.fx;
+  if (fx && 'season' in fx) return rest;
+  return { ...rest, ext: { ...(rest.ext ?? {}), fx: { ...(fx ?? {}), season } } };
+}, edgeArtObject);
 export type EdgeArt = z.infer<typeof edgeArtSchema>;
 
 export const blockEdgesSchema = z.object({
@@ -989,17 +998,6 @@ export const blockEdgesSchema = z.object({
 });
 export type BlockEdges = z.infer<typeof blockEdgesSchema>;
 
-/**
- * Whether `date` falls inside a yearly season, both ends inclusive. A season may wrap
- * the new year (`12-20` → `01-06`).
- */
-export function inSeason(season: { from: string; to: string } | undefined, date: Date = new Date()): boolean {
-  if (!season) return true;
-  const md = `${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-  return season.from <= season.to
-    ? md >= season.from && md <= season.to
-    : md >= season.from || md <= season.to;
-}
 
 
 export const layoutDocumentSchema = z.object({

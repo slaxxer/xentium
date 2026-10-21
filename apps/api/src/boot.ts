@@ -8,6 +8,7 @@ import { migrateRegionConsolidation } from "./modules/layouts/regionConsolidatio
 import { migrateHeaderBandBlocks } from "./modules/layouts/headerBandMigration.js";
 import { migratePageBandsIntoBody } from "./modules/layouts/pageBandMigration.js";
 import { migrateFooterBandBlocks } from "./modules/layouts/footerBandMigration.js";
+import { migrateEdgeSeasonsToPlugin } from "./modules/layouts/edgeSeasonMigration.js";
 import { migrateToPerThemeAppearance } from "./modules/themes/perThemeMigration.js";
 import { migrateComposedChrome } from "./modules/layouts/composedChromeMigration.js";
 import { ensureBundledThemes } from "./modules/themes/bundledThemes.js";
@@ -88,6 +89,12 @@ export async function boot() {
     // moves documents already in their current shape.
     await migrateToPerThemeAppearance().catch((err: unknown) => {
       logger.error({ err }, "Per-theme appearance carry-over failed — the site keeps its look, but edits may sit under Core until it is re-run");
+    });
+    // One-time: an edge's "only in season" dates move to the `fx` edge namespace;
+    // core draws its edge art all year. Cosmetic if it fails: seasonal art shows
+    // year-round until the template is saved.
+    await migrateEdgeSeasonsToPlugin().catch((err: unknown) => {
+      logger.error({ err }, "Edge season carry-over failed — seasonal edge art shows all year until it is re-run");
     });
     // Themes every install ships with (Xentium Dark), added once and never switched to.
     await ensureBundledThemes().catch((err: unknown) => {
