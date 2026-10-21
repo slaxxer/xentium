@@ -5,10 +5,10 @@
  *   node scripts/promote-latest.mjs              # the version in package.json
  *   node scripts/promote-latest.mjs 1.0.0-alpha.12
  *
- * Run by a person, after the release workflow has published. CI cannot do it:
- * Trusted Publishing only covers `npm publish`, and npm refuses dist-tag changes
- * from tokens that skip 2FA. So this runs on your own login, and npm may ask for a
- * passkey confirmation in the browser.
+ * Run after the release workflow has published: from the Actions tab (the "npm"
+ * workflow, with the NPM_TOKEN secret), or by hand on your own login, where npm may
+ * ask for a passkey confirmation in the browser. The release workflow itself can't:
+ * Trusted Publishing only covers `npm publish`, not dist-tags.
  *
  * It refuses before moving anything if a package is missing the version, so
  * `latest` never points at a release some packages do not have.

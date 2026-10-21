@@ -1,0 +1,57 @@
+# Point npm's `latest` at a published release, and deprecate the older ones,
+# from the Actions tab.
+#
+# The release workflow publishes with Trusted Publishing, which can't change
+# dist-tags. This one uses a granular npm token instead: read and write on the ten
+# Xentium packages, "bypass 2FA", with an expiry. Run it after the Release workflow
+# has published the version.
+#
+# Needs one repository secret (Settings → Secrets and variables → Actions):
+#   NPM_TOKEN   the granular access token
+name: npm
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to make npm's default (already on npm), e.g. 1.0.0-alpha.17"
+        required: true
+        type: string
+      deprecate_older:
+        description: "Also deprecate every older version"
+        required: true
+        default: true
+        type: boolean
+      security_below:
+        description: "Older versions below this one also say they miss security fixes (optional)"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: npm-dist-tags
+  cancel-in-progress: false
+
+jobs:
+  latest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          registry-url: https://registry.npmjs.org
+      - name: Make it npm's default
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          VERSION: ${{ inputs.version }}
+        run: node scripts/promote-latest.mjs "$VERSION"
+      - name: Deprecate older versions
+        if: ${{ inputs.deprecate_older }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          VERSION: ${{ inputs.version }}
+          SECURITY_BELOW: ${{ inputs.security_below }}
+        run: node scripts/deprecate-older.mjs "$VERSION" ${SECURITY_BELOW:+--security-below=$SECURITY_BELOW}
