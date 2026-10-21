@@ -1,4 +1,5 @@
 import { useEffect, useImperativeHandle, useMemo, useRef, useState, type ReactNode, type Ref } from "react";
+import { CoreUpdateRunCard } from "../components/CoreUpdateRun";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
@@ -107,6 +108,8 @@ export function MigrationHistoryPage() {
           <h1 className="pg-title">{t("migrations.title")}</h1>
         </div>
       </div>
+
+      <CoreUpdateRunCard />
 
       {isLoading ? (
         <div className="acp-card acp-empty">{t("migrations.loading")}</div>

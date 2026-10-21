@@ -201,6 +201,10 @@ adminRouter.get("/marketplace/updates",        adminGuard, adminController.getMa
 adminRouter.post("/marketplace/updates/check", adminGuard, updateCheckLimiter, adminController.checkMarketplaceUpdates);
 // "Got it" on the core-update dialog: it carries the whole changelog, so reading it counts.
 adminRouter.post("/marketplace/updates/core/acknowledge", adminGuard, adminController.acknowledgeCoreUpdate);
+// One-click core update: the API only writes a request for the updater on the server.
+adminRouter.get("/core-update/run", adminGuard, adminController.coreUpdateRunView);
+adminRouter.post("/core-update/run", requirePermission(CorePermissions.SYSTEM_UPDATE), adminController.coreUpdateRunStart);
+adminRouter.post("/core-update/rollback", requirePermission(CorePermissions.SYSTEM_UPDATE), adminController.coreUpdateRunRollback);
 // Aggregated admin-attention signals for the frontend navbar ACP badge.
 adminRouter.get("/status-summary",             adminGuard, adminController.getStatusSummary);
 adminRouter.post("/marketplace/connection",    adminGuard, adminController.connectMarketplace);

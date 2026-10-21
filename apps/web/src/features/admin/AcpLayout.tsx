@@ -5,7 +5,9 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../../hooks/useAuth";
 import { userCan } from "../../lib/authStore";
 import { api } from "../../lib/api";
-import { openPanelDialog } from "../../lib/dialog";
+import { openPanelDialog, resolveDialog } from "../../lib/dialog";
+import { CoreUpdateRunHost, openCoreUpdateRun, useCoreUpdateRun } from "./components/CoreUpdateRun";
+import { CorePermissions } from "@xentium/contracts";
 import { CoreUpdateDialogBody, isPrerelease, type CoreUpdate, type PluginUpdateRow } from "./components/coreUpdateParts";
 import "./AcpLayout.scss";
 import "./AcpAnnouncement.scss";
@@ -138,6 +140,12 @@ function useAcpAlerts() {
     staleTime: 5 * 60_000,
   });
 
+  // One-click: offered in the core dialog where the updater runs and this admin may update.
+  const { user } = useAuth();
+  const canUpdate = userCan(user, CorePermissions.SYSTEM_UPDATE);
+  const updateRun = useCoreUpdateRun(!!user && canUpdate);
+  const oneClick = canUpdate && !!updateRun.data?.available && !!updateRun.data.offered;
+
   useEffect(() => {
     const licenseNeeds = !!status && (status.licenseExpiringSoon || status.licenseExpired) && !status.licenseAcknowledged;
     const list = updates?.updates ?? [];
@@ -169,7 +177,8 @@ function useAcpAlerts() {
                    : corePre    ? t("coreUpdate.prerelease") : undefined,
         badgeTone:   coreUrgent ? "danger" : "calm",
         large:       true,
-        bodyNode:    <CoreUpdateDialogBody update={core!} plugins={list} />,
+        bodyNode:    <CoreUpdateDialogBody update={core!} plugins={list}
+                       onUpdateNow={oneClick ? () => { resolveDialog(true); openCoreUpdateRun(); } : undefined} />,
         confirmText: withPlugins ? t("coreUpdate.dialogPlugins") : t("coreUpdate.dialogOk"),
         cancelText:  withPlugins ? t("coreUpdate.dialogClose") : undefined,
       }).then((ok) => {
@@ -288,7 +297,7 @@ function useAcpAlerts() {
       // don't count, so the dialog returns on the next ACP entry.
       if (view) navigate("/admin/updates");
     });
-  }, [status, updates, broadcasts, t, navigate, qc]);
+  }, [status, updates, broadcasts, t, navigate, qc, oneClick]);
 }
 
 function AcpShell() {
@@ -321,6 +330,7 @@ function AcpShell() {
     // Previews inside here opt back in with <IconScope value="site">.
     <IconScope value="acp">
       <div className="acp-layout" data-layout={layout}>
+        <CoreUpdateRunHost />
         {layout === "rail" ? (
           <AcpRailShell nav={nav}>{content}</AcpRailShell>
         ) : (

@@ -45,5 +45,10 @@
   "XEC-USER-4020": "Rellena todos los campos obligatorios para registrarte.",
   "XEC-GROUP-4010": "Los nuevos miembros solo pueden unirse a un grupo que exista y que no dé acceso al ACP.",
   "XEC-LEGAL-3503": "Solo se puede volver a pedir un documento publicado que los miembros deben aceptar.",
-  "XEC-AUTH-2012": "Primero acepta los documentos legales del sitio."
+  "XEC-AUTH-2012": "Primero acepta los documentos legales del sitio.",
+  "XEC-UPDATE-4091": "Este servidor no tiene actualizador. Ejecuta npx xentium install-service una vez en el servidor.",
+  "XEC-UPDATE-4092": "Ya hay una actualización en curso.",
+  "XEC-UPDATE-4093": "Esa no es la versión que se ofrece a este sitio.",
+  "XEC-UPDATE-4094": "No hay ninguna actualización terminada que deshacer.",
+  "XEC-UPDATE-4221": "Esa contraseña no es correcta."
 }

@@ -51,6 +51,7 @@ const PERM_META: Record<string, { label: string; domain: string }> = {
   "plugin.install":             { label: "Install plugins",                    domain: "Extensions" },
   "plugin.enable":              { label: "Enable & disable plugins",           domain: "Extensions" },
   "system.tasks.manage":        { label: "Manage scheduled tasks",             domain: "System" },
+  "system.update":              { label: "Update Xentium from the ACP",        domain: "System" },
 };
 
 export const DOMAIN_ORDER = [

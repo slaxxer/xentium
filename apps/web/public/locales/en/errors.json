@@ -45,5 +45,10 @@
   "XEC-USER-4020": "Please fill in every required field to sign up.",
   "XEC-GROUP-4010": "New members can only join a group that exists and doesn't open the ACP.",
   "XEC-LEGAL-3503": "Only a published document members must accept can be asked for again.",
-  "XEC-AUTH-2012": "Please accept the site's legal documents first."
+  "XEC-AUTH-2012": "Please accept the site's legal documents first.",
+  "XEC-UPDATE-4091": "This server has no updater. Run npx xentium install-service once on the server.",
+  "XEC-UPDATE-4092": "An update is already running.",
+  "XEC-UPDATE-4093": "That isn't the version this site is offered.",
+  "XEC-UPDATE-4094": "There is no finished update to roll back.",
+  "XEC-UPDATE-4221": "That password isn't right."
 }

@@ -80,6 +80,11 @@ export const CorePermissions = {
   // on purpose: a task runs unattended and some actions are destructive, so it
   // can be withheld from admins who should not automate that.
   SYSTEM_TASKS_MANAGE: "system.tasks.manage",
+
+  // One-click core updates from the ACP. The update itself runs on the server
+  // (the updater), but starting one replaces the code the site runs, so it is
+  // its own key: an admin can manage the site without being allowed to update it.
+  SYSTEM_UPDATE: "system.update",
 } as const;
 
 export type PermissionKey =
