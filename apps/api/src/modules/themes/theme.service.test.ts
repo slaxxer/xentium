@@ -800,7 +800,7 @@ describe("edge art", () => {
     const header = structuredClone(DEFAULT_LAYOUTS["chrome.header"]) as LayoutDocument;
     header.regions.header![1]!.edges = {
       bottom: { shape: "image", image: "layouts/drips.png", direction: "out", colors: ["#000"],
-        fit: "repeat", height: 40, mirror: false, season: { from: "10-01", to: "11-01" } },
+        fit: "repeat", height: 40, mirror: false, ext: { fx: { season: { from: "10-01", to: "11-01" } } } },
     };
     published.templates["chrome.header"] = header;
 
@@ -813,7 +813,7 @@ describe("edge art", () => {
     await putOn(exported, "user-1");
     const staged = savedDrafts.get("chrome.header|")!;
     expect(staged.regions.header![1]!.edges?.bottom?.image).toBe(`themes/${META.id}/drips.png`);
-    expect(staged.regions.header![1]!.edges?.bottom?.season).toEqual({ from: "10-01", to: "11-01" });
+    expect(staged.regions.header![1]!.edges?.bottom?.ext).toEqual({ fx: { season: { from: "10-01", to: "11-01" } } });
   });
 });
 
