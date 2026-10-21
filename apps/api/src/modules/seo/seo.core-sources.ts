@@ -60,7 +60,7 @@ const pages: PageSource = {
   },
   async list() {
     const latest = await prisma.article.findFirst({ where: publicArticle, orderBy: { updatedAt: "desc" }, select: { updatedAt: true } });
-    return [{ path: "/articles", lastmod: latest?.updatedAt.toISOString() ?? null }, { path: "/members" }];
+    return [{ path: "/articles", area: "articles", lastmod: latest?.updatedAt.toISOString() ?? null }, { path: "/members", area: "members" }];
   },
 };
 
@@ -91,8 +91,8 @@ const articles: PageSource = {
     return info;
   },
   async list() {
-    const rows = await prisma.article.findMany({ where: publicArticle, select: { slug: true, updatedAt: true }, orderBy: { publishedAt: "desc" } });
-    return rows.map((r) => ({ path: `/articles/${encodeURIComponent(r.slug)}`, lastmod: r.updatedAt.toISOString() }));
+    const rows = await prisma.article.findMany({ where: publicArticle, select: { id: true, slug: true, updatedAt: true }, orderBy: { publishedAt: "desc" } });
+    return rows.map((r) => ({ path: `/articles/${encodeURIComponent(r.slug)}`, lastmod: r.updatedAt.toISOString(), kind: "article", id: r.id }));
   },
 };
 
@@ -118,8 +118,8 @@ const profiles: PageSource = {
     };
   },
   async list() {
-    const rows = await prisma.user.findMany({ where: activeUser(), select: { username: true, updatedAt: true }, orderBy: { createdAt: "asc" } });
-    return rows.map((r) => ({ path: `/u/${encodeURIComponent(r.username)}`, lastmod: r.updatedAt.toISOString() }));
+    const rows = await prisma.user.findMany({ where: activeUser(), select: { id: true, username: true, updatedAt: true }, orderBy: { createdAt: "asc" } });
+    return rows.map((r) => ({ path: `/u/${encodeURIComponent(r.username)}`, lastmod: r.updatedAt.toISOString(), kind: "profile", id: r.id }));
   },
 };
 
