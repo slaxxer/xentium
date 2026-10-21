@@ -188,5 +188,8 @@
   "signInToRate": "Zum Bewerten anmelden",
   "lastSeen": "Zuletzt gesehen {{when}}",
   "lastSeenOn": "Zuletzt gesehen {{date}}",
-  "details": "Angaben"
+  "details": "Angaben",
+  "membersOnly": "Dieses Profil ist nur für Mitglieder sichtbar. Melde dich an, um es zu sehen.",
+  "historyPrivate": "{{username}} hält den Beitragsverlauf privat.",
+  "wallClosed": "{{username}} nimmt keine Beiträge auf der Pinnwand an."
 }

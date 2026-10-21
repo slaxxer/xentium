@@ -8,6 +8,7 @@ import { getProfileVisitors, recordProfileView } from "./profileViews.js";
 import { permissionsService } from "../permissions/permissions.service.js";
 import { prisma } from "../../infrastructure/db.js";
 import { getStanding } from "../moderation/standing.js";
+import { assertProfileVisible } from "./profilePrivacy.js";
 import {
   getProfileParamsSchema,
   getProfileQuerySchema,
@@ -47,6 +48,7 @@ export const usersController = {
   getVisitors: (async (req, res) => {
     const { id } = visitorParamsSchema.parse(req.params);
     const { limit } = visitorQuerySchema.parse(req.query);
+    await assertProfileVisible(id, req.userId);
     res.json(await getProfileVisitors(id, limit));
   }) as RequestHandler,
 
@@ -125,6 +127,7 @@ export const usersController = {
 
   getProgression: (async (req, res) => {
     const { id } = followParamsSchema.parse(req.params);
+    await assertProfileVisible(id, req.userId);
     res.json(await progressionService.getProfileProgression(id));
   }),
 
@@ -211,6 +214,7 @@ export const usersController = {
   getUserProfileFields: (async (req, res) => {
     const { id } = followParamsSchema.parse(req.params);
     const isAuthenticated = !!req.userId;
+    await assertProfileVisible(id, req.userId);
     const fields = await userService.getUserPublicProfileFields(id, isAuthenticated);
     res.json(fields);
   }),

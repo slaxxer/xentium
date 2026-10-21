@@ -6,6 +6,7 @@ import { notificationService } from "../notifications/notification.service.js";
 import { resolveAvatar } from "../../shared/utils/resolveAvatar.js";
 import { filterHiddenBadges } from "../../shared/utils/badgeVisibility.js";
 import { getHiddenAuthorIds } from "../../shared/utils/blocks.js";
+import { assertCanComment, assertCanFollow, assertProfileVisible, profileAccess } from "./profilePrivacy.js";
 import { getSetting } from "../../shared/utils/settings.js";
 import { buildPaginationMeta } from "@xentium/contracts";
 import { isUserOnline } from "../../shared/utils/presence.js";
@@ -81,6 +82,10 @@ export const userService = {
     });
     // Badge precedence is Group.displayOrder (ACP-configurable; lower = higher).
 
+    const access = await profileAccess(user.id, viewerId);
+    if (!access.view) {
+      throw new XentiumError({ code: "XEC-USER-4021", httpStatus: 403, message: "This profile is visible to members only" });
+    }
     const isOwnProfile = viewerId === user.id;
     let isFollowing = false;
     let viewerHasBlocked = false;
@@ -170,6 +175,8 @@ export const userService = {
       isOwn: isOwnProfile,
       viewerIsFollowing: isFollowing,
       viewerHasBlocked,
+      // What this viewer may do, from the member's privacy settings (and blocks).
+      viewerCan: { follow: access.follow, comment: access.comment, history: access.history },
       isBanned,
       isPermanentBan,
       // The same presence the members list and "online now" show; a banned member reads offline.
@@ -184,6 +191,7 @@ export const userService = {
     }
     const already = await userRepository.isFollowing(followerId, followingId);
     if (already) return;
+    await assertCanFollow(followingId, followerId);
 
     await prisma.$transaction(async (tx) => {
       await tx.userFollow.create({ data: { followerId, followingId } });
@@ -222,6 +230,8 @@ export const userService = {
    * wall's owner may not START a comment on their own wall, but may reply on it.
    */
   async createProfileComment(profileUserId: string, authorId: string, body: string, parentId?: string) {
+    // The wall's owner may always reply on their own wall; anyone else needs their leave.
+    if (authorId !== profileUserId) await assertCanComment(profileUserId, authorId);
     let parent: { id: string; authorId: string } | null = null;
     if (parentId) {
       const p = await prisma.profileComment.findUnique({
@@ -314,6 +324,7 @@ export const userService = {
   },
 
   async getProfileComments(profileUserId: string, page: number, limit: number, viewerId?: string) {
+    await assertProfileVisible(profileUserId, viewerId);
     const hiddenAuthorIds = await getHiddenAuthorIds(viewerId);
     return userRepository.getProfileComments(profileUserId, page, limit, hiddenAuthorIds);
   },
@@ -341,11 +352,13 @@ export const userService = {
   },
 
   async getFollowers(userId: string, page: number, limit: number, viewerId?: string) {
+    await assertProfileVisible(userId, viewerId);
     await assertFollowListVisible(userId, "showFollowersPublic", viewerId);
     return userRepository.getFollowers(userId, page, limit);
   },
 
   async getFollowing(userId: string, page: number, limit: number, viewerId?: string) {
+    await assertProfileVisible(userId, viewerId);
     await assertFollowListVisible(userId, "showFollowingPublic", viewerId);
     return userRepository.getFollowing(userId, page, limit);
   },

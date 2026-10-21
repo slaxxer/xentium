@@ -49,7 +49,7 @@ usersRouter.get("/:username", optionalAuth, usersController.getPublicProfile);
  * `/progression` is the admin's ladder surface. `/me/limits` is the only other
  * non-admin progression route and it answers about the caller, not about a profile.
  */
-usersRouter.get("/:id/progression", usersController.getProgression);
+usersRouter.get("/:id/progression", optionalAuth, usersController.getProgression);
 // Warnings, bans and IPs: the member and staff only; everyone else gets 403.
 usersRouter.get("/:id/standing", requireAuth, usersController.getStanding);
 
@@ -60,7 +60,7 @@ usersRouter.get("/:id/standing", requireAuth, usersController.getStanding);
  * members only — a guest leaves no name to show — and carries nothing the profile
  * page does not already publish.
  */
-usersRouter.get("/:id/visitors", usersController.getVisitors);
+usersRouter.get("/:id/visitors", optionalAuth, usersController.getVisitors);
 
 // Followers / Following (by id) — optionalAuth so the owner can always see
 // their own lists even when set to private (§37).

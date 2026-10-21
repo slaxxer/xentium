@@ -269,7 +269,8 @@ registerBlock({
 
     return (
       <div className="profile-actions">
-        {!profile.viewerHasBlocked && (
+        {/* Following needs the member's leave (Account → Privacy); unfollowing never does. */}
+        {!profile.viewerHasBlocked && (profile.viewerIsFollowing || profile.viewerCan?.follow !== false) && (
           <button
             className={`profile-follow-btn${profile.viewerIsFollowing ? " profile-follow-btn--following" : ""}`}
             onClick={onFollow}

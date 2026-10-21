@@ -50,5 +50,8 @@
   "XEC-UPDATE-4092": "Ya hay una actualización en curso.",
   "XEC-UPDATE-4093": "Esa no es la versión que se ofrece a este sitio.",
   "XEC-UPDATE-4094": "No hay ninguna actualización terminada que deshacer.",
-  "XEC-UPDATE-4221": "Esa contraseña no es correcta."
+  "XEC-UPDATE-4221": "Esa contraseña no es correcta.",
+  "XEC-USER-4021": "Este perfil solo es visible para miembros.",
+  "XEC-USER-4022": "No se puede seguir a este miembro.",
+  "XEC-USER-4023": "Este miembro no acepta tus publicaciones en su muro."
 }
