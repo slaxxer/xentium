@@ -33,6 +33,8 @@ import { encryptSecret, decryptSecret } from "../../shared/utils/secretBox.js";
 import { countryOf, geoipAvailable } from "../../infrastructure/geoip.js";
 import { permissionCache } from "../../modules/permissions/permission.cache.js";
 import { sanitizeRichText } from "../../shared/sanitize/richText.js";
+import { renderEmailTemplate, renderLinkButton, siteVars } from "../../infrastructure/email/email-templates.js";
+import { recipientLocale, serverText, toServerLocale } from "../../shared/i18n/serverText.js";
 import { resolveCronPattern, previewRuns } from "../../jobs/scheduledJobs.js";
 
 /**
@@ -91,6 +93,21 @@ const host: PluginHost = {
     },
   },
   geo: { countryOf: (ip: string) => countryOf(ip), available: geoipAvailable },
+  // Mail for people a notification can't reach (no account), in the notification
+  // email's design. Values are escaped by the template; the link must be safe.
+  email: {
+    send: async ({ to, title, body, link, buttonLabel, locale }) => {
+      const lang = toServerLocale(locale) ?? "en";
+      const { subject, html } = await renderEmailTemplate("notification", {
+        ...(await siteVars()),
+        title, body,
+        link_url:    link,
+        link_button: renderLinkButton(link, buttonLabel ?? serverText(lang, "email", "buttons.view")),
+      }, lang);
+      await queues.emailNotification.add("email-notification", { to, subject, html });
+    },
+    localeOf: (userId: string) => recipientLocale({ userId }),
+  },
   // Search engines: what a page is (any registered source), the tags core would
   // write, the tags actually written, and every source (for sitemaps).
   seo: {

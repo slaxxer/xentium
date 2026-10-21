@@ -407,6 +407,15 @@ A notification should never block the thing it's about. Send it **after** your w
 wrap it in a try/catch: a mail outage shouldn't cost a member an action that already
 worked.
 
+### Email to anyone (`host.email`)
+
+A notification reaches members. For someone without an account (a guest who left an
+email address), use `ctx.host.email?.send({ to, title, body, link, buttonLabel, locale })`.
+It sends the site's notification email: `title` and `body` are plain text and get escaped,
+and `link` becomes the button. The mail is queued, so the call returns at once.
+`ctx.host.email?.localeOf(userId)` gives the language a member's emails go out in. It's
+available on cores from 1.0.0-alpha.19, so call it with `?.`.
+
 ### `registerNotificationTypes(types)`
 
 Right now this only logs. We've reserved it for a future preferences UI. Registering is

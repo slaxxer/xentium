@@ -424,6 +424,17 @@ export interface PluginHost extends BasePluginHost {
   };
 
   /**
+   * Email anyone, account or not (a guest who opened a support ticket), in the site's
+   * notification email design: `title` and `body` are plain text (escaped), `link`
+   * becomes the button. Queued, so it never slows the request. `localeOf` answers the
+   * language a member's emails go out in. Core 1.0.0-alpha.19+; optional before.
+   */
+  email?: {
+    send: (opts: { to: string; title: string; body: string; link?: string; buttonLabel?: string; locale?: string }) => Promise<void>;
+    localeOf: (userId: string) => Promise<string>;
+  };
+
+  /**
    * Core's LOCAL IP → country lookup (DB-IP Country Lite, refreshed monthly by the
    * `geoip-refresh` job). Nothing leaves the server. `countryOf` answers an ISO
    * 3166-1 alpha-2 code, or null for a private IP or before the first download.
