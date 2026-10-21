@@ -10,8 +10,10 @@ import path from "node:path";
 import { runChecks, worst, type Check } from "./checks.js";
 import { backup as dumpDatabase, installedVersion, waitForHealth } from "./release.js";
 import { findSite, type Site } from "./site.js";
-import { installUnits, runForeground, systemctl, unitNames, unitState, unitsInstalled } from "./service.js";
+import { installUnits, installUpdater, runForeground, systemctl, unitNames, unitState, unitsInstalled } from "./service.js";
 import { rollback, update } from "./update.js";
+import { FileReporter, type RunStatus } from "./progress.js";
+import { STATUS_FILE, runUpdater } from "./updater.js";
 import { color, error, field, heading, info, json, line, note, printChecks, success, warning } from "./ui.js";
 
 const HELP = `
@@ -25,7 +27,8 @@ ${color.bold("xentium")} — run and update a Xentium site
   ${color.bold("xentium backup")}             dump the database into shared/backups
   ${color.bold("xentium update")} [version]   install a release, migrate, switch over
   ${color.bold("xentium rollback")} [version] go back to the release you were on
-  ${color.bold("xentium install-service")}    install (or rewrite) the systemd units
+  ${color.bold("xentium install-service")}    install (or rewrite) the systemd units and the updater
+  ${color.bold("xentium updater")}            run an update the ACP asked for (started by systemd)
 
 Options
   --site <dir>    the site to act on (default: the one you're standing in)
@@ -56,7 +59,7 @@ function parseArgs(argv: string[]): Args {
     const [name, inline] = arg.replace(/^--?/, "").split("=", 2);
     // Flags that take a value: --site <dir>. Everything else is a switch.
     if (inline !== undefined) flags[name!] = inline;
-    else if ((name === "site" || name === "package") && argv[i + 1] && !argv[i + 1]!.startsWith("-")) flags[name] = argv[++i]!;
+    else if ((name === "site" || name === "package" || name === "report") && argv[i + 1] && !argv[i + 1]!.startsWith("-")) flags[name] = argv[++i]!;
     else flags[name!] = true;
   }
   return { command: rest.shift() ?? "", rest, flags };
@@ -201,8 +204,42 @@ async function installService(site: Site): Promise<number> {
     return 1;
   }
   await site.patchConfig({ service: units });
+  if (!(await installUpdater(site, units))) {
+    warning("The updater was not installed, so updates run from this terminal only.");
+  }
   note(`Start it with \`xentium start\`, or \`sudo systemctl start ${units.api}\`.`);
   return 0;
+}
+
+/**
+ * `update`, and, with `--report=<run id>` (the updater's hand-over), writing its
+ * progress into the run the updater opened. Such a run only installs what npm
+ * provenance proves our release workflow built.
+ */
+async function reportedUpdate(site: Site, rest: string[], flags: Record<string, string | boolean>): Promise<number> {
+  const options = {
+    ...(rest[0] ? { version: rest[0] } : {}),
+    ...(typeof flags.package === "string" ? { package: path.resolve(flags.package) } : {}),
+    force: !!flags.force,
+    skipBackup: !!flags["skip-backup"],
+    dryRun: !!flags["dry-run"],
+  };
+  if (typeof flags.report !== "string") return update(site, options);
+
+  const file = path.join(site.runDir, STATUS_FILE);
+  let opened: RunStatus | null = null;
+  try { opened = JSON.parse(await fs.readFile(file, "utf8")) as RunStatus; } catch { /* the updater writes it first */ }
+  const config = site.readConfig();
+  const report = FileReporter.open(file, {
+    id: flags.report, action: "update", from: opened?.from ?? config.version, to: rest[0] ?? "latest",
+    requestedBy: opened?.requestedBy ?? null, startedAt: opened?.startedAt ?? new Date().toISOString(),
+  });
+  const code = await update(site, { ...options, reporter: report, requireProvenance: true });
+  if (report.snapshot.state === "running") {
+    const failed = report.snapshot.steps.find((s) => s.state === "failed");
+    await report.finish(code === 0 ? "done" : "failed", code === 0 ? undefined : failed?.note ?? "the update did not complete");
+  }
+  return code;
 }
 
 // ── Entry ────────────────────────────────────────────────────────────────────
@@ -228,13 +265,8 @@ async function main(): Promise<number> {
     // The only command that works without a site: "why can't I install this?"
     case "doctor":          return doctor(findSite(typeof flags.site === "string" ? flags.site : undefined), flags);
     case "backup":          return backup(requireSite(flags));
-    case "update":          return update(requireSite(flags), {
-                              ...(rest[0] ? { version: rest[0] } : {}),
-                              ...(typeof flags.package === "string" ? { package: path.resolve(flags.package) } : {}),
-                              force: !!flags.force,
-                              skipBackup: !!flags["skip-backup"],
-                              dryRun: !!flags["dry-run"],
-                            });
+    case "update":          return reportedUpdate(requireSite(flags), rest, flags);
+    case "updater":         return runUpdater(requireSite(flags));
     case "rollback":        return rollback(requireSite(flags), rest[0]);
     case "install-service": return installService(requireSite(flags));
     default:
