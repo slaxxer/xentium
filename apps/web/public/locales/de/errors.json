@@ -45,5 +45,10 @@
   "XEC-USER-4020": "Bitte fülle alle Pflichtfelder aus, um dich zu registrieren.",
   "XEC-GROUP-4010": "Neue Mitglieder können nur einer bestehenden Gruppe ohne ACP-Zugang beitreten.",
   "XEC-LEGAL-3503": "Erneut abfragen geht nur bei einem veröffentlichten Dokument, dem Mitglieder zustimmen müssen.",
-  "XEC-AUTH-2012": "Bitte stimme zuerst den rechtlichen Dokumenten der Seite zu."
+  "XEC-AUTH-2012": "Bitte stimme zuerst den rechtlichen Dokumenten der Seite zu.",
+  "XEC-UPDATE-4091": "Dieser Server hat keinen Updater. Führe einmal npx xentium install-service auf dem Server aus.",
+  "XEC-UPDATE-4092": "Es läuft bereits ein Update.",
+  "XEC-UPDATE-4093": "Diese Version wird dieser Seite nicht angeboten.",
+  "XEC-UPDATE-4094": "Es gibt kein abgeschlossenes Update zum Zurücksetzen.",
+  "XEC-UPDATE-4221": "Das Passwort stimmt nicht."
 }

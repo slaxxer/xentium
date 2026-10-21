@@ -1,5 +1,6 @@
 import type { RequestHandler } from "express";
 import { articleBulkSchema, articleListSchema } from "./adminArticles.js";
+import { coreUpdateRun } from "./coreUpdateRun.js";
 import { resolveEditingKey } from "../themes/themeKey.js";
 import { adminCasesService } from "./adminCases.service.js";
 import { modSettingsService, modSettingsPatchSchema } from "./modSettings.service.js";
@@ -326,6 +327,23 @@ export const adminController = {
   listArticles: (async (req, res) => {
     const q = articleListSchema.parse(req.query);
     res.json(await adminService.listArticles(q));
+  }) as RequestHandler,
+
+  coreUpdateRunView: (async (_req, res) => {
+    res.json(await coreUpdateRun.view());
+  }) as RequestHandler,
+
+  coreUpdateRunStart: (async (req, res) => {
+    const body = z.object({
+      version:  z.string().regex(/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/).max(64),
+      password: z.string().min(1).max(512),
+    }).parse(req.body);
+    res.status(202).json(await coreUpdateRun.start(req.userId!, body.version, body.password));
+  }) as RequestHandler,
+
+  coreUpdateRunRollback: (async (req, res) => {
+    const body = z.object({ password: z.string().min(1).max(512) }).parse(req.body);
+    res.status(202).json(await coreUpdateRun.rollback(req.userId!, body.password));
   }) as RequestHandler,
 
   articleSummary: (async (_req, res) => {

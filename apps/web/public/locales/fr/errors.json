@@ -45,5 +45,10 @@
   "XEC-USER-4020": "Veuillez remplir tous les champs obligatoires pour vous inscrire.",
   "XEC-GROUP-4010": "Les nouveaux membres ne peuvent rejoindre qu'un groupe existant qui n'ouvre pas l'ACP.",
   "XEC-LEGAL-3503": "Seul un document publié que les membres doivent accepter peut être redemandé.",
-  "XEC-AUTH-2012": "Veuillez d'abord accepter les documents juridiques du site."
+  "XEC-AUTH-2012": "Veuillez d'abord accepter les documents juridiques du site.",
+  "XEC-UPDATE-4091": "Ce serveur n'a pas de programme de mise à jour. Lancez npx xentium install-service une fois sur le serveur.",
+  "XEC-UPDATE-4092": "Une mise à jour est déjà en cours.",
+  "XEC-UPDATE-4093": "Ce n'est pas la version proposée à ce site.",
+  "XEC-UPDATE-4094": "Aucune mise à jour terminée à annuler.",
+  "XEC-UPDATE-4221": "Ce mot de passe n'est pas le bon."
 }

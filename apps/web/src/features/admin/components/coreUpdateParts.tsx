@@ -205,7 +205,12 @@ export function PluginUpdateList({ updates }: { updates: PluginUpdateRow[] }) {
 
 /** The dialog's body: the facts, what to watch out for, the changelog, how to
  *  install, and any plugin updates waiting at the same time. */
-export function CoreUpdateDialogBody({ update, plugins = [] }: { update: CoreUpdate; plugins?: PluginUpdateRow[] }) {
+export function CoreUpdateDialogBody({ update, plugins = [], onUpdateNow }: {
+  update: CoreUpdate;
+  plugins?: PluginUpdateRow[];
+  /** Set where the updater runs and this admin may update: the one-click button. */
+  onUpdateNow?: () => void;
+}) {
   const { t, i18n } = useTranslation("acp");
   const released = releaseDate(update.latest.publishedAt, i18n.language);
   return (
@@ -219,6 +224,15 @@ export function CoreUpdateDialogBody({ update, plugins = [] }: { update: CoreUpd
       <CoreUpdateWarnings update={update} />
       <div className="core-dialog__label">{t("coreUpdate.changelog")}</div>
       <div className="core-notes"><CoreChangelog update={update} /></div>
+      {onUpdateNow && update.blockedBy.length === 0 && (
+        <div className="core-oneclick">
+          <div>
+            <b>{t("coreUpdate.run.oneClickTitle")}</b>
+            <span>{t("coreUpdate.run.oneClickSub")}</span>
+          </div>
+          <button type="button" className="btn-primary" onClick={onUpdateNow}>{t("coreUpdate.run.updateNow")}</button>
+        </div>
+      )}
       <UpdateCommand update={update} />
       {plugins.length > 0 && <PluginUpdateList updates={plugins} />}
     </div>

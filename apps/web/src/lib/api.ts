@@ -50,7 +50,10 @@ async function tryRefresh(): Promise<string | null> {
         credentials: "include",
       });
       if (!res.ok) {
-        authStore.clear(); // also marks loaded=true
+        // Only a refusal signs out. A 5xx is a server that is down for a moment (a
+        // core update restarts it): the refresh cookie is still good, try again later.
+        if (res.status < 500) authStore.clear(); // also marks loaded=true
+        else authStore.markLoaded();
         return null;
       }
       const { accessToken } = await res.json();
@@ -122,7 +125,7 @@ async function request<T>(method: string, path: string, body?: unknown, retry = 
       authStore.set(authStore.token, { ...authStore.user, pendingLegal: errObj.details.pending, needsLegalConsent: true });
     }
     const isMaintenance = errObj?.code === "XEC-CORE-8010" || (detail as any)?.maintenance === true;
-    if (res.status >= 500 && !isMaintenance) {
+    if (res.status >= 500 && !isMaintenance && !fatalHeld) {
       fatalErrorStore.trigger({
         code:     errObj?.code ?? `XEC-API-${res.status}`,
         message:  errObj?.message ?? "An unexpected server error occurred.",
@@ -187,6 +190,16 @@ export async function apiDownload(path: string, fallbackName: string): Promise<v
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+/**
+ * While a core update runs, the API restarts and answers 502 for a minute. That
+ * is the update, not a failure, so the fatal-halt overlay stays down meanwhile
+ * (CoreUpdateRun sets this from the run's status).
+ */
+let fatalHeld = false;
+export function holdFatalErrors(on: boolean): void {
+  fatalHeld = on;
 }
 
 export const api = {
