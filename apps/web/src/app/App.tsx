@@ -42,7 +42,7 @@ import { slotRegistry } from "../plugins/slotRegistry";
 // ACP pages — system
 import { MembersOnly } from "../components/MembersOnly";
 import { FatalErrorOverlay }     from "../components/FatalErrorOverlay";
-import { CanonicalManager }      from "../components/CanonicalManager";
+import { HeadManager }           from "../components/HeadManager";
 import { RouteErrorPage }        from "../features/errors/RouteErrorPage";
 import { ErrorBoundary }         from "../features/errors/ErrorBoundary";
 
@@ -188,7 +188,7 @@ function AppGuard() {
   if (INSTALL_PATHS.has(pathname)) return null;
 
   if (isLoading) return <Loading />;
-  if ((error as any)?.status === 410 || data?.installed) return <><CanonicalManager /><LegalConsentGate /><Outlet /></>;
+  if ((error as any)?.status === 410 || data?.installed) return <><HeadManager /><LegalConsentGate /><Outlet /></>;
   return <Navigate to="/install" replace />;
 }
 

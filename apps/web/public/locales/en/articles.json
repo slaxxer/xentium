@@ -202,10 +202,6 @@
     "visMembers": "Members only",
     "visPrivate": "Private",
     "seoPreview": "SEO Preview",
-    "seoTitleFallback": "Article title",
-    "seoDescFallback": "Excerpt will appear here.",
-    "seoTitlePlaceholder": "SEO title (optional)",
-    "seoDescPlaceholder": "SEO description (optional)",
     "toolbar": {
       "heading1": "Heading 1",
       "heading2": "Heading 2",
@@ -273,7 +269,6 @@
     "needImage": "Required to publish. It's the card image everywhere this is listed.",
     "visPublicHint": "anyone",
     "visMembersHint": "signed in",
-    "visPrivateHint": "only you",
-    "searchAppearance": "Search appearance"
+    "visPrivateHint": "only you"
   }
 }

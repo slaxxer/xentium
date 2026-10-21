@@ -26,17 +26,24 @@ import deModeration from "../../locales/de/moderation.json" with { type: "json" 
 import esModeration from "../../locales/es/moderation.json" with { type: "json" };
 import frModeration from "../../locales/fr/moderation.json" with { type: "json" };
 import ptModeration from "../../locales/pt/moderation.json" with { type: "json" };
+import enSeo from "../../locales/en/seo.json" with { type: "json" };
+import deSeo from "../../locales/de/seo.json" with { type: "json" };
+import esSeo from "../../locales/es/seo.json" with { type: "json" };
+import frSeo from "../../locales/fr/seo.json" with { type: "json" };
+import ptSeo from "../../locales/pt/seo.json" with { type: "json" };
 
 export const SERVER_LOCALES = ["en", "de", "es", "fr", "pt"] as const;
 export type ServerLocale = (typeof SERVER_LOCALES)[number];
 
 type Tree = { [key: string]: string | Tree };
-const RESOURCES: Record<ServerLocale, Record<"email" | "notifications" | "moderation", Tree>> = {
-  en: { email: enEmail, notifications: enNotifications, moderation: enModeration },
-  de: { email: deEmail, notifications: deNotifications, moderation: deModeration },
-  es: { email: esEmail, notifications: esNotifications, moderation: esModeration },
-  fr: { email: frEmail, notifications: frNotifications, moderation: frModeration },
-  pt: { email: ptEmail, notifications: ptNotifications, moderation: ptModeration },
+// `seo`: the names of core's own pages in a page title (Articles, Members, …), in
+// the site's language: a search result is read before anyone picks a language.
+const RESOURCES: Record<ServerLocale, Record<"email" | "notifications" | "moderation" | "seo", Tree>> = {
+  en: { email: enEmail, notifications: enNotifications, moderation: enModeration, seo: enSeo },
+  de: { email: deEmail, notifications: deNotifications, moderation: deModeration, seo: deSeo },
+  es: { email: esEmail, notifications: esNotifications, moderation: esModeration, seo: esSeo },
+  fr: { email: frEmail, notifications: frNotifications, moderation: frModeration, seo: frSeo },
+  pt: { email: ptEmail, notifications: ptNotifications, moderation: ptModeration, seo: ptSeo },
 };
 export type ServerNamespace = keyof (typeof RESOURCES)["en"];
 

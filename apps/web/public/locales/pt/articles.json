@@ -204,10 +204,6 @@
     "visMembers": "Apenas membros",
     "visPrivate": "Privado",
     "seoPreview": "Pré-visualização SEO",
-    "seoTitleFallback": "Título do artigo",
-    "seoDescFallback": "O resumo aparecerá aqui.",
-    "seoTitlePlaceholder": "Título SEO (opcional)",
-    "seoDescPlaceholder": "Descrição SEO (opcional)",
     "toolbar": {
       "heading1": "Cabeçalho 1",
       "heading2": "Cabeçalho 2",
@@ -275,7 +271,6 @@
     "needImage": "Necessária para publicar. É a imagem do card em todas as listagens.",
     "visPublicHint": "qualquer pessoa",
     "visMembersHint": "com login",
-    "visPrivateHint": "só você",
-    "searchAppearance": "Aparência na busca"
+    "visPrivateHint": "só você"
   }
 }

@@ -1,0 +1,11 @@
+{
+  "articles": "Artículos",
+  "members": "Miembros",
+  "legal": {
+    "imprint": "Aviso legal",
+    "privacy": "Política de privacidad",
+    "terms": "Términos del servicio",
+    "disclaimer": "Descargo de responsabilidad"
+  },
+  "home": "Inicio"
+}

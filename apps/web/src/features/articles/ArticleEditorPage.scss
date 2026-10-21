@@ -256,11 +256,23 @@ textarea.aed-input { resize: vertical; line-height: 1.5; }
   &__hint { margin-left: auto; font-size: var(--fs-2xs); color: var(--c-fg-subtle); font-weight: 500; }
 }
 
-.aed-seo {
-  padding: 12px; border-radius: var(--radius-md); background: var(--c-card); border: 1px solid var(--c-border);
-  &__host { font-size: var(--fs-2xs); color: var(--c-fg-subtle); margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  &__title { font-size: var(--fs-md); font-weight: 600; color: var(--c-accent); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  &__desc { font-size: var(--fs-2xs); line-height: 1.5; color: var(--c-fg-subtle); }
+/* Tabs in the panel head when a plugin adds a panel (the SEO plugin's SEO tab). */
+.aed-ptabs { display: flex; align-self: stretch; gap: 2px; }
+.aed-ptab {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 0 10px; border: 0; border-bottom: 2px solid transparent;
+  background: none; color: var(--c-fg-muted);
+  font: inherit; font-size: var(--fs-sm); font-weight: 700; cursor: pointer;
+  &:hover { color: var(--c-fg); }
+  &.is-on { color: var(--c-fg); border-bottom-color: var(--c-accent); }
+  &__badge {
+    padding: 1px 7px; border-radius: var(--radius-pill); font-size: var(--fs-2xs); font-weight: 800;
+    --aed-tone: var(--c-fg-muted);
+    background: color-mix(in srgb, var(--aed-tone) 14%, transparent); color: var(--aed-tone);
+    &.is-good { --aed-tone: var(--c-success); }
+    &.is-fair { --aed-tone: var(--c-warn); }
+    &.is-bad { --aed-tone: var(--c-danger); }
+  }
 }
 
 /* ── Wide screens: the panel sits beside the canvas instead of over it ──── */

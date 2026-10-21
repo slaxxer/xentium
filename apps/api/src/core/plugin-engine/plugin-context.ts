@@ -10,6 +10,9 @@ import { acpPageRegistry } from "./acp-page-registry.js";
 import { securityScanRegistry } from "../security/security-scan-registry.js";
 import { authGuardRegistry, type AuthGuard } from "../auth-guard-registry/auth-guard-registry.js";
 import { searchRegistry } from "../search-registry/search-registry.js";
+import { seoRegistry } from "../../modules/seo/seo.registry.js";
+import { defaults as seoDefaults, describe as seoDescribe, headFor as seoHeadFor } from "../../modules/seo/seo.service.js";
+import type { PageSource, SeoProvider } from "@xentium/contracts";
 import { reportTargetRegistry } from "../report-target-registry/report-target-registry.js";
 import { embedRegistry } from "../embed-registry/embed-registry.js";
 import { contentRegistry } from "../content-registry/content-registry.js";
@@ -88,6 +91,14 @@ const host: PluginHost = {
     },
   },
   geo: { countryOf: (ip: string) => countryOf(ip), available: geoipAvailable },
+  // Search engines: what a page is (any registered source), the tags core would
+  // write, the tags actually written, and every source (for sitemaps).
+  seo: {
+    describe: (path: string) => seoDescribe(path),
+    defaults: (path: string, info) => seoDefaults(path, info),
+    head: (path: string) => seoHeadFor(path),
+    sources: () => seoRegistry.sources(),
+  },
   security: {
     createCase: async (opts: any) => {
       const { createModerationCase } = await import("../../modules/moderation/moderationCase.service.js");
@@ -177,6 +188,15 @@ export class PluginContextImpl implements PluginContext {
   registerSearchSource(source: SearchSource): void {
     searchRegistry.register(this.pluginId, source);
     logger.info({ pluginId: this.pluginId, source: source.id }, "Plugin search source registered");
+  }
+
+  registerPageSource(source: PageSource): void {
+    seoRegistry.registerSource(source, this.pluginId);
+  }
+
+  registerSeoProvider(provider: SeoProvider): void {
+    seoRegistry.setProvider(provider, this.pluginId);
+    logger.info({ pluginId: this.pluginId }, "SEO provider registered");
   }
 
   registerEmbed(handler: EmbedHandler): void {

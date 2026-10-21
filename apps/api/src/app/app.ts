@@ -45,6 +45,8 @@ import { extractedDir } from "../core/plugin-engine/plugin-engine.js";
 import { prisma } from "../infrastructure/db.js";
 import { globalApiLimiter } from "../shared/middleware/rateLimit.js";
 import { mountWebApp } from "./serveWeb.js";
+import { registerCoreSources } from "../modules/seo/seo.core-sources.js";
+import { robots as seoRobots, sitemap as seoSitemap } from "../modules/seo/seo.service.js";
 
 const ALLOWED_UPLOAD_DIRS = ['avatars', 'covers', 'articles', 'pages', 'groups', 'forum-attachments', 'themes', 'layouts', 'emojis'];
 
@@ -177,6 +179,22 @@ export function createApp(): Express {
     } catch {
       if (!res.headersSent) res.status(404).end();
     }
+  });
+
+  // robots.txt and the sitemaps live at the site root, where crawlers look. robots.txt
+  // always answers (core's rules, or the SEO plugin's); sitemaps only with the plugin.
+  registerCoreSources();
+  app.get("/robots.txt", async (_req, res, next) => {
+    try {
+      res.type("text/plain").set("Cache-Control", "public, max-age=300").send(await seoRobots());
+    } catch (e) { next(e); }
+  });
+  app.get(/^\/sitemap(?:-[a-z0-9-]{1,64})?\.xml$/, async (req, res, next) => {
+    try {
+      const xml = await seoSitemap(req.path.slice(1));
+      if (!xml) { res.status(404).type("text/plain").send("Not found"); return; }
+      res.type("application/xml").set("Cache-Control", "public, max-age=300").send(xml);
+    } catch (e) { next(e); }
   });
 
   // Serve the built SPA (prod) BEFORE installGuard so the installer page + its

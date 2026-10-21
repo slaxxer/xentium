@@ -1,3 +1,4 @@
+import type { HeadTags, PageInfo, PageSource, SeoProvider } from "@xentium/contracts";
 /**
  * @xentium/plugin-sdk
  *
@@ -433,6 +434,19 @@ export interface PluginHost extends BasePluginHost {
     available: () => boolean;
   };
 
+  /**
+   * Search engines (core 1.0.0-alpha.19+; optional on older cores). `describe` answers
+   * what a page is as a guest may see it (any registered source), `defaults` the tags
+   * core writes without a provider, `head` the tags actually written, `sources` every
+   * page source (core's and plugins') for sitemaps.
+   */
+  seo?: {
+    describe: (path: string) => Promise<PageInfo | null>;
+    defaults: (path: string, info: PageInfo | null) => Promise<HeadTags>;
+    head: (path: string) => Promise<HeadTags>;
+    sources: () => PageSource[];
+  };
+
   utils: BasePluginHost["utils"] & {
     resolveAvatar: (...args: any[]) => any;
     /** Sanitize user-authored rich-text HTML (allowlist) before storage.
@@ -478,6 +492,14 @@ export interface PluginContext extends BasePluginContext<PluginHost> {
    *  it). Deregistered on disable — embeds in it then stay hidden. Optional on
    *  older cores: `ctx.registerContentKind?.(…)`. */
   registerContentKind?(handler: ContentKindHandler): void;
+
+  /** Describe your own pages for search engines and sitemaps (a thread, a file). Only
+   *  what a guest may open. Core 1.0.0-alpha.19+: call as `ctx.registerPageSource?.(…)`. */
+  registerPageSource?(source: PageSource): void;
+
+  /** Become the site's SEO provider: the tags of every page, robots.txt and the
+   *  sitemaps. One at a time. Core 1.0.0-alpha.19+. */
+  registerSeoProvider?(provider: SeoProvider): void;
 
   /** Register a site-stats source shown in the footer. Deregistered on disable. */
   registerStatSource(source: StatSource): void;
