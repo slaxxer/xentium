@@ -120,3 +120,60 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm db:generate
       - run: pnpm build
+
+  # A site made with the previous release must survive an update to this commit, and
+  # its pg_dump backup must restore into a working site (scripts/upgrade-test.mjs:
+  # install with the old tag, add an article and an avatar, migrate with this code,
+  # check; restore the dump into a second database, check again).
+  upgrade:
+    name: Upgrade from the previous release
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: xentium
+          POSTGRES_PASSWORD: xentium
+          POSTGRES_DB: xentium
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U xentium"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0   # the previous release's tag and commit
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      # pg_dump must be at least the server's version (17); the runner's own is older.
+      - name: PostgreSQL 17 client
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-common
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt-get install -y -qq postgresql-client-17
+      - run: pnpm install --frozen-lockfile
+      - name: Write a test .env
+        run: |
+          set -euo pipefail
+          dummy=$(pnpm --silent --filter @xentium/api exec node --input-type=commonjs \
+            -e "require('argon2').hash('xentium-dummy').then(h=>console.log(h))")
+          {
+            echo 'DATABASE_URL="postgresql://xentium:xentium@localhost:5432/xentium"'
+            echo 'REDIS_URL="redis://localhost:6379"'
+            echo "DUMMY_ARGON2_HASH=\"$dummy\""
+          } > .env
+      - run: node scripts/upgrade-test.mjs
+
