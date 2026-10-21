@@ -165,6 +165,12 @@ export interface PluginMeta {
   pluginId: string;
   /** FontAwesome IconDefinition used in ACP sidebar and Marketplace */
   icon?: unknown;
+  /**
+   * One of the ACP rail's own icons (`forum`, `files`, `support`, `shop`, …), so the
+   * plugin's section matches core's: outline at rest, filled when active. Wins over
+   * `icon` in the rail. Unknown names fall back to `icon`.
+   */
+  acpIcon?: string;
   /** CSS color token used in Marketplace card accent */
   accentColor?: string;
   /** Section name as declared in registerAcpPage — used to match for icon/position */

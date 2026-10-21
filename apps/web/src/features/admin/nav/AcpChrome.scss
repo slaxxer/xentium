@@ -89,6 +89,7 @@ $panel-w: 248px;
 
     &.is-active { background: var(--c-accent-soft); color: var(--c-accent); }
 
+
     // The bar means "the page you are on is in here" and belongs only to the
     // route. A flyout lights the cell it is previewing, but must not move this,
     // or peeking into a section would look like having left the one you are in.
@@ -393,3 +394,7 @@ $panel-w: 248px;
   right: auto;
   overflow-y: auto;
 }
+
+// A filled section icon (the section you are in): its inner lines are cut out in the
+// colour behind it. Containers on another background set --ic-cut.
+.ic--rail .ic-cut { stroke: var(--ic-cut, var(--c-surface)); }

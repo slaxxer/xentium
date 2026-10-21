@@ -5,7 +5,7 @@ import { FontAwesomeIcon } from "../../components/Icon";
 import { faPuzzlePiece } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../lib/api";
 import { slotRegistry } from "../../plugins/slotRegistry";
-import { AcpIcon, type AcpIconName } from "./pages/acpIcons";
+import { AcpIcon, isRailIcon, type AcpIconName } from "./pages/acpIcons";
 import { pluginTextKey } from "../../lib/coreText";
 
 export interface NavChild {
@@ -28,6 +28,8 @@ export interface NavItem {
   label: string;        // `acp` i18n key for core items; literal label for plugin sections
   icon: ReactNode;
   iconName?: AcpIconName;  // same icon by name, for consumers that need it unrendered
+  /** The rail's icon (outline at rest, filled when active): a name from `RAIL_ICONS`. */
+  railIcon?: string;
                            // (the topbar breadcrumb / command palette index below)
   to?: string;          // leaf item (no children)
   key?: string;         // grouping key
@@ -38,11 +40,11 @@ export interface NavItem {
 // Plugin-registered sections supply literal labels — i18next returns the key as-is
 // when it's missing, so those pass through untranslated, which is correct.
 export const ACP_NAV: NavItem[] = [
-  { label: "nav.dashboard", icon: createElement(AcpIcon, { name: "dashboard", size: 18 }), iconName: "dashboard", to: "/admin" },
+  { label: "nav.dashboard", railIcon: "dashboard", icon: createElement(AcpIcon, { name: "dashboard", size: 18 }), iconName: "dashboard", to: "/admin" },
   {
     // Members and Access control were two sections (2026-10-17 merged): groups,
     // their permissions and the ranks that move members between them are one subject.
-    label: "nav.members", icon: createElement(AcpIcon, { name: "user", size: 18 }), iconName: "user", key: "users",
+    label: "nav.members", railIcon: "members", icon: createElement(AcpIcon, { name: "user", size: 18 }), iconName: "user", key: "users",
     children: [
       { label: "nav.userList", to: "/admin/users" },
       { label: "nav.groups", to: "/admin/groups" },
@@ -55,7 +57,7 @@ export const ACP_NAV: NavItem[] = [
     ],
   },
   {
-    label: "nav.content", icon: createElement(AcpIcon, { name: "file", size: 18 }), iconName: "file", key: "content",
+    label: "nav.content", railIcon: "content", icon: createElement(AcpIcon, { name: "file", size: 18 }), iconName: "file", key: "content",
     children: [
       { label: "nav.articles", to: "/admin/articles" },
       // The editor's tools: what members can write with, beside the emojis it offers.
@@ -66,7 +68,7 @@ export const ACP_NAV: NavItem[] = [
     ],
   },
   {
-    label: "nav.moderation", icon: createElement(AcpIcon, { name: "shield", size: 18 }), iconName: "shield", key: "moderation",
+    label: "nav.moderation", railIcon: "moderation", icon: createElement(AcpIcon, { name: "shield", size: 18 }), iconName: "shield", key: "moderation",
     children: [
       { label: "nav.reviewCases", to: "/admin/cases" },
       // Used on every warning and ban, so before the log and the settings.
@@ -76,7 +78,7 @@ export const ACP_NAV: NavItem[] = [
     ],
   },
   {
-    label: "nav.appearance", icon: createElement(AcpIcon, { name: "palette", size: 18 }), iconName: "palette", key: "appearance",
+    label: "nav.appearance", railIcon: "appearance", icon: createElement(AcpIcon, { name: "palette", size: 18 }), iconName: "palette", key: "appearance",
     children: [
       // Theme Studio is reached from a theme on this page — it edits ONE theme — so
       // it has no nav entry of its own.
@@ -89,7 +91,7 @@ export const ACP_NAV: NavItem[] = [
     ],
   },
   {
-    label: "nav.extensions", icon: createElement(AcpIcon, { name: "puzzle", size: 18 }), iconName: "puzzle", key: "extensions",
+    label: "nav.extensions", railIcon: "extensions", icon: createElement(AcpIcon, { name: "puzzle", size: 18 }), iconName: "puzzle", key: "extensions",
     children: [
       { label: "nav.marketplace", to: "/admin/marketplace" },
       // Uploading a package is a button on Installed (when uploads are allowed), not
@@ -103,7 +105,7 @@ export const ACP_NAV: NavItem[] = [
   },
   {
     // Two small groups in the panel: what you set up, and what the site records.
-    label: "nav.system", icon: createElement(AcpIcon, { name: "cog", size: 18 }), iconName: "cog", key: "system",
+    label: "nav.system", railIcon: "system", icon: createElement(AcpIcon, { name: "cog", size: 18 }), iconName: "cog", key: "system",
     children: [
       { label: "nav.settings", to: "/admin/settings", group: "nav.groupSetup" },
       { label: "nav.email", to: "/admin/email", group: "nav.groupSetup" },
@@ -205,6 +207,9 @@ export function useAcpNav(): NavItem[] {
     const meta = slotRegistry.getPluginMetaBySectionName(section);
     return {
       label: pluginTextKey(`acpSections.${section}`) ?? section,
+      // A plugin that names one of the rail's icons matches core's style; an older
+      // one keeps its Font Awesome glyph.
+      railIcon: isRailIcon(meta?.acpIcon) ? meta?.acpIcon : undefined,
       icon: meta?.icon
         ? createElement(FontAwesomeIcon, { icon: meta.icon as never })
         : createElement(FontAwesomeIcon, { icon: faPuzzlePiece }),
