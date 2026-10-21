@@ -188,5 +188,8 @@
   "signInToRate": "Inicia sesión para valorar",
   "lastSeen": "Visto {{when}}",
   "lastSeenOn": "Visto por última vez en {{date}}",
-  "details": "Datos"
+  "details": "Datos",
+  "membersOnly": "Este perfil solo es visible para miembros. Inicia sesión para verlo.",
+  "historyPrivate": "{{username}} mantiene su historial de publicaciones en privado.",
+  "wallClosed": "{{username}} no acepta publicaciones en su muro."
 }

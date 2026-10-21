@@ -50,5 +50,8 @@
   "XEC-UPDATE-4092": "Une mise à jour est déjà en cours.",
   "XEC-UPDATE-4093": "Ce n'est pas la version proposée à ce site.",
   "XEC-UPDATE-4094": "Aucune mise à jour terminée à annuler.",
-  "XEC-UPDATE-4221": "Ce mot de passe n'est pas le bon."
+  "XEC-UPDATE-4221": "Ce mot de passe n'est pas le bon.",
+  "XEC-USER-4021": "Ce profil n'est visible que par les membres.",
+  "XEC-USER-4022": "Ce membre ne peut pas être suivi.",
+  "XEC-USER-4023": "Ce membre n'accepte pas vos messages sur son mur."
 }
