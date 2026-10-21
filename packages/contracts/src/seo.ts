@@ -38,6 +38,13 @@ export interface PageInfo {
 export interface SitemapEntry {
   path: string;
   lastmod?: string | null;
+  /** The content behind it, when it is one item: lets the SEO plugin leave out a page
+   *  its editor marked "hide from search engines". */
+  kind?: string;
+  id?: string;
+  /** Its indexing area, when it differs from its source's (one source listing pages of
+   *  several areas), so turning an area off leaves exactly its pages out. */
+  area?: string;
 }
 
 /** A provider of page descriptions: core registers its own, plugins theirs. */

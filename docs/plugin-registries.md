@@ -146,10 +146,17 @@ ctx.registerPageSource?.({
     };
   },
   async list() {
-    return (await allPublicItems()).map((i) => ({ path: `/items/${i.slug}`, lastmod: i.updatedAt }));
+    return (await allPublicItems()).map((i) => ({
+      path: `/items/${i.slug}`, lastmod: i.updatedAt, kind: "my-plugin.item", id: i.id,
+    }));
   },
 });
 ```
+
+Give each sitemap entry its `kind` and `id` when it is one item: the SEO plugin then leaves
+out a page its editor hid from search engines. When one source lists pages of several
+areas, give those entries their own `area` too, so turning an area off removes exactly
+its pages.
 
 Without the SEO plugin, core turns the description into the page's title, description,
 canonical and preview tags itself. Available on cores from 1.0.0-alpha.19, so call it with

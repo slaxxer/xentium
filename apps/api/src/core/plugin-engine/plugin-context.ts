@@ -143,6 +143,9 @@ export class PluginContextImpl implements PluginContext {
           update: {},
           create: { groupId: group.id, permissionId: permission.id },
         });
+        // Members' cached permissions predate the grant: without this the admin who
+        // just enabled the plugin is refused its own pages for up to five minutes.
+        await permissionCache.invalidateForGroup(group.id).catch(() => {});
       }
     }
     logger.info({ pluginId: this.pluginId, count: perms.length }, "Plugin permissions registered");
