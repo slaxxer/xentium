@@ -59,7 +59,13 @@ export const XEC = {
   // Legal documents
   LEGAL_NOT_FOUND: "XEC-LEGAL-3501",
   LEGAL_EMPTY: "XEC-LEGAL-3502",
-  LEGAL_NOT_ASKABLE: "XEC-LEGAL-3503", // ask again: only a published document members must accept
+  LEGAL_NOT_ASKABLE: "XEC-LEGAL-3503",
+  // One-click core updates
+  UPDATE_UNAVAILABLE: "XEC-UPDATE-4091",  // no updater on this server (install-service not run)
+  UPDATE_BUSY: "XEC-UPDATE-4092",         // an update or rollback is already running or queued
+  UPDATE_NOT_OFFERED: "XEC-UPDATE-4093",  // not the version the update check offers
+  UPDATE_NO_ROLLBACK: "XEC-UPDATE-4094",  // nothing finished to roll back
+  UPDATE_REAUTH: "XEC-UPDATE-4221",       // the password did not match // ask again: only a published document members must accept
 
   // Storage / Uploads
   STORE_FILE_TOO_LARGE: "XEC-STORE-7001",

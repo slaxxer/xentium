@@ -23,7 +23,7 @@ interface OnlineData { total: number; users?: OnlineUser[]; guests?: number; rec
 interface Stats { members: number; articles: number; today: number; newestMember: string | null }
 interface FooterNavItem { id: string; label: string; url: string; openInNewTab: boolean; visibility: string; placement?: string }
 interface FooterStat { id: string; label: string; value: number }
-interface FooterMeta { siteName: string; uptimeSeconds: number; stats: FooterStat[]; latencyMs: number; fetchedAt: number }
+interface FooterMeta { siteName: string; uptimeSeconds: number; version?: string; stats: FooterStat[]; latencyMs: number; fetchedAt: number }
 
 const MAX_NAMES = 18;
 
@@ -231,7 +231,7 @@ export function FooterLinks({ showThemeChooser = true }: { showThemeChooser?: bo
   );
 }
 
-/** The fixed footer line — `© {year} Powered by Xentium Community` — not editable, always centred. */
+/** The fixed footer line — `© {year} Powered by Xentium Community · v{version}` — not editable, always centred. */
 export function FooterText({ showUptime = false }: { showUptime?: boolean }) {
   const { t } = useTranslation("common");
   const { data: meta } = useFooterMeta();
@@ -249,6 +249,7 @@ export function FooterText({ showUptime = false }: { showUptime?: boolean }) {
     <div className="xt-foottext">
       <span className="xt-foottext__line">
         <Trans t={t} i18nKey="footer.poweredBy" values={{ year: new Date().getFullYear() }} components={{ b: <b /> }} />
+        {meta?.version && <><span className="xt-sep">·</span><span className="xt-foottext__ver">v{meta.version}</span></>}
       </span>
       {showUptime && (
         <span className="xt-foottext__meta">

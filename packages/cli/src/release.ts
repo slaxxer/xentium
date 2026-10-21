@@ -24,7 +24,7 @@ export interface SpawnResult { code: number; output: string }
 export function exec(
   cmd: string,
   args: string[],
-  opts: { cwd?: string; env?: NodeJS.ProcessEnv; quiet?: boolean; timeout?: number } = {},
+  opts: { cwd?: string; env?: NodeJS.ProcessEnv; quiet?: boolean; timeout?: number; onData?: (chunk: string) => void } = {},
 ): Promise<SpawnResult> {
   return new Promise((resolve) => {
     const child = spawn(cmd, args, {
@@ -40,6 +40,7 @@ export function exec(
       stream.on("data", (chunk: string) => {
         output += chunk;
         if (!opts.quiet) process.stdout.write(chunk);
+        opts.onData?.(chunk);
       });
     }
     child.on("error", (e) => {
@@ -154,14 +155,29 @@ export class MigrateError extends Error {
   }
 }
 
-/** Runs `prisma migrate deploy`; returns what it printed, or throws MigrateError. */
-export async function migrate(site: Site, version: string, opts: { quiet?: boolean } = {}): Promise<string> {
+/**
+ * Runs `prisma migrate deploy`; returns what it printed, or throws MigrateError.
+ * `onApplying` hears each migration as Prisma starts it ("Applying migration `…`").
+ */
+export async function migrate(
+  site: Site, version: string, opts: { quiet?: boolean; onApplying?: (name: string) => void } = {},
+): Promise<string> {
   const env = { ...site.processEnv(version), ...site.readEnv() };
+  let pending = "";
   const result = await exec(prismaBin(site, version), ["migrate", "deploy"], {
     cwd: site.appDir(version),
     env,
     quiet: opts.quiet,
     timeout: 10 * 60_000,
+    onData: opts.onApplying && ((chunk) => {
+      pending += chunk;
+      const lines = pending.split("\n");
+      pending = lines.pop() ?? "";
+      for (const l of lines) {
+        const m = /Applying migration `([^`]+)`/.exec(l);
+        if (m) opts.onApplying!(m[1]!);
+      }
+    }),
   });
   if (result.code !== 0) throw new MigrateError(result.output);
   return result.output;
@@ -233,12 +249,23 @@ VALUES
  * had never started.
  */
 export async function migrationsPending(site: Site, version: string): Promise<boolean> {
+  return (await pendingMigrations(site, version)) !== null;
+}
+
+/**
+ * The migrations this release would apply, by name, oldest first; null when there
+ * are none. Same reading rules as above: an unreadable status throws.
+ */
+export async function pendingMigrations(site: Site, version: string): Promise<string[] | null> {
   const env = { ...site.processEnv(version), ...site.readEnv() };
   const result = await exec(prismaBin(site, version), ["migrate", "status"], {
     cwd: site.appDir(version), env, quiet: true, timeout: 60_000,
   });
-  if (/not yet been applied|pending/i.test(result.output)) return true;
-  if (result.code === 0) return false;
+  if (/not yet been applied|pending/i.test(result.output)) {
+    // Prisma lists them one per line after the heading; a name is a timestamp and a slug.
+    return [...result.output.matchAll(/^\s*(\d{14}_[\w-]+)\s*$/gm)].map((m) => m[1]!);
+  }
+  if (result.code === 0) return null;
   throw new Error(`could not read the migration status:\n${result.output.trim().slice(-2000)}`);
 }
 

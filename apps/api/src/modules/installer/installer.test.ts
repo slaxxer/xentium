@@ -107,7 +107,9 @@ describe("installer happy path", () => {
     expect(reRun.body).toEqual({ error: "install_disabled" });
 
     expect((await request(app).get("/api/protected")).status).toBe(200);
-  });
+    // The whole wizard: seeding every permission and group plus an argon2 hash. Close
+    // to vitest's 5 s default on a CI runner, where it timed out once.
+  }, 20_000);
 
   it("refuses to mutate once already complete (assertNotComplete)", async () => {
     await request(app).post("/api/install/database").send({});

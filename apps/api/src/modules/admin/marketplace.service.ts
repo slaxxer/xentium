@@ -229,6 +229,17 @@ function pendingCore(cache: CoreUpdateCache | null): cache is CoreUpdateCache & 
   return !!cache?.updateAvailable && !!cache.latest && cache.current === XENTIUM_VERSION;
 }
 
+/**
+ * The version the update check offers right now (the stepping stone when the
+ * jump is refused, else the newest), or null. A one-click update may install
+ * exactly this and nothing else.
+ */
+export async function offeredCoreVersion(): Promise<string | null> {
+  const cache = await readCoreUpdateCache();
+  if (!pendingCore(cache)) return null;
+  return cache.via ?? cache.latest.version;
+}
+
 /** The acknowledgement closing the core dialog writes. Not a page: an ACP visit row nobody navigates to. */
 const CORE_ACK_MARK = "/admin/updates#core";
 

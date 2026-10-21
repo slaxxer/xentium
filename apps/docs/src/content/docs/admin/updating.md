@@ -71,8 +71,43 @@ first. Updating anyway is possible, but those plugins will refuse to load until 
 
 ## Installing the update
 
-Updates are applied on the server, not from the ACP. The web process is never allowed to
-replace the code it is running, so there is no button that does this.
+You can update from the ACP with one click, or run the same update yourself on the server.
+Either way it is the `xentium` command that does the work, on the server.
+
+### From the ACP
+
+The update dialog has an **Update now** button, and so does **ACP → System → Migration
+History** while an update is on offer. You confirm with your password, and the dialog then
+shows the update as it happens: each package as it downloads, every step, each database
+migration, and the restart. You can close it at any time; the update carries on, and
+Migration History shows the same view, live, to every admin with the permission.
+
+It needs two things:
+
+- **The updater on your server.** Run this once in your site's directory (a site installed
+  before this feature has to run it once more):
+
+  ```bash
+  npx xentium install-service
+  ```
+
+  Besides the site's own services it installs `xentium-updater.path`, which waits for an
+  update request, the `xentium-updater` job that runs it as your site's user, and a sudoers
+  rule that lets that user start and stop exactly your site's two services.
+- **The "Update Xentium from the ACP" permission** (ACP → Members → Permissions, under
+  System). Administrators have it on a new site.
+
+The ACP never runs anything itself. **Update now** only writes a request into
+`shared/run/`, and the updater picks it up. The updater accepts nothing but a newer
+Xentium release whose npm provenance proves we built it, so a site that was broken into
+can't be made to install something else this way.
+
+If an update fails, it is undone by itself: the backup is restored and the previous release
+runs again. Migration History then shows the update as rolled back, with the error and the
+log. After an update that went through, **Roll back** there switches back to the previous
+release (the database stays as it is; see [Going back](#going-back)).
+
+### On the server
 
 ```bash
 cd /srv/xentium
@@ -81,7 +116,7 @@ npx xentium update 1.1.2
 ```
 
 That is what the dialog shows you, with your site's directory and the version
-they are offering filled in. The first line updates the `xentium` command itself, because
+on offer filled in. The first line updates the `xentium` command itself, because
 fixes to the updater ship in it. Naming the version matters for prereleases: without one,
 `xentium update` installs what npm calls the newest stable release. You don't need `sudo`;
 the command asks for it when it restarts your site's services.
