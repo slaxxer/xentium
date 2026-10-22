@@ -2,6 +2,22 @@
 
 ## 1.0.0-alpha.19
 
+This release fixes two security problems. Please update.
+
+### Security
+
+- **A member could publish another member's draft.** Anyone allowed to publish their own
+  articles could publish someone else's unfinished draft by its id. Publishing is now limited
+  to the article's author, or staff who may edit any article.
+- **Privacy settings are now enforced by the server.** Several choices in Account → Privacy
+  were only reflected in the page and not checked on the server: a members-only profile,
+  who may follow you, who may post on your wall, allowing wall posts at all, and who may see
+  your post history. Each is now refused on the server, and a block keeps both of you from
+  following each other or posting on each other's wall. The profile page now hides what
+  you're not allowed to do instead of showing a button that fails.
+- **A Permissions-Policy header** switches off browser features a community site never asks
+  for (camera, microphone, location, USB).
+
 ### Added
 
 - **Real page titles and preview tags.** Every page, from the home page to articles,
@@ -27,6 +43,8 @@
   that offer seasonal art. Dates you set before are kept for them. Without such an add-on,
   that edge art now shows all year; remove it in Theme Studio if you only wanted it for a
   season.
+- **Keeping your site safe** is now part of our security policy: why to update, how backups
+  and rollback work, and what an installed plugin can do on your site.
 - **The article editor's own search fields are gone.** How an article appears in search
   results is now up to an add-on that handles search appearance.
 
@@ -36,6 +54,10 @@
   author, also when a moderator edits someone else's article.
 - **An add-on's pages open straight away** after you enable it, instead of after a few
   minutes.
+- **More than one API process:** after the install finished, the other processes kept
+  showing "not installed" until they were restarted. They now open as soon as it finishes.
+- **The member directory stays fast on a big site.** It no longer counts every member on
+  every page.
 
 ## Upgrading
 
