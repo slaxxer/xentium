@@ -23,32 +23,23 @@ test("admin creates and publishes an article via the editor", async ({ page, req
   await uiLogin(page, ADMIN.email, ADMIN.password);
   await page.goto("/articles/new");
 
-  // Title, body (10+ words to satisfy the publish gate), excerpt.
-  await page.locator(".aep__title-input").fill(TITLE);
-  await page.locator(".article-editor__content").click();
-  await page.keyboard.type(
-    "This end to end article body has clearly more than ten words in it.",
-  );
-  await page.locator(".aep__excerpt-input").fill("A short excerpt for the listing.");
+  // Title, excerpt, and a body long enough for the publish checklist.
+  await page.locator(".aed-title").fill(TITLE);
+  await page.locator(".aed-excerpt").fill("A short excerpt for the listing.");
+  await page.locator(".nvc-content").click();
+  await page.keyboard.type("This end to end article body has clearly more than ten words in it.");
 
-  // One tag (Enter commits it).
-  await page.locator('.aep__input[placeholder="Add tag…"]').fill("launch");
-  await page.locator('.aep__input[placeholder="Add tag…"]').press("Enter");
+  // Details panel: category, one tag (Enter commits it), the featured image.
+  await page.locator("select.aed-input").selectOption({ label: "General" });
+  const tag = page.getByPlaceholder("Add a tag, then press Enter");
+  await tag.fill("launch");
+  await tag.press("Enter");
+  await page.locator('aside input[type="file"]').setInputFiles({ name: "cover.png", mimeType: "image/png", buffer: PNG_1x1 });
 
-  // Category + featured image (the upload creates the draft).
-  await page.locator(".aep__select").selectOption({ label: "General" });
-  await page.locator('input[type="file"]').setInputFiles({
-    name: "cover.png",
-    mimeType: "image/png",
-    buffer: PNG_1x1,
-  });
-
-  // Publish becomes enabled once all requirements are met.
-  const publishBtn = page.locator(".aep__btn--primary");
-  await expect(publishBtn).toBeEnabled({ timeout: 20_000 });
-  await publishBtn.click();
-
-  // Redirects to the reader on success.
+  // Publish opens once everything it needs is there; the reader opens on success.
+  const publish = page.locator(".aed-btn--primary").first();
+  await expect(publish).not.toHaveClass(/is-blocked/, { timeout: 20_000 });
+  await publish.click();
   await page.waitForURL(/\/articles\/[^/]+$/, { timeout: 20_000 });
   await expect(page.locator(".ard__title")).toHaveText(TITLE);
   articleSlug = page.url().split("/articles/")[1]!.replace(/\/$/, "");
@@ -60,8 +51,9 @@ test("a member can comment on the published article", async ({ page }) => {
   await uiLogin(page, MEMBER.email, MEMBER.password);
   await page.goto(`/articles/${articleSlug}`);
 
-  const comment = "Great write-up — thanks for sharing!";
-  await page.locator(".mini-editor__content").click();
+  const comment = "Great write-up, thanks for sharing!";
+  await page.locator(".ard__comments .nvc--collapsed").click();
+  await page.locator(".ard__comments .nvc-content").click();
   await page.keyboard.type(comment);
   await page.getByRole("button", { name: "Post Comment" }).click();
 

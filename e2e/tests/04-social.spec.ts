@@ -31,9 +31,10 @@ test("member1 posts on member2's wall", async ({ page, request }) => {
   await page.getByRole("button", { name: "Wall" }).click();
 
   const msg = "Welcome to the community!";
-  await page.locator(".mini-editor__content").click();
+  await page.locator(".profile-wall__composer.nvc--collapsed").click();
+  await page.locator(".profile-wall .nvc-content").click();
   await page.keyboard.type(msg);
-  await page.getByRole("button", { name: "Post", exact: true }).click();
+  await page.locator(".profile-wall").getByRole("button", { name: /^Post/ }).click();
 
   await expect(
     page.locator(".profile-wall__comment-text").filter({ hasText: msg }),
