@@ -181,6 +181,12 @@ On a host from before these hooks, `shows` is never asked. If you want your art 
 there too, return an empty fragment (`<></>`) from `render` outside your dates: anything
 other than `null` stops the host drawing the edge itself.
 
+## The member's rank colour
+
+On a profile, the page sets `--xt-rank-color` to the member's rank colour (their first
+group that has one). Art that should take it on can use `var(--xt-rank-color, <fallback>)`;
+everywhere else the variable is absent and the fallback applies.
+
 ## Art without an outline
 
 The core shape `blank` draws nothing. It exists for edges that only carry plugin art. When

@@ -874,8 +874,12 @@ export function ProfilePage() {
     blockPending: blockMutation.isPending,
   };
 
+  const rankColor = profile.groups.find((g) => g.badgeColor)?.badgeColor ?? null;
   return (
-    <div className="profile-page">
+    <div className="profile-page"
+      // The member's rank colour (their first group with one), for anything on the page
+      // that dresses itself in it: `var(--xt-rank-color)`. Absent when no group has one.
+      style={rankColor ? { ["--xt-rank-color" as string]: rankColor } : undefined}>
       <LayoutRenderer templateKey="profile" document={layout} context={context} />
     </div>
   );
