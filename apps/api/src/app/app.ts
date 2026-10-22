@@ -69,6 +69,13 @@ export function createApp(): Express {
     },
     crossOriginResourcePolicy: { policy: 'cross-origin' },
   }));
+  // Browser features a community site never asks for, switched off for the page and
+  // anything embedded in it. Payment is left alone: checkout add-ons embed providers
+  // that use it.
+  app.use((_req, res, next) => {
+    res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), usb=(), browsing-topics=()');
+    next();
+  });
 
   app.use(cors({
     origin: isProd ? env.APP_URL : 'http://localhost:5173',
