@@ -12,6 +12,7 @@ import * as ReactQuery from "@tanstack/react-query";
 import * as FaReactNs from "@fortawesome/react-fontawesome";
 import { FontAwesomeIcon as StyledFaIcon } from "../components/Icon";
 import * as ReactI18next from "react-i18next";
+import * as Zod from "zod";
 
 import * as webApi from "@web/lib/api";
 import * as webSwal from "@web/lib/swal";
@@ -137,6 +138,10 @@ const HOST = {
   webUseLayout,
   webEdgeRegistry,
   webEdgeArt,
+  // The schema library block props are written in (core 1.0.0-alpha.19+). A plugin that
+  // only needs it for a block schema can use this copy instead of bundling its own,
+  // which keeps its bundle small; check for it, since older hosts lack it.
+  Zod,
 };
 
 declare global {
