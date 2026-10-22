@@ -39,6 +39,7 @@
 
 ## Upgrading
 
-- No database migrations this time.
+- One database migration: three indexes for the member directory. On a site with a very
+  large member list it takes a moment while the update runs.
 - On the first start, Xentium moves the dates of seasonal edge art to where add-ons read
   them. Nothing to do on your side.
