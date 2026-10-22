@@ -467,6 +467,15 @@ disabled.
 (`resolveAvatar`, `sanitizeRichText`, `cron`), `progression.getEffectiveGroupId`,
 `notificationService` and `security`.
 
+Some parts are newer, so check for them before you use them on an older core:
+
+- `host.geo.countryOf(ip)` answers a country code (ISO 3166-1 alpha-2) for an IP address,
+  or `null` for a private address or before the first country list has downloaded. The
+  lookup is local: nothing leaves the server. From core 1.0.0-alpha.16.
+- `host.email` sends email to anyone (see above). From core 1.0.0-alpha.19.
+- `host.seo` describes pages for search engines (see `registerPageSource`). From core
+  1.0.0-alpha.19.
+
 Use `host.prisma`, never a client of your own. Plugin tables live outside the Prisma
 schema and the plugin migration runner migrates them (with your `<pluginid>_` prefix,
 tracked in `xcf_plugin_migrations`). A second client just means a second connection pool.
