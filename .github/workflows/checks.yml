@@ -177,3 +177,61 @@ jobs:
           } > .env
       - run: node scripts/upgrade-test.mjs
 
+  # The browser suite (e2e/): install wizard, sign-up and sign-in, articles, social,
+  # moderation and the plugin pipeline, in Chrome against a stack of its own
+  # (`pnpm e2e`: its own *_e2e database, ports and Redis prefix).
+  e2e:
+    name: Browser tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: xentium
+          POSTGRES_PASSWORD: xentium
+          POSTGRES_DB: xentium
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U xentium"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:generate
+      - name: Write a test .env
+        run: |
+          set -euo pipefail
+          dummy=$(pnpm --silent --filter @xentium/api exec node --input-type=commonjs \
+            -e "require('argon2').hash('xentium-dummy').then(h=>console.log(h))")
+          {
+            echo 'DATABASE_URL="postgresql://xentium:xentium@localhost:5432/xentium"'
+            echo 'REDIS_URL="redis://localhost:6379"'
+            echo "COOKIE_SECRET=\"$(openssl rand -hex 16)\""
+            echo "JWT_SECRET=\"$(openssl rand -hex 32)\""
+            echo "DUMMY_ARGON2_HASH=\"$dummy\""
+          } > .env
+      # The runner ships Google Chrome; the suite uses it (channel "chrome"), no download.
+      - run: pnpm e2e
+        env:
+          CI: "true"
+      - if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: e2e-results
+          path: e2e/test-results
+          retention-days: 7
+
