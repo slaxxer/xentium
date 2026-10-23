@@ -416,7 +416,9 @@ export function CoreUpdateRunDialog({ onClose }: { onClose: () => void }) {
 /**
  * The top of System → Migration History: the update on offer (Update now opens
  * the dialog), and the latest update or rollback the updater ran, live while it
- * runs. A finished update can be rolled back from here, with the password again.
+ * runs. Once it went through, the steps are history: one line is left, which
+ * keeps the way back (roll back, with the password again). A failed or stalled
+ * run keeps the whole card, because that is when the steps matter.
  */
 export function CoreUpdateRunCard() {
   const { t } = useTranslation("acp");
@@ -435,6 +437,7 @@ export function CoreUpdateRunCard() {
   const s = view.status;
   const going = view.queued || s?.state === "running";
   const canRollback = !going && view.available && s?.action === "update" && s.state === "done" && s.to === view.running;
+  const finished = !going && !view.stalled && s?.state === "done";
 
   return (
     <div className="cur-history">
@@ -450,7 +453,7 @@ export function CoreUpdateRunCard() {
       )}
 
       {s && (
-        <section className="mh-card cur-runcard" aria-label={t("coreUpdate.run.cardLabel")}>
+        <section className={`mh-card cur-runcard${finished ? " is-finished" : ""}`} aria-label={t("coreUpdate.run.cardLabel")}>
           <header className="cur-runcard__head">
             <div>
               <h2>{t(s.action === "rollback" ? "coreUpdate.run.cardRollback" : "coreUpdate.run.cardUpdate", { from: s.from, to: s.to })}</h2>
@@ -472,7 +475,7 @@ export function CoreUpdateRunCard() {
             </form>
           )}
           {view.stalled && <p className="cur-formerror">{t("coreUpdate.run.stalledNote")}</p>}
-          <RunProgress status={s} reconnecting={run.reconnecting} />
+          {!finished && <RunProgress status={s} reconnecting={run.reconnecting} />}
         </section>
       )}
     </div>
