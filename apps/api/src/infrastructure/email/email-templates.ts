@@ -51,12 +51,23 @@ export interface EmailTemplateDef {
  * unreadable; the colours below assume the white card.
  */
 const FONT = "font-family:system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
-const FRAME_OPEN =
-  `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f1f1f6" style="background-color:#f1f1f6;color-scheme:light;${FONT}">` +
-  `<tr><td align="center" style="padding:32px 16px">` +
-  `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff" style="max-width:520px;background-color:#ffffff;border:1px solid #e7e7f1;border-top:4px solid #7c6af7;border-radius:12px">` +
-  `<tr><td style="padding:28px 32px 12px">` +
-  `<div style="margin-bottom:24px"><span style="font-size:20px;font-weight:800;letter-spacing:-0.03em;color:#0d0d22">{{site_name}}</span></div>`;
+/**
+ * Opens the card with the brand line: the site's icon beside its name. The icon is a
+ * PNG from the site itself (`site_icon_url`, see `siteVars`) because Gmail and Outlook
+ * show no SVG; without a public address there is no image, only the name.
+ */
+function frameOpen(vars: Record<string, string | undefined>): string {
+  const icon = vars.site_icon_url && isSafeUrl(vars.site_icon_url)
+    ? `<td width="40" style="padding:0 10px 0 0;vertical-align:middle"><img src="{{site_icon_url}}" width="30" height="30" alt="" style="display:block;width:30px;height:30px;border:0;border-radius:8px"></td>`
+    : "";
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f1f1f6" style="background-color:#f1f1f6;color-scheme:light;${FONT}">` +
+    `<tr><td align="center" style="padding:32px 16px">` +
+    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff" style="max-width:520px;background-color:#ffffff;border:1px solid #e7e7f1;border-top:4px solid #7c6af7;border-radius:12px">` +
+    `<tr><td style="padding:28px 32px 12px">` +
+    `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:24px"><tr>${icon}` +
+    `<td style="vertical-align:middle"><span style="font-size:20px;font-weight:800;letter-spacing:-0.03em;color:#0d0d22">{{site_name}}</span></td>` +
+    `</tr></table>`;
+}
 
 /** Closes the card; below it, the site's name and address in small grey type. */
 function frameClose(vars: Record<string, string | undefined>): string {
@@ -153,7 +164,7 @@ function blockVars(vars: Record<string, string | undefined>, locale: ServerLocal
 export function renderEmailBody(body: string, vars: Record<string, string | undefined>, locale: ServerLocale = "en"): string {
   const all = { ...blockVars(vars, locale), ...vars };
   if (isLegacyBody(body)) return substitutePlaceholders(body, all);
-  return substitutePlaceholders(FRAME_OPEN + styleContent(unwrapBlockPlaceholders(body)) + frameClose(all), all);
+  return substitutePlaceholders(frameOpen(all) + styleContent(unwrapBlockPlaceholders(body)) + frameClose(all), all);
 }
 
 export function escapeHtml(s: string): string {
@@ -234,11 +245,26 @@ export async function renderEmailTemplate(
  * values the frontend renders in canonical meta, so branded mail follows what
  * the site publicly calls itself rather than a build-time constant.
  */
-export async function siteVars(): Promise<{ site_name: string; site_url: string }> {
+export async function siteVars(): Promise<{ site_name: string; site_url: string; site_icon_url: string }> {
+  const site_url = (await getSetting<string>("site.url", "")).replace(/\/$/, "");
   return {
     site_name: await getSetting<string>("site.name", "Xentium"),
-    site_url: (await getSetting<string>("site.url", "")).replace(/\/$/, ""),
+    site_url,
+    site_icon_url: emailIconUrl(site_url, await getSetting<string | null>("appearance.logo.icon", null)),
   };
+}
+
+/**
+ * The icon an email shows: the admin's uploaded one when mail clients can show it
+ * (PNG, JPEG, GIF; not SVG or ICO), else the Xentium icon every install ships.
+ * Mail is read off-site, so the address must be absolute; no site address, no icon.
+ */
+export function emailIconUrl(siteUrl: string, uploaded: string | null): string {
+  if (uploaded && /\.(png|jpe?g|gif)$/i.test(uploaded)) {
+    if (/^https?:\/\//i.test(uploaded)) return uploaded;
+    if (siteUrl) return `${siteUrl}/uploads/${uploaded.replace(/^\/+/, "")}`;
+  }
+  return siteUrl ? `${siteUrl}/brand/icon-192.png` : "";
 }
 
 /** The purple CTA used by the notification default when a link is present. */

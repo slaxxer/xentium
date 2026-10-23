@@ -1,7 +1,6 @@
 import { prisma } from "../../infrastructure/db.js";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
 import { XEC } from "@xentium/contracts";
-import { getSetting } from "../../shared/utils/settings.js";
 import {
   EMAIL_TEMPLATE_DEFAULTS,
   EMAIL_TEMPLATE_KEYS,
@@ -10,6 +9,7 @@ import {
   isLegacyBody,
   renderEmailTemplate,
   renderLinkButton,
+  siteVars,
   type EmailTemplateKey,
 } from "../../infrastructure/email/email-templates.js";
 import { sendEmail, verifySmtp, isEmailConfigured } from "../../infrastructure/email/email.service.js";
@@ -33,11 +33,10 @@ function isShippedCopy(key: EmailTemplateKey, subject: string, body: string): bo
 
 /** Sample values so a test send and the ACP preview show something realistic. */
 async function sampleVars(): Promise<Record<string, string>> {
-  const siteName = await getSetting<string>("site.name", "Xentium");
-  const siteUrl = await getSetting<string>("site.url", "");
+  const site = await siteVars();
+  const siteUrl = site.site_url;
   return {
-    site_name: siteName,
-    site_url: siteUrl,
+    ...site,
     username: "example-user",
     title: "A sample notification",
     body: "This is what the body text looks like.",
