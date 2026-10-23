@@ -744,5 +744,12 @@
     "bannedForever": "{{user}} queda suspendido de forma permanente",
     "fixed": "Lo fija la plantilla. Solo los jefes de equipo con el permiso correspondiente pueden cambiarlo.",
     "override": "Cambiar (jefe de equipo)"
+  },
+  "uploader": {
+    "dropOne": "Suelta un archivo aquí o haz clic para elegirlo",
+    "dropMany": "Suelta archivos aquí o haz clic para elegirlos",
+    "max": "Hasta {{size}} cada uno",
+    "tooLarge": "Más de {{size}}",
+    "failed": "No se pudo subir. Inténtalo de nuevo."
   }
 }

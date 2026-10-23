@@ -734,5 +734,12 @@
     "bannedForever": "{{user}} is banned permanently",
     "fixed": "Set by the template. Team leads with the override permission can change it.",
     "override": "Override (team lead)"
+  },
+  "uploader": {
+    "dropOne": "Drop a file here, or click to choose one",
+    "dropMany": "Drop files here, or click to choose",
+    "max": "Up to {{size}} each",
+    "tooLarge": "Larger than {{size}}",
+    "failed": "The upload failed. Try again."
   }
 }
