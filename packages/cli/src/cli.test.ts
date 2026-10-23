@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { checkMemory, checkNode, checkPlatform, worst, type Check } from "./checks.js";
+import { checkImageProcessing, checkMemory, checkNode, checkPlatform, worst, type Check } from "./checks.js";
 import { pgConnection, prismaBin, recordDeploy } from "./release.js";
 import { compareSemver, mergeEnv, parseEnv } from "./site.js";
 import { unitFile } from "./service.js";
@@ -33,6 +33,12 @@ describe("version checks", () => {
 
   it("never refuses a platform outright", () => {
     expect(checkPlatform().status).not.toBe("fail");
+  });
+
+  it("refuses a platform the image library has no binary for", () => {
+    expect(checkImageProcessing("linux-x64").status).toBe("ok");
+    expect(checkImageProcessing("linux-arm64").status).toBe("ok");
+    expect(checkImageProcessing("freebsd-x64").status).toBe("fail");
   });
 });
 

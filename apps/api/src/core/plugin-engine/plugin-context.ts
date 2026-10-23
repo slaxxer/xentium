@@ -44,6 +44,7 @@ import { pluginUsers } from "../plugin-platform/people.js";
 import { pluginTime } from "../plugin-platform/time.js";
 import { registerResource } from "../plugin-platform/resources.js";
 import { pluginRegistry } from "./plugin-registry.js";
+import { filesFor } from "../plugin-platform/files.js";
 
 /**
  * A plugin putting a member into a group (a paid membership, an earned role). The
@@ -73,7 +74,7 @@ export async function removeFromGroup(userId: string, groupId: string): Promise<
 }
 
 /** Host services shared by every plugin; the plugin's own (`jobs`) are added per context. */
-const host: Omit<PluginHost, "jobs" | "settings"> = {
+const host: Omit<PluginHost, "jobs" | "settings" | "files"> = {
   prisma,
   zod: z,
   users: pluginUsers,
@@ -146,7 +147,7 @@ export class PluginContextImpl implements PluginContext {
   readonly host: PluginHost;
 
   constructor(public readonly pluginId: string) {
-    this.host = { ...host, jobs: jobsFor(pluginId), settings: settingsFor(pluginId) };
+    this.host = { ...host, jobs: jobsFor(pluginId), settings: settingsFor(pluginId), files: filesFor(pluginId) };
   }
 
   async registerResource(decl: PluginResourceDeclaration): Promise<void> {

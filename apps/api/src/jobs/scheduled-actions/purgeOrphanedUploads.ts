@@ -36,6 +36,7 @@ import { prisma } from "../../infrastructure/db.js";
 import { env } from "../../config/env.js";
 import { ALLOWED_UPLOAD_DIRS } from "../../infrastructure/storage/LocalStorageProvider.js";
 import { registerScheduledAction, type ActionResult, type ActionRunCtx } from "./action-registry.js";
+import { liveAddonFile } from "../../core/plugin-platform/files.js";
 
 /** Upload subdirectories. Taken FROM the storage provider rather than restated
  *  beside it: a second copy is a copy that drifts, and a root missing here is a
@@ -187,6 +188,8 @@ export async function runPurgeOrphanedUploads(
 ): Promise<ActionResult> {
   const roots = params.scope === "all" ? [...ROOTS] : [params.scope as Root];
   const referenced = await collectReferenced();
+  // Add-on files are referenced by their row, not by a path in some column.
+  const fileIds = new Set((await prisma.pluginFile.findMany({ select: { id: true } })).map((f) => f.id));
   const youngerThan = Date.now() - params.graceHours * 3_600_000;
 
   let deleted = 0;
@@ -196,7 +199,7 @@ export async function runPurgeOrphanedUploads(
 
   for (const root of roots) {
     for (const rel of await walk(path.join(BASE, root))) {
-      if (referenced.has(rel)) continue;
+      if (referenced.has(rel) || liveAddonFile(rel, fileIds)) continue;
 
       const abs = path.join(BASE, rel);
       const stat = await fs.stat(abs).catch(() => null);
