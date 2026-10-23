@@ -88,6 +88,17 @@ export interface EdgeExtension {
    * document says yes, the editor offers "Viewing at" to preview other hours.
    */
   usesTime?: (ext: unknown) => boolean;
+  /**
+   * Whether the edge draws at all at `now`; `false` hides it as if it were not there
+   * (no box, no room kept for it). Absent = always. Every extension must agree.
+   */
+  shows?: (args: { edge: EdgeArt; ext: unknown; now: Date }) => boolean;
+  /**
+   * A day, as `MM-DD`, worth previewing these settings on — for art that shows only
+   * part of the year. When any edge in the open document names one, the editor offers
+   * "Viewing on" with it.
+   */
+  viewDate?: (ext: unknown) => string | null;
   /** Above the shape picker; shown even when the side has no edge yet (presets). */
   InspectorTop?: ComponentType<EdgeInspectorProps>;
   /** Below the core settings, when the side has an edge. */

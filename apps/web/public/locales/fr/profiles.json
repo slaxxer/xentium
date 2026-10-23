@@ -188,5 +188,8 @@
   "signInToRate": "Connectez-vous pour noter",
   "lastSeen": "Vu {{when}}",
   "lastSeenOn": "Vu pour la dernière fois en {{date}}",
-  "details": "Informations"
+  "details": "Informations",
+  "membersOnly": "Ce profil n'est visible que par les membres. Connectez-vous pour le voir.",
+  "historyPrivate": "{{username}} garde son historique de publications privé.",
+  "wallClosed": "{{username}} n'accepte pas de messages sur son mur."
 }

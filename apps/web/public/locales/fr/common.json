@@ -335,7 +335,7 @@
       "label": "Modération",
       "labelWaiting": "Modération, {{count}} en attente",
       "title": "Modération (Maj+M)",
-      "oldest": "Le plus ancien attend le plus",
+      "newest": "Les plus récents d'abord",
       "loading": "Chargement…",
       "nothing": "Rien en attente.",
       "reports": "Signalements",

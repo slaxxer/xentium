@@ -16,7 +16,7 @@ import { useTranslation } from "react-i18next";
 import { FontAwesomeIcon } from "../../../components/Icon";
 import {
   faPlus, faTrash, faArrowUp, faArrowDown, faEyeSlash, faClone, faGripVertical,
-  faWandMagicSparkles, faCalendarDays,
+  faWandMagicSparkles,
 } from "@fortawesome/free-solid-svg-icons";
 import { iconFor } from "../../../layout/blockIcons";
 import {
@@ -224,17 +224,12 @@ export function TreeNode({
               <FontAwesomeIcon icon={faEyeSlash} />
             </span>
           )}
-          {/* Edge art is invisible in the tree otherwise — and seasonal art is invisible
-              on the page for most of the year, which is exactly when someone looks. */}
-          {(node.edges?.top || node.edges?.bottom) && (() => {
-            const seasonal = !!(node.edges.top?.season || node.edges.bottom?.season);
-            return (
-              <span className="lay__edge-mark"
-                title={ctx.t(seasonal ? "layoutEditor.edge.treeSeasonal" : "layoutEditor.edge.treeMark")}>
-                <FontAwesomeIcon icon={seasonal ? faCalendarDays : faWandMagicSparkles} />
-              </span>
-            );
-          })()}
+          {/* Edge art is invisible in the tree otherwise. */}
+          {(node.edges?.top || node.edges?.bottom) && (
+            <span className="lay__edge-mark" title={ctx.t("layoutEditor.edge.treeMark")}>
+              <FontAwesomeIcon icon={faWandMagicSparkles} />
+            </span>
+          )}
         </span>
         <span className="lay__node-actions">
           {isContainer && (

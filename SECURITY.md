@@ -26,8 +26,37 @@ A good report tells us:
 
 ## Supported versions
 
-Xentium is in alpha. We fix security problems in the **newest release only**, so
-please update before reporting, and keep your site on the latest version.
+We fix security problems in the **newest release only**. An older release does not
+get security fixes, so please update before reporting, and keep your site on the
+latest version.
+
+## Keeping your site safe
+
+Because only the newest release gets fixes, updating is part of running a site:
+
+- **Update when we announce a release.** The ACP shows every new release, and a
+  security release is marked as one. **Update now** in the ACP, or
+  `npx xentium update` on the server, does the whole update.
+- **Every update takes a database backup first** (into `shared/backups`), and puts it
+  back by itself if the update fails. You can also take one at any time with
+  `npx xentium backup`.
+- **You can go back.** `npx xentium rollback`, or **Roll back** in
+  **System → Migration History**, returns to the release an update replaced.
+- **Keep your own backups too**, off the server: the database dumps in
+  `shared/backups` and your uploads in `shared/uploads`. A backup you have never
+  restored is a guess, so try one now and then on a spare database.
+
+## Plugins and what they can do
+
+A plugin is code that runs inside your site with the same rights as Xentium itself,
+including full access to its database. When you install a plugin, you trust its
+author with your site.
+
+What we check: plugin packages from plugins.xentium.org are signed, and a plugin's
+database migrations may only create and change the plugin's own tables, which stops a
+broken migration from damaging your site's data. These checks do not make a
+malicious plugin safe, and they don't look inside the code a plugin runs. Install
+plugins only from authors you trust.
 
 ## In scope
 

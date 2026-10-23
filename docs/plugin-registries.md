@@ -122,6 +122,69 @@ ctx.registerStatSource({
 `id` is a machine key that the browser translates. `label` is only the English fallback,
 not what's displayed. See [Translating a plugin](plugin-i18n.md).
 
+### `registerPageSource(source)`
+
+Describe your own pages for search engines, link previews and sitemaps. Core asks every
+source in turn which page an address is, and the first one that knows answers. Only
+describe what a guest can open: return `null` for members-only, hidden or unpublished
+content, and leave it out of `list()`.
+
+```ts
+ctx.registerPageSource?.({
+  id:    "my-plugin.items",
+  area:  "items",          // the indexing area the SEO plugin offers a switch for
+  label: "Items",
+  async describe(path) {
+    const m = /^\/items\/([^/]+)$/.exec(path);
+    if (!m) return null;
+    const item = await findPublicItem(m[1]);
+    return item && {
+      path, kind: "my-plugin.item", id: item.id, area: "items",
+      title: item.title, description: item.summary, image: item.cover,
+      publishedAt: item.createdAt, modifiedAt: item.updatedAt,
+      breadcrumbs: [{ name: "Home", path: "/" }, { name: "Items", path: "/items" }, { name: item.title, path }],
+    };
+  },
+  async list() {
+    return (await allPublicItems()).map((i) => ({
+      path: `/items/${i.slug}`, lastmod: i.updatedAt, kind: "my-plugin.item", id: i.id,
+    }));
+  },
+});
+```
+
+Give each sitemap entry its `kind` and `id` when it is one item: the SEO plugin then leaves
+out a page its editor hid from search engines. When one source lists pages of several
+areas, give those entries their own `area` too, so turning an area off removes exactly
+its pages.
+
+Without the SEO plugin, core turns the description into the page's title, description,
+canonical and preview tags itself. Available on cores from 1.0.0-alpha.19, so call it with
+`?.`.
+
+### `registerSeoProvider(provider)`
+
+Become the site's SEO provider: the tags of every page, `/robots.txt` and the sitemaps
+(`/sitemap.xml`, `/sitemap-<name>.xml`). There is one provider at a time; the SEO plugin
+is it. `host.seo` gives the provider what it needs: `describe(path)`, core's
+`defaults(path, info)`, `head(path)` and every page source (`sources()`).
+
+### Editor panels (`slotRegistry.registerEditorPanel`)
+
+A tab beside **Details** in a content editor. The article editor shows one for every panel
+registered for `contentKind: "article"`. Your component gets the content's kind and id
+(`null` until it has been saved once), a live summary of what is being written (title,
+excerpt, plain text, first paragraph, headings, word count, links to the site, images
+without alt text, the cover) and `setBadge`, which puts a short label on your tab. Save your
+own data through your own endpoint.
+
+```tsx
+slotRegistry.registerEditorPanel({
+  id: "my-plugin.notes", contentKind: "article", label: "Notes",
+  component: ({ contentId, draft, setBadge }) => <NotesPanel id={contentId} draft={draft} onScore={setBadge} />,
+});
+```
+
 ---
 
 ### `registerReportTarget(handler)`
@@ -197,6 +260,11 @@ An admin page, and a link in the site's nav.
 
 Plugin nav links always go below core's. The `position` you declare is a hint, not an
 index; admins reorder links in the ACP.
+
+A plugin with its own ACP section can give it one of the ACP's own icons, so it matches
+the core sections (outline, filled while you're in it): add `acpIcon` to
+`slotRegistry.registerPluginMeta`, with `forum`, `files`, `support` or `shop`. Without it,
+the section shows your Font Awesome `icon`.
 
 ### Blocks, layout templates and slots
 
@@ -344,6 +412,15 @@ A notification should never block the thing it's about. Send it **after** your w
 wrap it in a try/catch: a mail outage shouldn't cost a member an action that already
 worked.
 
+### Email to anyone (`host.email`)
+
+A notification reaches members. For someone without an account (a guest who left an
+email address), use `ctx.host.email?.send({ to, title, body, link, buttonLabel, locale })`.
+It sends the site's notification email: `title` and `body` are plain text and get escaped,
+and `link` becomes the button. The mail is queued, so the call returns at once.
+`ctx.host.email?.localeOf(userId)` gives the language a member's emails go out in. It's
+available on cores from 1.0.0-alpha.19, so call it with `?.`.
+
 ### `registerNotificationTypes(types)`
 
 Right now this only logs. We've reserved it for a future preferences UI. Registering is
@@ -389,6 +466,15 @@ disabled.
 `middleware` (`requireAuth`, `optionalAuth`, `requirePermission`), `utils`
 (`resolveAvatar`, `sanitizeRichText`, `cron`), `progression.getEffectiveGroupId`,
 `notificationService` and `security`.
+
+Some parts are newer, so check for them before you use them on an older core:
+
+- `host.geo.countryOf(ip)` answers a country code (ISO 3166-1 alpha-2) for an IP address,
+  or `null` for a private address or before the first country list has downloaded. The
+  lookup is local: nothing leaves the server. From core 1.0.0-alpha.16.
+- `host.email` sends email to anyone (see above). From core 1.0.0-alpha.19.
+- `host.seo` describes pages for search engines (see `registerPageSource`). From core
+  1.0.0-alpha.19.
 
 Use `host.prisma`, never a client of your own. Plugin tables live outside the Prisma
 schema and the plugin migration runner migrates them (with your `<pluginid>_` prefix,

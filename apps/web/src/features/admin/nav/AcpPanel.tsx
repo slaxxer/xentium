@@ -1,7 +1,7 @@
 import { Fragment } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { AcpIcon } from "../pages/acpIcons";
+import { AcpIcon, navIcon } from "../pages/acpIcons";
 import { childMatches, type NavItem } from "../useAcpNav";
 import { AcpSearch } from "./AcpSearch";
 import { setAcpCollapsed } from "./acpChrome";
@@ -74,7 +74,7 @@ export function AcpPanel({ section, variant = "docked", canDock = true, showSear
       {section && (
         <>
           <div className="acp-panel__section">
-            <span className="acp-panel__sectionic">{section.icon}</span>
+            <span className="acp-panel__sectionic">{navIcon(section, true)}</span>
             <span>{t(section.label)}</span>
           </div>
 

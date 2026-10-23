@@ -21,6 +21,11 @@ vi.mock("../../shared/utils/settings.js", () => ({ getSetting: vi.fn() }));
 vi.mock("../../shared/utils/blocks.js", () => ({ getHiddenAuthorIds: vi.fn() }));
 vi.mock("../../shared/utils/presence.js", () => ({ isUserOnline: vi.fn() }));
 vi.mock("./profileDob.js", () => ({ getDobForUser: vi.fn() }));
+// Privacy is its own test (profilePrivacy.test.ts): here every wall is open.
+vi.mock("./profilePrivacy.js", () => ({
+  assertCanComment: vi.fn(), assertCanFollow: vi.fn(), assertProfileVisible: vi.fn(),
+  profileAccess: vi.fn(async () => ({ view: true, follow: true, comment: true, history: true })),
+}));
 
 const { userService } = await import("./users.service.js");
 

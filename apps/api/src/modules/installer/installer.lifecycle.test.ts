@@ -166,7 +166,7 @@ describe("installer lifecycle: concurrency", () => {
     expect(results.map((r) => r.status).sort()).toEqual([200, 410, 410]);
     const winner = results.find((r) => r.status === 200)!;
     expect((await status()).siteId).toBe(winner.body.siteId);
-    expect(await prisma.setting.count({ where: { key: "auth.jwtPrivateKey" } })).toBe(1);
+    expect(await prisma.install.count()).toBe(1);
   });
 
   it("the database refuses a second install row", async () => {
@@ -184,6 +184,15 @@ describe("installer lifecycle: after completion", () => {
         expect((await STEPS[name]()).status, `${name} (cache ${cached})`).toBe(410);
       }
     }
+    expect((await request(app).get("/api/protected")).status).toBe(200);
+  });
+
+  it("an install finished by ANOTHER process opens this one without a restart", async () => {
+    await walkTo("admin");
+    // This process has seen the site uninstalled…
+    expect((await request(app).get("/api/protected")).status).toBe(503);
+    // …and another API instance finishes the install (straight in the database here).
+    await prisma.install.update({ where: { singleton: true }, data: { completedAt: new Date(), currentStep: "COMPLETE" } });
     expect((await request(app).get("/api/protected")).status).toBe(200);
   });
 });

@@ -330,7 +330,7 @@
       "label": "Moderation",
       "labelWaiting": "Moderation, {{count}} waiting",
       "title": "Moderation (Shift+M)",
-      "oldest": "Oldest waits longest",
+      "newest": "Newest first",
       "loading": "Loading…",
       "nothing": "Nothing is waiting.",
       "reports": "Reports",

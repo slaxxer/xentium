@@ -1,3 +1,4 @@
+import type { HeadTags, PageInfo, PageSource, SeoProvider } from "@xentium/contracts";
 /**
  * @xentium/plugin-sdk
  *
@@ -423,6 +424,17 @@ export interface PluginHost extends BasePluginHost {
   };
 
   /**
+   * Email anyone, account or not (a guest who opened a support ticket), in the site's
+   * notification email design: `title` and `body` are plain text (escaped), `link`
+   * becomes the button. Queued, so it never slows the request. `localeOf` answers the
+   * language a member's emails go out in. Core 1.0.0-alpha.19+; optional before.
+   */
+  email?: {
+    send: (opts: { to: string; title: string; body: string; link?: string; buttonLabel?: string; locale?: string }) => Promise<void>;
+    localeOf: (userId: string) => Promise<string>;
+  };
+
+  /**
    * Core's LOCAL IP → country lookup (DB-IP Country Lite, refreshed monthly by the
    * `geoip-refresh` job). Nothing leaves the server. `countryOf` answers an ISO
    * 3166-1 alpha-2 code, or null for a private IP or before the first download.
@@ -431,6 +443,19 @@ export interface PluginHost extends BasePluginHost {
   geo?: {
     countryOf: (ip: string) => string | null;
     available: () => boolean;
+  };
+
+  /**
+   * Search engines (core 1.0.0-alpha.19+; optional on older cores). `describe` answers
+   * what a page is as a guest may see it (any registered source), `defaults` the tags
+   * core writes without a provider, `head` the tags actually written, `sources` every
+   * page source (core's and plugins') for sitemaps.
+   */
+  seo?: {
+    describe: (path: string) => Promise<PageInfo | null>;
+    defaults: (path: string, info: PageInfo | null) => Promise<HeadTags>;
+    head: (path: string) => Promise<HeadTags>;
+    sources: () => PageSource[];
   };
 
   utils: BasePluginHost["utils"] & {
@@ -478,6 +503,14 @@ export interface PluginContext extends BasePluginContext<PluginHost> {
    *  it). Deregistered on disable — embeds in it then stay hidden. Optional on
    *  older cores: `ctx.registerContentKind?.(…)`. */
   registerContentKind?(handler: ContentKindHandler): void;
+
+  /** Describe your own pages for search engines and sitemaps (a thread, a file). Only
+   *  what a guest may open. Core 1.0.0-alpha.19+: call as `ctx.registerPageSource?.(…)`. */
+  registerPageSource?(source: PageSource): void;
+
+  /** Become the site's SEO provider: the tags of every page, robots.txt and the
+   *  sitemaps. One at a time. Core 1.0.0-alpha.19+. */
+  registerSeoProvider?(provider: SeoProvider): void;
 
   /** Register a site-stats source shown in the footer. Deregistered on disable. */
   registerStatSource(source: StatSource): void;

@@ -156,6 +156,37 @@ registerEdgeExtension({
 When any edge in the open document answers yes, the editor shows **Viewing at** next to
 the preview, so an admin can see any hour without waiting for it.
 
+## Art for part of the year
+
+Core edge art shows all year. If your plugin offers art that should only appear for part of
+it (a holiday look, say), keep the dates in your own settings and tell the host two things:
+
+- `shows` decides whether the edge is drawn at all at a given moment. Return `false` and
+  the edge is gone: no box, no room kept for it. Every extension has to agree, so one
+  that returns `false` hides the edge.
+- `viewDate` names a day worth previewing, as `MM-DD`. When any edge in the open document
+  names one, the editor offers **Viewing on** with that day, and `now` in `render` and
+  `shows` follows it.
+
+```ts
+registerEdgeExtension({
+  namespace: "myplugin",
+  pluginId: "xentium-myplugin",
+  shows: ({ ext, now }) => inMySeason(read(ext)?.season, now),
+  viewDate: (ext) => read(ext)?.season?.from ?? null,
+});
+```
+
+On a host from before these hooks, `shows` is never asked. If you want your art hidden
+there too, return an empty fragment (`<></>`) from `render` outside your dates: anything
+other than `null` stops the host drawing the edge itself.
+
+## The member's rank colour
+
+On a profile, the page sets `--xt-rank-color` to the member's rank colour (their first
+group that has one). Art that should take it on can use `var(--xt-rank-color, <fallback>)`;
+everywhere else the variable is absent and the fallback applies.
+
 ## Art without an outline
 
 The core shape `blank` draws nothing. It exists for edges that only carry plugin art. When

@@ -50,5 +50,8 @@
   "XEC-UPDATE-4092": "An update is already running.",
   "XEC-UPDATE-4093": "That isn't the version this site is offered.",
   "XEC-UPDATE-4094": "There is no finished update to roll back.",
-  "XEC-UPDATE-4221": "That password isn't right."
+  "XEC-UPDATE-4221": "That password isn't right.",
+  "XEC-USER-4021": "This profile is visible to members only.",
+  "XEC-USER-4022": "This member can't be followed.",
+  "XEC-USER-4023": "This member isn't taking posts on their wall from you."
 }

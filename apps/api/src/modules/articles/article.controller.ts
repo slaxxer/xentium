@@ -112,8 +112,9 @@ export const articlesController = {
   publish: (async (req, res) => {
     const { id } = articleIdParamSchema.parse(req.params);
     const viewerId = req.userId!;
-    // requirePermission(ARTICLE_PUBLISH) gates this route — no inline check needed
-    const article = await articleService.publish(id, viewerId);
+    // requirePermission(ARTICLE_PUBLISH) gates the route; whose article is the service's check.
+    const perms = await viewerPerms(viewerId);
+    const article = await articleService.publish(id, viewerId, perms.has(CorePermissions.ARTICLE_EDIT_ANY));
     res.json(article);
   }),
 

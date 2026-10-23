@@ -50,5 +50,8 @@
   "XEC-UPDATE-4092": "Es läuft bereits ein Update.",
   "XEC-UPDATE-4093": "Diese Version wird dieser Seite nicht angeboten.",
   "XEC-UPDATE-4094": "Es gibt kein abgeschlossenes Update zum Zurücksetzen.",
-  "XEC-UPDATE-4221": "Das Passwort stimmt nicht."
+  "XEC-UPDATE-4221": "Das Passwort stimmt nicht.",
+  "XEC-USER-4021": "Dieses Profil ist nur für Mitglieder sichtbar.",
+  "XEC-USER-4022": "Diesem Mitglied kann man nicht folgen.",
+  "XEC-USER-4023": "Dieses Mitglied nimmt von dir keine Beiträge auf der Pinnwand an."
 }

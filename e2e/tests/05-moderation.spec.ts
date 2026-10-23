@@ -3,9 +3,9 @@ import { ADMIN, MEMBER, apiLogin, userId, uiLogin } from "./helpers";
 
 /**
  * Moderation + admin account actions, all targeting member1 (who authored the
- * comment from 03-article). Ban, force-logout and password-reset are driven
- * through the ACP UI; warnings live in the ModCanvas so they are issued + read
- * via the admin API; the comment tombstone is asserted on the public reader.
+ * comment from 03-article). Ban, sign-out-everywhere and password reset are
+ * driven through the ACP UI; warnings are issued + read via the admin API; a
+ * removed comment must be gone from the public reader.
  */
 
 const WARN_REASON = "E2E warning: please follow the guidelines.";
@@ -30,20 +30,18 @@ test("admin warns a member (issued + listed via the moderation API)", async ({ r
 });
 
 test("admin bans a member via the ACP", async ({ page, request }) => {
-  const token = await apiLogin(request, ADMIN.email, ADMIN.password);
   const m1Id = await userId(request, MEMBER.username);
 
   await uiLogin(page, ADMIN.email, ADMIN.password);
   await page.goto(`/admin/users/${m1Id}`);
 
-  await page.getByRole("button", { name: "Ban", exact: true }).click();
-  await page.locator(".acp-modal select").selectOption("permanent");
-  await page.locator(".acp-modal textarea").fill(BAN_REASON);
-  await page.getByRole("button", { name: "Issue Ban" }).click();
+  await page.getByRole("button", { name: /^Ban…/ }).click();
+  const modal = page.getByRole("dialog");
+  await modal.getByRole("button", { name: "Permanent" }).click();
+  await modal.locator("textarea").fill(BAN_REASON);
+  await modal.getByRole("button", { name: "Issue ban" }).click();
 
-  await expect(page.locator(".acp-badge--danger").filter({ hasText: "Banned" })).toBeVisible({
-    timeout: 15_000,
-  });
+  await expect(page.getByText(/Banned/).first()).toBeVisible({ timeout: 15_000 });
 });
 
 test("admin force-logs-out and resets a member's password via the ACP", async ({ page, request }) => {
@@ -53,19 +51,17 @@ test("admin force-logs-out and resets a member's password via the ACP", async ({
   await page.goto(`/admin/users/${m1Id}`);
 
   // Reset password → confirm dialog → success toast.
-  await page.getByRole("button", { name: "Reset Password" }).click();
-  await page.locator(".swal2-confirm").click();
-  await expect(page.locator(".swal2-toast")).toContainText("Password reset email sent", {
-    timeout: 15_000,
-  });
+  await page.getByRole("button", { name: /^Reset Password/ }).click();
+  await page.locator(".xt-dialog").getByRole("button", { name: "Send Email" }).click();
+  await expect(page.locator(".xt-toast").filter({ hasText: "Password reset email sent" })).toBeVisible({ timeout: 15_000 });
 
-  // Force logout → confirm dialog → success toast.
-  await page.getByRole("button", { name: "Log Out" }).click();
-  await page.locator(".swal2-confirm").click();
-  await expect(page.locator(".swal2-toast")).toContainText("Logged out", { timeout: 15_000 });
+  // Sign out everywhere → confirm dialog → success toast.
+  await page.getByRole("button", { name: /^Sign out everywhere/ }).click();
+  await page.locator(".xt-dialog").getByRole("button", { name: "Log Out" }).click();
+  await expect(page.locator(".xt-toast").filter({ hasText: "Logged out" })).toBeVisible({ timeout: 15_000 });
 });
 
-test("a moderator soft-deletes an article comment, showing a tombstone", async ({ page, request }) => {
+test("a moderator removes an article comment, and it leaves the page", async ({ page, request }) => {
   const token = await apiLogin(request, ADMIN.email, ADMIN.password);
   const auth = { Authorization: `Bearer ${token}` };
 
@@ -86,10 +82,10 @@ test("a moderator soft-deletes an article comment, showing a tombstone", async (
   });
   expect(del.ok()).toBeTruthy();
 
-  // The reader renders a tombstone in place of the deleted comment (§33).
+  // A removed comment leaves the list entirely (no tombstone), on the page and in the API.
+  const after = await (await request.get(`/api/articles/${article.id}/comments`)).json();
+  expect(after.data.some((c: { id: string }) => c.id === comment.id)).toBeFalsy();
   await page.goto(`/articles/${article.slug}`);
-  const tombstone = page.locator(".ard__comment-tombstone");
-  await expect(tombstone).toBeVisible({ timeout: 15_000 });
-  await expect(tombstone).toContainText(`deleted by ${ADMIN.username}`);
-  await expect(tombstone).toContainText(DEL_REASON);
+  await expect(page.locator(".ard__comments")).toBeVisible({ timeout: 15_000 });
+  await expect(page.locator(`#comment-${comment.id}`)).toHaveCount(0);
 });

@@ -204,10 +204,6 @@
     "visMembers": "Solo miembros",
     "visPrivate": "Privado",
     "seoPreview": "Vista previa SEO",
-    "seoTitleFallback": "Título del artículo",
-    "seoDescFallback": "El extracto aparecerá aquí.",
-    "seoTitlePlaceholder": "Título SEO (opcional)",
-    "seoDescPlaceholder": "Descripción SEO (opcional)",
     "toolbar": {
       "heading1": "Encabezado 1",
       "heading2": "Encabezado 2",
@@ -275,7 +271,6 @@
     "needImage": "Necesaria para publicar. Es la imagen de la tarjeta en todos los listados.",
     "visPublicHint": "cualquiera",
     "visMembersHint": "con sesión iniciada",
-    "visPrivateHint": "solo tú",
-    "searchAppearance": "Apariencia en buscadores"
+    "visPrivateHint": "solo tú"
   }
 }

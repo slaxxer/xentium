@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import type { JSONContent } from "@tiptap/react";
+import { slotRegistry, type EditorDraft } from "../../plugins/slotRegistry";
 import Image from "@tiptap/extension-image";
 import { FontAwesomeIcon } from "../../components/Icon";
 import {
@@ -60,13 +61,11 @@ interface FormState {
   tags: string[];
   tagInput: string;
   visibility: ArticleVisibility;
-  seoTitle: string;
-  seoDescription: string;
 }
 
 const emptyForm: FormState = {
   title: "", excerpt: "", body: EMPTY_BODY, categoryId: "", tags: [], tagInput: "",
-  visibility: "public", seoTitle: "", seoDescription: "",
+  visibility: "public",
 };
 
 function fromDetail(d: ArticleDetail): FormState {
@@ -78,8 +77,6 @@ function fromDetail(d: ArticleDetail): FormState {
     tags: d.tags.map((t) => t.name),
     tagInput: "",
     visibility: d.visibility,
-    seoTitle: d.seoTitle ?? "",
-    seoDescription: d.seoDescription ?? "",
   };
 }
 
@@ -91,8 +88,6 @@ function toInput(form: FormState): CreateArticleInput {
     categoryId: form.categoryId || undefined,
     tags: form.tags,
     visibility: form.visibility,
-    seoTitle: form.seoTitle.trim() || undefined,
-    seoDescription: form.seoDescription.trim() || undefined,
   };
 }
 
@@ -106,6 +101,30 @@ function bodyText(json: unknown): string {
   return text.join(" ");
 }
 const countWords = (s: string) => s.trim().split(/\s+/).filter(Boolean).length;
+
+type PMNode = { type?: string; text?: string; attrs?: Record<string, unknown>; marks?: Array<{ type?: string; attrs?: Record<string, unknown> }>; content?: PMNode[] };
+
+/** What an editor panel (the SEO plugin's) needs to know about the article, from the form. */
+function editorDraftOf(form: FormState, slug: string | null, coverUrl: string | null, siteUrl: string | null): EditorDraft {
+  const headings: string[] = [];
+  let firstParagraph = "";
+  let internalLinks = 0, images = 0, imagesWithoutAlt = 0;
+  const textOf = (n: PMNode): string => (typeof n.text === "string" ? n.text : (n.content ?? []).map(textOf).join(""));
+  const own = (href: unknown) => typeof href === "string" && (href.startsWith("/") || (!!siteUrl && href.startsWith(siteUrl)));
+  const walk = (n: PMNode) => {
+    if (n.type === "heading") headings.push(textOf(n).trim());
+    if (n.type === "paragraph" && !firstParagraph) firstParagraph = textOf(n).trim();
+    if (n.type === "image") { images++; if (!String(n.attrs?.alt ?? "").trim()) imagesWithoutAlt++; }
+    for (const m of n.marks ?? []) if (m.type === "link" && own(m.attrs?.href)) internalLinks++;
+    for (const c of n.content ?? []) walk(c);
+  };
+  walk(form.body as PMNode);
+  const text = bodyText(form.body);
+  return {
+    title: form.title.trim(), slug, excerpt: form.excerpt.trim(), text, firstParagraph,
+    headings: headings.filter(Boolean), wordCount: countWords(text), internalLinks, images, imagesWithoutAlt, coverUrl,
+  };
+}
 
 /** A field-level note about what publishing still needs. */
 function Need({ children }: { children: React.ReactNode }) {
@@ -127,8 +146,6 @@ export function ArticleEditorPage() {
 
   // SEO preview host comes from the configured site URL, not a hardcoded domain.
   const { data: siteCfg } = useSiteConfig();
-  let seoHost = "yoursite.com";
-  try { if (siteCfg?.siteUrl) seoHost = new URL(siteCfg.siteUrl).host; } catch { /* keep fallback */ }
 
   const existingQuery = useQuery({
     queryKey: ["article", slug],
@@ -270,6 +287,17 @@ export function ArticleEditorPage() {
   }, [existingQuery.data, isEdit, draftKey, clearDraft, t]);
 
   const articleId = existingQuery.data?.id;
+
+  // Plugin panels beside Details (the SEO plugin's SEO tab). Without any, the panel
+  // is Details alone and the editor has no SEO part at all.
+  const editorPanels = slotRegistry.getEditorPanels("article");
+  const [panelTab, setPanelTab] = useState("details");
+  const [panelBadges, setPanelBadges] = useState<Record<string, { label: string; tone: "good" | "fair" | "bad" } | null>>({});
+  const activePanel = editorPanels.find((p) => p.id === panelTab) ?? null;
+  const editorDraft = useMemo(
+    () => editorDraftOf(form, existingQuery.data?.slug ?? null, featuredUrl ?? null, siteCfg?.siteUrl ?? null),
+    [form, existingQuery.data?.slug, featuredUrl, siteCfg?.siteUrl],
+  );
   const viewerId = authStore.user?.id;
   const isOwner = !!existingQuery.data && existingQuery.data.author.id === viewerId;
   const isStaff = viewerIsStaff(authStore.user);
@@ -403,7 +431,12 @@ export function ArticleEditorPage() {
 
   const isBusy = saveMut.isPending || publishMut.isPending || unpublishMut.isPending;
   const user = authStore.user;
-  const userName = user?.username ?? "You";
+  // The byline names the article's AUTHOR. Staff editing someone else's article saw
+  // their own name here; only a new article is the viewer's.
+  const author = existingQuery.data?.author;
+  const bylineName = author?.username ?? user?.username ?? "You";
+  const bylineAvatar = author ? author.avatar : user?.avatar ?? null;
+  const bylineColor = author ? author.badgeColor : user?.visibleGroups[0]?.badgeColor ?? null;
   const onBodyJson = useCallback((json: JSONContent) => setForm((f) => ({ ...f, body: json })), []);
 
   const publishLabel = status === "published"
@@ -462,8 +495,8 @@ export function ArticleEditorPage() {
             {(triedPublish || form.title.length > 0) && need.title && <Need>{t("editor.needTitle")}</Need>}
 
             <div className="aed-byline">
-              <Avatar user={{ username: userName, avatar: user?.avatar ?? null }} size={28} />
-              <span className="aed-byline__name" style={user?.visibleGroups[0]?.badgeColor ? { color: user.visibleGroups[0].badgeColor } : undefined}>{userName}</span>
+              <Avatar user={{ username: bylineName, avatar: bylineAvatar }} size={28} />
+              <span className="aed-byline__name" style={bylineColor ? { color: bylineColor } : undefined}>{bylineName}</span>
               <span className="aed-byline__status">{t(`editor.status.${status}`)}</span>
               <span>·</span>
               <span>{serverSavedAt ? t("editor.savedAt", { when: dt.time(serverSavedAt) }) : t("editor.newDraft")}</span>
@@ -508,7 +541,20 @@ export function ArticleEditorPage() {
         {panelOpen && <div className="aed-scrim" onClick={() => setPanelOpen(false)} />}
         <aside className={`aed-panel${panelOpen ? " is-open" : ""}`} aria-hidden={!panelOpen}>
           <div className="aed-panel__head">
-            <b>{t("editor.detailsTitle")}</b>
+            {editorPanels.length === 0 ? <b>{t("editor.detailsTitle")}</b> : (
+              <div className="aed-ptabs" role="tablist" aria-label={t("editor.detailsTitle")}>
+                {[{ id: "details", label: t("editor.detailsTitle") }, ...editorPanels].map((p) => {
+                  const badge = panelBadges[p.id];
+                  return (
+                    <button key={p.id} type="button" role="tab" aria-selected={panelTab === p.id}
+                      className={`aed-ptab${panelTab === p.id ? " is-on" : ""}`} onClick={() => setPanelTab(p.id)}>
+                      {p.label}
+                      {badge && <span className={`aed-ptab__badge is-${badge.tone}`}>{badge.label}</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
             {warn && panelMissing > 0 && <span className="aed-panel__need">{t("editor.toFill", { count: panelMissing })}</span>}
             <span className="aed-top__gap" />
             <button type="button" className="aed-panel__x" onClick={() => setPanelOpen(false)} aria-label={t("editor.close")}>
@@ -516,6 +562,12 @@ export function ArticleEditorPage() {
             </button>
           </div>
 
+          {activePanel ? (
+            <div className="aed-panel__body">
+              <activePanel.component contentKind="article" contentId={articleId ?? null} draft={editorDraft}
+                setBadge={(b) => setPanelBadges((prev) => (JSON.stringify(prev[activePanel.id]) === JSON.stringify(b) ? prev : { ...prev, [activePanel.id]: b }))} />
+            </div>
+          ) : (
           <div className="aed-panel__body">
             <div className="aed-label">{t("editor.statusLabel")}</div>
             <div className="aed-seg">
@@ -598,20 +650,8 @@ export function ArticleEditorPage() {
                 <span className="aed-vis__hint">{t(`editor.${hintKey}`)}</span>
               </button>
             ))}
-
-            <div className="aed-rule" />
-
-            <div className="aed-label">{t("editor.searchAppearance")}</div>
-            <div className="aed-seo">
-              <div className="aed-seo__host">{seoHost} › articles</div>
-              <div className="aed-seo__title">{form.seoTitle.trim() || form.title.trim() || t("editor.seoTitleFallback")}</div>
-              <div className="aed-seo__desc">{form.seoDescription.trim() || form.excerpt.trim() || t("editor.seoDescFallback")}</div>
-            </div>
-            <input className="aed-input aed-input--mt" value={form.seoTitle} maxLength={200}
-              onChange={(e) => setForm({ ...form, seoTitle: e.target.value })} placeholder={t("editor.seoTitlePlaceholder")} />
-            <textarea className="aed-input aed-input--mt" rows={2} value={form.seoDescription} maxLength={500}
-              onChange={(e) => setForm({ ...form, seoDescription: e.target.value })} placeholder={t("editor.seoDescPlaceholder")} />
           </div>
+          )}
 
           <div className="aed-panel__foot">
             <button type="button" className="aed-btn aed-btn--ghost" onClick={handleSave} disabled={isBusy}>{t("editor.saveDraft")}</button>

@@ -1,4 +1,5 @@
 import { staffGroupKeys } from "../../shared/utils/staff.js";
+import { TtlCache } from "../../shared/utils/memoTtl.js";
 import { prisma } from "../../infrastructure/db.js";
 import { withResolvedAvatar, withResolvedAvatarList, resolveAvatar } from "../../shared/utils/resolveAvatar.js";
 import { getOnlineUserIds } from "../../shared/utils/presence.js";
@@ -83,6 +84,33 @@ const CONNECTION_USER_SELECT = {
   },
 } as const;
 
+
+/** The member directory's rail counts: all active members (matching `base`), staff, and per group. */
+async function directoryCounts(base: object, staffKeys: string[]) {
+  const [total, staff, groups] = await Promise.all([
+    prisma.user.count({ where: base }),
+    prisma.user.count({ where: { AND: [base, { groups: { some: { group: { key: { in: [...staffKeys] } } } } }] } }),
+    prisma.group.findMany({
+      where: { key: { notIn: [...staffKeys] } },
+      select: { key: true, name: true, displayOrder: true, _count: { select: { users: true } } },
+      orderBy: { displayOrder: "asc" },
+    }),
+  ]);
+  return { total, staff, groups };
+}
+
+/** The same without a name search, shared for 30 seconds (keyed by the staff groups, which can change). */
+const directoryCountsCache = new TtlCache<string, ReturnType<typeof directoryCounts>>(30_000);
+function cachedDirectoryCounts(staffKeys: string[]) {
+  const key = [...staffKeys].sort().join(",");
+  let hit = directoryCountsCache.get(key);
+  if (!hit) {
+    hit = directoryCounts({ isActive: true }, staffKeys);
+    directoryCountsCache.set(key, hit);
+    hit.catch(() => directoryCountsCache.delete(key));
+  }
+  return hit;
+}
 
 export const userRepository = {
   // Get user by ID (internal)
@@ -357,18 +385,18 @@ export const userRepository = {
     else if (sort === "newest")  orderBy = { createdAt: "desc" };
     else if (sort === "az")      orderBy = { username: "asc" };
 
-    const [rows, total, facetTotal, facetOnline, facetStaff, groupRows] = await Promise.all([
+    // The rail's counts scan the whole member table, so without a name search they are
+    // shared for 30 seconds: a count a few seconds old reads the same, and a big site
+    // would otherwise count every member on every page of the directory.
+    const sideCounts = q ? directoryCounts(base, STAFF_KEY_LIST) : cachedDirectoryCounts(STAFF_KEY_LIST);
+    const unfiltered = !q && filter === "all";
+    const [rows, filteredTotal, facetOnline, { total: facetTotal, staff: facetStaff, groups: groupRows }] = await Promise.all([
       prisma.user.findMany({ where, select: MEMBER_SELECT, orderBy, skip: (page - 1) * limit, take: limit }),
-      prisma.user.count({ where }),
-      prisma.user.count({ where: base }),
+      unfiltered ? Promise.resolve(null) : prisma.user.count({ where }),
       prisma.user.count({ where: { AND: [base, { id: { in: onlineArr } }] } }),
-      prisma.user.count({ where: { AND: [base, { groups: { some: { group: { key: { in: [...STAFF_KEY_LIST] } } } } }] } }),
-      prisma.group.findMany({
-        where: { key: { notIn: [...STAFF_KEY_LIST] } },
-        select: { key: true, name: true, displayOrder: true, _count: { select: { users: true } } },
-        orderBy: { displayOrder: "asc" },
-      }),
+      sideCounts,
     ]);
+    const total = filteredTotal ?? facetTotal;
 
     const facets = {
       total: facetTotal,

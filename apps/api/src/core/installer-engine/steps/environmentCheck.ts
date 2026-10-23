@@ -1,5 +1,6 @@
 import { statfs } from "node:fs/promises";
 import { promises as fs } from "node:fs";
+import path from "node:path";
 import Redis from "ioredis";
 import { env } from "../../../config/env.js";
 import { prisma } from "../../../infrastructure/db.js";
@@ -57,9 +58,30 @@ async function checkRedis() {
   }
 }
 
+/**
+ * The closest directory to `dir` that already exists: the data directory itself once it
+ * is there, otherwise the parent it will be created in. Free space is a property of the
+ * disk, so either answers the question.
+ *
+ * ⚠ The checks run side by side, and on a fresh server `checkDataDir` is still creating
+ * DATA_DIR while this runs. Reading DATA_DIR itself failed there ("Could not read disk")
+ * and kept the wizard's Continue disabled on every first install.
+ */
+export async function nearestExistingDir(dir: string): Promise<string> {
+  let at = path.resolve(dir);
+  for (;;) {
+    try {
+      if ((await fs.stat(at)).isDirectory()) return at;
+    } catch { /* not there yet: try its parent */ }
+    const up = path.dirname(at);
+    if (up === at) return at;
+    at = up;
+  }
+}
+
 async function checkStorage() {
   try {
-    const s = await statfs(env.DATA_DIR);
+    const s = await statfs(await nearestExistingDir(env.DATA_DIR));
     const free = s.bavail * s.bsize;
     return {
       key: "storage",

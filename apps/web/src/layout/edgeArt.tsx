@@ -31,7 +31,7 @@
 import { useLayoutEffect, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import {
-  EDGE_DEFAULT_COUNT, inSeason,
+  EDGE_DEFAULT_COUNT,
   type BlockEdges, type EdgeArt, type EdgeShape,
 } from "@xentium/contracts";
 import { edgeExtensions, edgeShape, registerEdgeShape, type EdgeUnit } from "./edgeRegistry";
@@ -236,8 +236,9 @@ export const edgeClassName = (edge: EdgeArt, side: "top" | "bottom"): string =>
 // ── "Viewing on" (editor only) ─────────────────────────────────────────────
 
 /**
- * The date the editor's preview pretends it is, as `MM-DD`; null = today. Seasonal
- * art is hidden most of the year, which is exactly when an admin arranges things.
+ * The date the editor's preview pretends it is, as `MM-DD`; null = today. For plugin
+ * art that shows only part of the year (`EdgeExtension.viewDate`), which is hidden
+ * most of the year — exactly when an admin arranges things.
  */
 let previewDate: string | null = null;
 const dateListeners = new Set<() => void>();
@@ -279,10 +280,10 @@ export const dateFromMonthDay = (md: string): Date => {
   return new Date(new Date().getFullYear(), (m ?? 1) - 1, d ?? 1, 12);
 };
 
-/** Whether one edge draws on `on` (default: today). */
+/** Whether one edge draws at `on` (default: now). Core always draws; a plugin may say no. */
 export function edgeShows(edge: EdgeArt | undefined, on: Date = new Date()): edge is EdgeArt {
   if (!edge) return false;
-  return !edge.season || inSeason(edge.season, on);
+  return edgeExtensions().every((x) => !x.shows || x.shows({ edge, ext: edge.ext?.[x.namespace], now: on }));
 }
 
 // ── The layer ──────────────────────────────────────────────────────────────

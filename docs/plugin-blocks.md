@@ -57,6 +57,17 @@ registerBlock({
 import "./blocks/MyBlock";
 ```
 
+### Without bundling zod
+
+From core 1.0.0-alpha.19 the host hands plugins its own zod as `window.__XENTIUM_HOST__.Zod`.
+A plugin that only needs zod for block schemas can build them with that copy instead of
+bundling its own, which keeps its download small. Check for it, since older hosts lack it:
+
+```ts
+const zod = window.__XENTIUM_HOST__?.Zod;
+if (zod) registerBlock({ /* … */ schema: zod.z.object({ /* … */ }) });
+```
+
 ## The rules
 
 **Namespace the type.** Core blocks have bare names (`heading`, `articleIndex`); plugin

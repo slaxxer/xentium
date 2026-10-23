@@ -114,6 +114,10 @@ per IP for guests and 600 a minute per signed-in session. All of them answer
 | POST | `/site` | Public | Site name, URL, language, timezone. |
 | POST | `/admin` | Public | Create the first admin account. |
 | POST | `/finalize` | Public | Run `migrate deploy` and the seed, write `site.id`, lock the installer. |
+| GET / POST | `/addons` | Public | The add-ons the wizard offers (free official plugins, and what a linked marketplace account owns) / save the pick for this step: `{ pluginIds }`. |
+| POST | `/addons/install` | Public | `{ pluginId, version }`: download and install one picked add-on. |
+| POST | `/marketplace/link` · GET `/marketplace/link/:linkId` | Public | Link a plugins.xentium.org account from the wizard: start (a code to confirm on the marketplace), then poll until it's confirmed. |
+| DELETE | `/marketplace/connection` | Public | Unlink that account again. |
 
 ## Auth: `/api/auth`
 
@@ -134,6 +138,7 @@ per IP for guests and 600 a minute per signed-in session. All of them answer
 | POST | `/passkey/register/options` · `/passkey/register/verify` | Auth | Add a passkey: options, then `{ response, name? }`. |
 | PATCH / DELETE | `/passkeys/:id` | Auth | Rename or remove a passkey. Removing the last way to sign in is refused (409). |
 | GET | `/sign-in-methods` | Auth | Your password state, passkeys and connected providers. |
+| POST | `/legal-consent` | Auth | `{ keys }`: accept the listed legal documents (`terms`, `privacy`, …) at their current revision. Answers `{ pending }`, what is still to accept. Until nothing is pending, other routes answer 403 `XEC-AUTH-2012`. |
 | POST | `/oauth/:provider/start` | Public | `{ remember?, returnTo? }` → `{ url }` to send the browser to (Google, GitHub, Discord). |
 | POST | `/oauth/:provider/link` | Auth | Same, to connect the provider to your account. |
 | DELETE | `/oauth/:provider` | Auth | Disconnect a provider (refused if it is your last way in). |
@@ -163,6 +168,7 @@ All **Auth**.
 | GET / PATCH | `/profile-fields` | Read or update your custom field values (with per-field privacy). |
 | POST / DELETE | `/pin` | Set or turn off the login PIN. |
 | GET / PATCH | `/notifications` | Read or update notification preferences. |
+| GET / PATCH | `/badges` | Which of your badges are hidden on your profile: `{ hidden: badgeId[] }`. |
 
 ## Users: `/api/users`
 
@@ -171,6 +177,9 @@ All **Auth**.
 | GET | `/profile-fields` | Public | Custom profile field **definitions**. |
 | GET | `/search` | Auth | User search (typeahead). |
 | GET | `/me/limits` | Auth | Your content limits from the progression config. |
+| GET | `/me/progression` | Auth | Your rank, points and the next rung, as the profile shows them to you. |
+| GET | `/suggested` | Auth | Up to five members you might follow. |
+| GET | `/ping` | Public | `{ pong: true }`. A cheap reachability check. |
 | GET | `/me/level-up` | Auth | `{ levelUp }`: the newest rung you climbed and have not seen yet (`rank`, `from`, what it `unlocks`, the `next` goal), or `null`. Null too when progression or promotion notices are off. |
 | POST | `/me/level-up/seen` | Auth | Marks every unseen climb seen. The site shows the level-up dialog once. |
 | GET | `/me/blocks` | Auth | Who you've blocked. |
@@ -180,6 +189,8 @@ All **Auth**.
 | GET | `/:id/followers` | Optional | Followers, paginated (403 if the owner hid the list). |
 | GET | `/:id/following` | Optional | Following, paginated (403 if hidden). |
 | GET | `/:id/profile-fields` | Optional | A user's field values, filtered by privacy and by who's asking. |
+| GET | `/:id/progression` | Optional | A member's rank and progress, as their profile shows it. |
+| GET | `/:id/standing` | Auth | Warnings (and, with ban rights, bans and addresses) of a member. Only the member themselves and staff who may warn; everyone else gets 403. |
 | GET | `/:id/profile-comments` | Optional | Profile wall: top-level comments, newest first, each with its `replies` oldest first. Deleted comments are left out entirely, and a deleted comment's replies with it. |
 | POST | `/:id/profile-comments` | Auth (rate-limited) | Post on a wall, or reply with `parentId`. Replies are one level deep: a reply to a reply is filed under the same comment. The wall's owner can reply but can't start a comment. |
 | PUT | `/profile-comments/:commentId` | Auth | Edit your comment (within the edit window). |
@@ -189,6 +200,14 @@ All **Auth**.
 | POST / DELETE | `/:id/follow` | Auth (rate-limited) | Follow / unfollow. |
 | POST / DELETE | `/:id/block` | Auth (rate-limited) | Block / unblock (removes follows in both directions). |
 
+**Privacy.** A member's Account → Privacy settings are enforced here, and a block counts both
+ways. A members-only profile answers guests 403 `XEC-USER-4021`, on the profile and on every
+part of it (wall, follow lists, fields, visitors, progression). A follow the member doesn't
+allow is 403 `XEC-USER-4022`, a wall post or reply they don't allow is 403 `XEC-USER-4023`, and
+`GET /api/articles?authorId=` answers an empty page when their post history is private to
+you. The profile carries `viewerCan: { follow, comment, history }`, so a client can hide what
+would be refused.
+
 ## Articles: `/api/articles`
 
 | Method | Path | Auth | Description |
@@ -197,10 +216,11 @@ All **Auth**.
 | GET | `/featured` | Optional | `{ article }`: the newest pinned article the viewer may see, or `null`. |
 | GET | `/trending` | Optional | Articles of the last days ranked by likes and comments (a comment counts twice); only ones with any: `?days=` (default 30), `?max=`. |
 | GET | `/me` | Auth | Your own articles, any status. |
+| GET | `/tags/popular` | Public | The twelve most used tags. |
 | GET | `/:slug` | Optional | One article (respects visibility). Signed in, it carries `viewer: { liked, disliked, saved }`. |
 | POST | `/` | Perm:`article.create` | Create. |
 | PATCH | `/:id` | Auth (owner/admin) | Update. |
-| POST | `/:id/publish` | Auth | Publish (in a transaction; sets `published_at` and bumps `article_count`). |
+| POST | `/:id/publish` | Auth | Publish (in a transaction; sets `published_at` and bumps `article_count`). Your own article; someone else's needs `article.edit_any` too. |
 | POST | `/:id/unpublish` | Auth | Back to draft. |
 | DELETE | `/:id` | Auth (owner/admin) | Soft-delete. |
 | GET | `/:id/revisions` | Auth | Revision history. |
@@ -249,6 +269,8 @@ once published. The ACP routes need `legal.manage`.
 | POST | `/api/admin/legal/:key/publish` | ACP | The draft goes live. A draft with no text is refused (`XEC-LEGAL-3502`). |
 | POST | `/api/admin/legal/:key/unpublish` | ACP | Takes it offline. The draft is kept. |
 | POST | `/api/admin/legal/:key/discard` | ACP | Resets the draft to the published text. |
+| PUT | `/api/admin/legal/:key/acceptance` | ACP | `{ requireAcceptance }`: whether members must accept this document (asked at sign-up, and once from anyone who never did). |
+| POST | `/api/admin/legal/:key/ask-again` | ACP | `{ groupIds }`: raise the document's revision, so members are asked to accept it again: everyone when `groupIds` is empty, else those groups. |
 
 ## Emojis: `/api/emojis` (public) and `/api/admin/emojis` (ACP)
 
@@ -332,6 +354,9 @@ setting. Plugins can add their own scans or replace a built-in pattern through t
 |---|---|---|---|
 | POST | `/reports` | Auth | File a report (any target type). |
 | GET | `/summary` | Auth | Counts for the moderation shield's red dot. |
+| GET | `/users?q=` | a moderator | Find a member to act on. |
+| GET | `/users/:id/profile` · `/users/:id/warnings` · `/users/:id/bans` | a moderator | One member's card, warnings and bans, for ModCanvas. |
+| POST | `/users/:id/sessions/revoke-all` | Perm:`moderation.ban` | Sign a member out everywhere at once (sessions and the access tokens already handed out). |
 | GET | `/reports` | Perm:`moderation.report.manage` | The report queue. |
 | PATCH | `/reports/:id` | Perm:`moderation.report.manage` | Update a report's status. |
 | GET | `/warnings` · POST `/warnings` | Perm:`moderation.warn` | List / issue warnings. A warning is always one of the site's warn templates, about one piece of the member's content: `{ userId, templateId, target: { type, id }, expiry? }`. There is no free text: the server fills the template in and takes its length. `expiry` (another length) needs `moderation.warn.expiry.override`. Content by someone else is refused (`XEC-MOD-4102`), a missing or wrong template too (`XEC-MOD-4101`). Each warning runs the escalation ladder. |
@@ -348,7 +373,7 @@ setting. Plugins can add their own scans or replace a built-in pattern through t
 | GET | `/cases` | Perm:`moderation.cases.manage` | Review cases. |
 | PATCH | `/cases/:id` · POST `/cases/:id/ban-all` | Perm:`moderation.cases.manage` | Update / ban everyone in a case. |
 | GET | `/log` | Perm:`moderation.log.view` | Moderation log. |
-| DELETE | `/comments/article/:id` · `/comments/profile/:id` | Perm:`moderation.*` | Soft-delete with a reason (leaves a tombstone). |
+| DELETE | `/comments/article/:id` · `/comments/profile/:id` | Perm:`moderation.*` | Remove with a reason. The comment and its replies leave the page; the reason stays in the moderation log. |
 
 ## Appearance: `/api/appearance`
 
@@ -359,6 +384,10 @@ setting. Plugins can add their own scans or replace a built-in pattern through t
 | PUT | `/tokens` | Admin | Save the admin's tokens (`{ tokens, label? }`, a map by scope). Goes into the **draft**. |
 | PATCH | `/tokens/scope/:scope` | Admin | Merge ONE scope into the draft: `{ tokens: { "--x": "#fff" \| null } }`, where `null` clears a token. Returns the whole set. This exists for a second editor on the same draft (the Studio's Layout variant panel), because two screens both reading and writing the whole set would lose whichever edit landed first. |
 | GET / PUT | `/custom-css` | Admin | The admin's own stylesheet. |
+| POST | `/custom-css/preview` | Admin | Scope a stylesheet for the live preview without saving it. |
+| GET / PUT | `/font` | Admin | The site font being edited (family, weight, size) for one theme. It is part of the draft: Theme Studio's Publish puts it live. |
+| GET | `/composer` | Public | The editor toolbar every Composer uses: which tools show, in what order. |
+| PUT | `/composer` | Admin | Save that toolbar. |
 | GET | `/draft-status` | Admin | Whether there's an unpublished draft. |
 | POST | `/publish` | Admin | Publish the draft now. |
 | POST | `/reset` | Admin | *Reset appearance*: clears the admin's tokens and stylesheet and keeps the installed theme. |
@@ -413,6 +442,25 @@ tiers, defined in `apps/web/src/styles/tokens.scss`, and described for code in
 
 How the layers, themes and this stylesheet fit together is in
 [The style system](style-system.md).
+
+## Site, home and members
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| GET | `/api/site/config` | Public | What the app needs at start: feature switches, the landing page, site name, address and tagline, time zone and date/time formats, the site alert bar and the sign-in method. |
+| GET | `/api/site/footer` | Public | The footer's facts: site name, uptime in seconds, the installed version and the site's counters (add-ons can contribute). |
+| GET | `/api/site/head?path=` | Public | The head tags for one page (title, description, canonical address, link previews, JSON-LD), the same ones the server writes into the page. The app asks again on every navigation. |
+| GET | `/api/home/guest-config` | Public | The guest landing's feed sources (core articles plus what add-ons register). |
+| GET | `/api/home/stats` | Public | Headline counts for the guest landing and the footer. |
+| GET | `/api/home/feed-source/:id?limit=` | Public | Recent items from an add-on's feed source; `[]` for one that isn't registered. |
+| GET | `/api/home/hot-threads` | Public | The home page's "hot" list from the first add-on that offers one, or `{ enabled: false }`. |
+| GET | `/api/members?page=&limit=&q=&filter=&sort=` | Public | The member directory (when the members feature is on). `sort` is `active`, `followers`, `newest` or `az`; `limit` up to 60. |
+| GET | `/api/members/groups` | Public | Every group with its badge colour, in precedence order, for the footer legend. |
+| GET | `/api/members/team` | Public | The staff, for the team page. |
+| GET | `/api/members/hall-of-fame` | Public | The members the hall of fame lists. |
+| GET | `/api/themes/choices` | Public | The installed themes a visitor may pick, the site's own first: id, name, version and which one is the site's. |
+| GET | `/api/maintenance` | Public | Maintenance status, text, progress and ETA. Always answers, so the app can show the maintenance screen. |
+| POST | `/api/activity/visit` | Optional | `{ url }`: log a page visit for the signed-in member (ACP activity log). Nothing for guests. |
 
 ## Public nav
 
@@ -469,6 +517,10 @@ never put secrets in a draft: give a write-only field its own Set/Remove route. 
 
 ## Admin (ACP): `/api/admin`
 
+These endpoints serve the ACP. From 1.0.0 on they follow semver like the rest of the API,
+but they are made for our own admin panel, so build on the member-facing endpoints where
+you can.
+
 Everything below needs **Admin** (`admin.access`) unless a stricter permission is listed.
 
 ### Dashboard and users
@@ -486,6 +538,12 @@ Everything below needs **Admin** (`admin.access`) unless a stricter permission i
 | POST | `/users/:id/ban` · DELETE `/users/:id/ban` | Ban / lift. |
 | POST | `/users/:id/force-logout` | Revoke every session. |
 | POST | `/users/:id/password-reset` | Send a reset email. |
+| GET | `/dashboard/overview` | The ACP overview: needs-attention items, setup checklist, recent activity. |
+| GET | `/dashboard/analytics` | Charts for the dashboard: sign-ups, content and visits over time. |
+| POST | `/users` | Create a member from the ACP. |
+| GET | `/users/:id/login-events` | One member's sign-in history, newest first (paginated). |
+| POST / DELETE | `/users/:id/ban` | Ban (temporary or permanent, with a reason) / lift the ban. A ban signs the member out everywhere at once. |
+| GET / PUT | `/settings/:key` | Read / write one setting. |
 
 ### Profile fields
 
@@ -494,6 +552,8 @@ Everything below needs **Admin** (`admin.access`) unless a stricter permission i
 | GET | `/profile-fields` | The field definitions. |
 | POST · PATCH `/:id` · DELETE `/:id` | Create / update / delete (system fields can't be deleted). |
 | PUT | `/profile-fields/reorder` | Reorder. |
+| GET | `/profile-fields/stats` | How many members filled in each field. |
+| POST | `/profile-fields` · PATCH / DELETE `/profile-fields/:id` | Create / edit / delete a field. |
 
 ### Access control
 
@@ -522,6 +582,15 @@ Everything below needs **Admin** (`admin.access`) unless a stricter permission i
 | GET·PATCH | `/mod-settings` | Mod Settings: `expiry { enabled, days }`, `ladder` (steps of `{ warningCount, action: notify \| ban_temporary \| ban_permanent, banDays?, notifyModerators }`), `bans { defaultDays, minDays, maxDays, allowOverride }`, `resetAfterBan`, and `patterns` (per pattern: `enabled`, `claimedBy`, `casesLast7d`). PATCH takes any of those sections (`patterns` as `{ type: boolean }`) and writes only what it carries. An impossible range, a default outside it, or two steps on one count is refused. |
 | GET | `/modlog` | Moderation log. |
 | DELETE | `/comments/article/:id` · `/comments/profile/:id` | Moderator soft-delete. |
+| GET | `/articles/summary` | Counts for the Articles page's tiles. |
+| POST | `/articles/bulk` | `{ ids, action, categoryId? }`: `move` (to a category, `null` for none), `hide`, `show` or `delete` several articles at once. Each action asks for the permission its single-article route asks for. |
+| DELETE | `/articles/:id` | Delete an article. |
+| PATCH | `/reports/:id` | Change a report's status. |
+| POST | `/warnings` · PATCH `/warnings/:id/pardon` | Issue / pardon a warning. |
+| POST | `/cases/:id/revoke-exception` | Take back an exception granted on a review case. |
+| GET / POST | `/mod-templates` · PATCH / DELETE `/mod-templates/:id` | The warn, ban and removal templates: list, create, edit, delete. |
+| GET / PATCH | `/mod-settings` | The moderation policy (warning ladder, ban lengths, overrides). |
+| GET | `/modlog/summary` · `/modlog/export.csv` | The moderation log's counts / the log as CSV. |
 
 ### Extensions and licensing
 
@@ -610,6 +679,17 @@ files, 5 MB each, 40 MB total).
 | GET | `/style-history` | Style snapshots. |
 | GET | `/xec-codes` | The XEC code list (for the Error Reference page). |
 | GET·POST·PATCH·DELETE | `/nav-items` … `/nav-items/reorder` | The site's nav manager. |
+| GET | `/error-log/groups` · `/error-log/stats` · `/error-log/recent-codes` | The error log grouped by cause, its counts, and the codes seen lately. |
+| GET | `/error-log/lookup?code=` | Look one error code (or a member) up. |
+| GET | `/error-log/groups/:key/occurrences` | Each time one grouped error happened. |
+| PATCH / DELETE | `/error-log/groups/:key` | Mark a group resolved (it reopens if it happens again) / delete it. |
+| DELETE | `/error-log` · `/error-log/:id` | Clear the log / delete one entry. |
+| GET / PATCH | `/auth-providers` · `/auth-providers/:provider` | Sign-in providers (Google, GitHub, Discord) and the passkey settings. |
+| GET | `/jobs` · PUT `/jobs/:key` · POST `/jobs/:key/run` | Scheduled jobs: list, change the schedule, run now. |
+| GET / POST | `/nav-items` · PATCH / DELETE `/nav-items/:id` · PATCH `/nav-items/reorder` | The site's navigation links. |
+| GET | `/announcements` · POST `/announcements/:id/dismiss` | Signed announcements from the Xentium team; dismissing one removes it for every admin. |
+| GET | `/core-update/run` | The one-click update's live view: steps, packages, migrations, the log. |
+| POST | `/core-update/run` · `/core-update/rollback` | Perm:`system.update`. Ask the updater on the server to update, or roll back the last update. The API only writes the request; it never runs anything itself. |
 
 ### Beta and invites
 
@@ -620,7 +700,9 @@ For sites that are open only to invited users while in beta.
 | GET | `/api/beta/status` | Optional | The beta gate's state for the current visitor. |
 | POST | `/api/beta/redeem` · `/api/beta/log-visit` | Public/Optional | Redeem a beta code / log a visit. |
 | GET·POST·DELETE | `/api/admin/beta-codes` (+ `/log`) | Admin | Manage beta codes; the visit log. |
-| GET·POST·DELETE | `/api/admin/invites` | Admin | Manage invites. |
+| GET·POST·DELETE | `/api/admin/invites` | Admin | Manage invites (DELETE takes `/:id`). |
+| GET | `/api/admin/activity?page=&limit=&category=&q=&user=&ip=&since=` | Admin | The activity log: page visits and ACP actions, filterable. `category` is `page_visit` or `acp_action`. |
+| GET | `/api/admin/activity/facets` | Admin | What the activity log's filter menus offer. |
 
 ---
 

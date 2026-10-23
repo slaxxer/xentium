@@ -1,0 +1,11 @@
+{
+  "articles": "Artikel",
+  "members": "Mitglieder",
+  "legal": {
+    "imprint": "Impressum",
+    "privacy": "Datenschutzerklärung",
+    "terms": "Nutzungsbedingungen",
+    "disclaimer": "Haftungsausschluss"
+  },
+  "home": "Startseite"
+}
