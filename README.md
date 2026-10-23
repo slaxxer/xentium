@@ -813,9 +813,17 @@ draft; use Set/Remove) and destructive actions. Plugins built for the old autosa
 The full recipe, the ways it goes wrong, and the `groupConfigPanel` + progression
 path are in [`docs/plugin-acp-autosave.md`](docs/plugin-acp-autosave.md).
 
+### Start here: the plugin platform
+
+Core does the common work for you: events and filters, resources (core serves your table's
+endpoints), settings with a page drawn from your schema, background jobs, files and images,
+members and the site's time zone, and an upload component. The guide is
+[`docs/plugin-platform.md`](docs/plugin-platform.md). `pnpm plugin:new <id>` starts a working
+plugin in `plugins/local/<id>/` that uses most of it.
+
 ### Local development
 
-1. Put your plugin in `plugins/community-examples/<name>/` (or `plugins/official/<name>/`). Both are pnpm workspace members.
+1. Start with `pnpm plugin:new <id>`, or put your plugin in `plugins/community-examples/<name>/` (or `plugins/official/<name>/`). All three folders are pnpm workspace members.
 2. For hot reload of the web side during `vite dev`, add your web entry to `apps/web/src/plugins/dev-plugins.ts` (keep that edit local).
 3. Start the stack with `./xentium.sh`, then install and enable your plugin under **ACP → Extensions → Installed → Upload** (switch on "Allow uploads" there first; or set `BOOTSTRAP_OFFICIAL_PLUGINS=true` to load the first-party plugins on startup).
 
