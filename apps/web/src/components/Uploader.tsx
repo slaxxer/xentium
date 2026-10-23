@@ -75,14 +75,16 @@ export function Uploader({ url, field = "file", accept, maxBytes, multiple = fal
   const [over, setOver] = useState(false);
   const acceptAttr = accept?.map((a) => KIND_MIME[a] ?? a).join(",");
 
-  // Previews are object URLs: give them back when they go.
-  useEffect(() => () => { items.forEach((i) => i.preview && URL.revokeObjectURL(i.preview)); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // Previews are object URLs: give them back when the uploader goes.
+  const previews = useRef<string[]>([]);
+  useEffect(() => () => { previews.current.forEach((u) => URL.revokeObjectURL(u)); }, []);
 
   const patch = (id: number, p: Partial<Item>) => setItems((list) => list.map((i) => (i.id === id ? { ...i, ...p } : i)));
 
   async function upload(file: File) {
     const id = ++seq;
     const preview = file.type.startsWith("image/") ? URL.createObjectURL(file) : null;
+    if (preview) previews.current.push(preview);
     setItems((list) => [...list, { id, file, preview, progress: 0, state: "sending" }]);
     if (maxBytes && file.size > maxBytes) {
       patch(id, { state: "failed", error: t("uploader.tooLarge", { size: mb(maxBytes) }) });
