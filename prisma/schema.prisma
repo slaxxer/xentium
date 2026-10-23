@@ -1542,3 +1542,28 @@ model OAuthAccount {
   @@map("xcf_oauth_accounts")
 }
 
+
+// Files add-ons store through `host.files` (ADR-0011): one row per file, keyed by the
+// add-on and, optionally, the item it belongs to. The bytes live under
+// `uploads/addons/<plugin_id>/<visibility>/<id>/`; only `public` ones are served by
+// `/uploads`, private ones leave through the add-on's own route after its check.
+model PluginFile {
+  id           String   @id @default(uuid())
+  pluginId     String   @map("plugin_id")
+  kind         String?
+  itemId       String?  @map("item_id")
+  visibility   String   // 'public' | 'private'
+  mime         String
+  ext          String
+  bytes        Int
+  width        Int?
+  height       Int?
+  /// For images: { thumb|medium|full: { file, ext, width, height, bytes } }.
+  variants     Json?
+  originalName String?  @map("original_name")
+  uploaderId   String?  @map("uploader_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([pluginId, kind, itemId])
+  @@map("xcf_files")
+}

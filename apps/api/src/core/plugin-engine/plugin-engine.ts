@@ -24,6 +24,7 @@ import { deregisterEvents, emit } from "../events/events.js";
 import { deregisterJobs, dropPluginJobs, stopPluginSchedules } from "../plugin-platform/jobs.js";
 import { deregisterSettings } from "../plugin-platform/settings.js";
 import { deregisterResources } from "../plugin-platform/resources.js";
+import { dropPluginFiles } from "../plugin-platform/files.js";
 
 const PLUGIN_STORE = path.join(env.UPLOAD_DIR, "plugins");
 
@@ -469,6 +470,8 @@ export async function uninstallPlugin(pluginId: string, removeData: boolean): Pr
     // Always purge residual migration tracking so a future reinstall starts clean
     // even if a down migration above failed mid-way.
     await prisma.xentiumPluginMigration.deleteMany({ where: { pluginId } });
+    // Its files: the rows in xcf_files and the bytes under uploads/addons/<id>.
+    await dropPluginFiles(pluginId).catch((err) => logger.warn({ pluginId, err }, "Could not remove the plugin's files"));
   }
 
   // Its background work goes with it, data kept or not: no handler will ever run it again.

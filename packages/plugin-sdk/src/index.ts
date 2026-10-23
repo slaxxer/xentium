@@ -379,6 +379,8 @@ export interface PluginHost extends BasePluginHost {
   jobs: PluginJobs;
   /** THIS plugin's settings (see `ctx.registerSettings`). Core 1.0.0. */
   settings: PluginSettings;
+  /** Files and images for THIS plugin. Core 1.0.0. */
+  files: PluginFiles;
   /** Members, named and shown as their privacy allows. Core 1.0.0. */
   users: PluginUsers;
   /** The site's time zone and days. Core 1.0.0. */
@@ -755,6 +757,72 @@ export interface PluginResourceDeclaration<S = any> {
     beforeDelete?(row: Record<string, unknown>, ctx: ResourceHookContext): void | Promise<void>;
     afterDelete?(row: Record<string, unknown>, ctx: ResourceHookContext): void | Promise<void>;
   };
+}
+
+// ── Files and images (core 1.0.0) ───────────────────────────────────────────
+
+/** A file from the request (a multer file works as is), or its bytes. */
+export type PluginFileInput = Buffer | { buffer: Buffer; originalname?: string };
+
+export interface PluginFileSaveOptions {
+  /** `public`: served at its URL to anyone. `private`: only through your route, with `send`. */
+  visibility: "public" | "private";
+  /**
+   * What may be uploaded, checked by the file's bytes (never its name): kinds
+   * `image`, `pdf`, `archive`, `audio`, `video`, `document`, or single types (`png`, `zip`, …).
+   */
+  accept: string[];
+  /** Default 20 MB; at most 200 MB. */
+  maxBytes?: number;
+  /** Your label for what the file belongs to (`"gallery.photo"`) and its id; used by `list` / `removeFor`. */
+  kind?: string;
+  itemId?: string;
+  /** Who uploaded it (usually `req.userId`). */
+  uploaderId?: string | null;
+  /** Images get thumb (320), medium (1280) and full (2560) sizes. Default true. */
+  variants?: boolean;
+}
+
+export interface PluginFileVariant { url: string | null; width: number; height: number; ext: string }
+
+export interface PluginFile {
+  /** Store this in your table to find the file again. */
+  ref: string;
+  mime: string;
+  ext: string;
+  bytes: number;
+  width: number | null;
+  height: number | null;
+  kind: string | null;
+  itemId: string | null;
+  visibility: "public" | "private";
+  /** The member's own file name: metadata only, never used on disk. */
+  originalName: string | null;
+  uploaderId: string | null;
+  createdAt: string;
+  /** Public files only (null when private). For images, the `full` size. */
+  url: string | null;
+  variants: { thumb: PluginFileVariant; medium: PluginFileVariant; full: PluginFileVariant } | null;
+}
+
+/**
+ * Store files: core checks the type by its bytes, names it, and for every image
+ * removes camera data and GPS (a phone photo carries where it was taken) and makes
+ * its sizes. Remove a file when its item goes; files with no row are purged.
+ */
+export interface PluginFiles {
+  save(file: PluginFileInput, opts: PluginFileSaveOptions): Promise<PluginFile>;
+  /** One of YOUR files, or null. */
+  get(ref: string): Promise<PluginFile | null>;
+  list(filter?: { kind?: string; itemId?: string }): Promise<PluginFile[]>;
+  /**
+   * Answer a request with a file (call it after your own permission check, for a
+   * private file). Non-images always download; `download` names the file.
+   */
+  send(res: unknown, ref: string, opts?: { download?: string | boolean; variant?: "thumb" | "medium" | "full" }): Promise<void>;
+  remove(ref: string): Promise<boolean>;
+  /** Remove every file of an item. Returns how many. */
+  removeFor(filter: { kind?: string; itemId?: string }): Promise<number>;
 }
 
 // ── Context ──────────────────────────────────────────────────────────────────
