@@ -39,10 +39,11 @@ export function StudioTour({ open, hasSelection, onClose }: {
     { id: "welcome" },
     { id: "modes",   target: ".studio__modes" },
     { id: "page",    target: ".lay__doc" },
-    { id: "select",  target: ".lay__stage", done: () => hasSelection },
-    { id: "panel",   target: ".lay__rail" },
     { id: "add",     target: ".lay__rail" },
-    { id: "mode",    target: ".lay__mode" },
+    { id: "select",  target: ".lay__stage", done: () => hasSelection },
+    { id: "panel",   target: ".lay__inspector" },
+    // The step id is the old Simple/Advanced one; it now points at the change count.
+    { id: "mode",    target: ".lay__changes" },
     { id: "publish", target: ".studio__publish" },
     { id: "done" },
   ];

@@ -4216,20 +4216,20 @@
       },
       "select": {
         "title": "Clique em algo na página",
-        "body": "A pré-visualização é a sua página real. Clique numa parte para a selecionar: um título, o feed, a navegação.",
+        "body": "A pré-visualização é a sua página real. Clique numa parte para a selecionar. Clique duas vezes num título para escrever por cima dele ali mesmo.",
         "task": "Clique em algo na pré-visualização para continuar."
       },
       "panel": {
-        "title": "As definições aparecem aqui",
-        "body": "Altere as definições, suba ou desça o bloco, ou use Mover para… para o pôr noutro sítio, como a barra lateral. Também pode arrastá-lo na página. Ctrl+Z anula tudo."
+        "title": "As definições estão à direita",
+        "body": "Altere as definições, escolha as colunas de uma secção ou quem vê um bloco. Sem nada selecionado, este lado mostra o seu tema. Ctrl+Z anula tudo."
       },
       "add": {
-        "title": "Adicione mais blocos",
-        "body": "Volte a Blocos para ver tudo o que pode adicionar. Arraste um bloco para a página, ou clique para o adicionar depois do bloco escolhido."
+        "title": "Construa com secções",
+        "body": "Uma página é uma pilha de secções. Arraste uma secção pronta para entre duas secções e depois arraste blocos para as suas colunas. Ao arrastar, uma linha mostra cada sítio possível."
       },
       "mode": {
-        "title": "Simples ou Avançado",
-        "body": "Simples mostra o essencial para começar. Avançado junta camadas, quem vê um bloco, estilos do tema e ícones."
+        "title": "Veja o que alterou",
+        "body": "Aqui conta-se o que a publicação alteraria. Clique para marcar na página cada bloco alterado e repor o que removeu."
       },
       "publish": {
         "title": "Nada fica online até publicar",
@@ -4239,6 +4239,52 @@
         "title": "É isto",
         "body": "Divirta-se a torná-lo seu. Pode rever esta visita a qualquer momento no botão ?."
       }
+    },
+    "sections": {
+      "title": "Secções",
+      "add": "Adicionar",
+      "outline": "Estrutura",
+      "columns": "Colunas",
+      "columnsHint": "Menos colunas não perdem nenhum bloco: passam para a última coluna.",
+      "columnsCustom": "Estas colunas têm larguras próprias. Escolha uma forma para as substituir.",
+      "layout": {
+        "one": "Uma coluna",
+        "half": "Duas colunas",
+        "twoOne": "Duas colunas, larga à esquerda",
+        "oneTwo": "Duas colunas, larga à direita",
+        "three": "Três colunas"
+      },
+      "preset": {
+        "hero": "Destaque",
+        "features": "Três vantagens",
+        "textBlock": "Texto",
+        "callToAction": "Chamada à ação",
+        "emptyOne": "Vazia, uma coluna",
+        "emptyTwo": "Vazia, duas colunas"
+      },
+      "words": {
+        "eyebrow": "Bem-vindo",
+        "title": "Um título para esta secção",
+        "body": "Escreva algo aqui. Clique duas vezes em qualquer texto da página para o alterar.",
+        "featureTitle": "Uma vantagem",
+        "featureBody": "Diga numa frase porque é importante.",
+        "ctaTitle": "Pronto para participar?",
+        "ctaBody": "Diga aos visitantes o que fazer a seguir."
+      },
+      "changedTag": "Alterado",
+      "dropHere": "Largue aqui",
+      "emptyHere": "Largue um bloco aqui",
+      "changes": "{{count}} alteração",
+      "changes_other": "{{count}} alterações",
+      "noChanges": "Sem alterações",
+      "hideChanges": "Ocultar alterações",
+      "removed": "Removido desde a publicação:",
+      "putBack": "Repor",
+      "settingsTitle": "Definições",
+      "themeTitle": "Tema",
+      "themeHint": "Aplica-se a todas as páginas. Clique em algo na página para alterar só isso.",
+      "fixedText": "Escreveu por cima do texto traduzido, por isso este texto é agora igual em todos os idiomas.",
+      "useTranslated": "Usar novamente o texto traduzido"
     }
   },
   "groups": {

@@ -4216,20 +4216,20 @@
       },
       "select": {
         "title": "Cliquez sur un élément de la page",
-        "body": "L'aperçu est votre vraie page. Cliquez sur une partie pour la sélectionner : un titre, le fil, la navigation.",
+        "body": "L'aperçu est votre vraie page. Cliquez sur une partie pour la sélectionner. Double-cliquez sur un titre pour le réécrire directement.",
         "task": "Cliquez sur un élément de l'aperçu pour continuer."
       },
       "panel": {
-        "title": "Ses réglages apparaissent ici",
-        "body": "Modifiez les réglages, montez-le ou descendez-le, ou utilisez Déplacer… pour le mettre ailleurs, comme dans la barre latérale. Vous pouvez aussi le glisser sur la page. Ctrl+Z annule tout."
+        "title": "Ses réglages sont à droite",
+        "body": "Modifiez les réglages, choisissez les colonnes d'une section ou qui voit un bloc. Sans sélection, ce côté affiche votre thème. Ctrl+Z annule tout."
       },
       "add": {
-        "title": "Ajoutez des blocs",
-        "body": "Revenez à Blocs pour voir tout ce que vous pouvez ajouter. Glissez un bloc sur la page, ou cliquez pour l'ajouter après le bloc choisi."
+        "title": "Construire avec des sections",
+        "body": "Une page est une pile de sections. Glissez une section toute prête entre deux sections, puis glissez des blocs dans ses colonnes. Pendant le glisser, une ligne montre chaque endroit possible."
       },
       "mode": {
-        "title": "Simple ou Avancé",
-        "body": "Simple montre l'essentiel pour commencer. Avancé ajoute les calques, qui voit un bloc, les styles du thème et les icônes."
+        "title": "Voyez ce que vous avez changé",
+        "body": "Ici s'affiche ce que la publication changerait. Cliquez pour marquer chaque bloc modifié sur la page et remettre ce que vous avez retiré."
       },
       "publish": {
         "title": "Rien n'est en ligne avant de publier",
@@ -4239,6 +4239,52 @@
         "title": "C'est tout",
         "body": "Amusez-vous à le faire vôtre. Vous pouvez revoir cette visite à tout moment avec le bouton ?."
       }
+    },
+    "sections": {
+      "title": "Sections",
+      "add": "Ajouter",
+      "outline": "Plan",
+      "columns": "Colonnes",
+      "columnsHint": "Moins de colonnes ne retire aucun bloc : ils passent dans la dernière colonne.",
+      "columnsCustom": "Ces colonnes ont des largeurs personnalisées. Choisissez une forme pour les remplacer.",
+      "layout": {
+        "one": "Une colonne",
+        "half": "Deux colonnes",
+        "twoOne": "Deux colonnes, large à gauche",
+        "oneTwo": "Deux colonnes, large à droite",
+        "three": "Trois colonnes"
+      },
+      "preset": {
+        "hero": "Bannière",
+        "features": "Trois atouts",
+        "textBlock": "Texte",
+        "callToAction": "Appel à l'action",
+        "emptyOne": "Vide, une colonne",
+        "emptyTwo": "Vide, deux colonnes"
+      },
+      "words": {
+        "eyebrow": "Bienvenue",
+        "title": "Un titre pour cette section",
+        "body": "Écrivez quelque chose ici. Double-cliquez sur un texte de la page pour le modifier.",
+        "featureTitle": "Un atout",
+        "featureBody": "Dites en une phrase pourquoi il compte.",
+        "ctaTitle": "Prêt à nous rejoindre ?",
+        "ctaBody": "Dites aux visiteurs quoi faire ensuite."
+      },
+      "changedTag": "Modifié",
+      "dropHere": "Déposez ici",
+      "emptyHere": "Déposez un bloc ici",
+      "changes": "{{count}} modification",
+      "changes_other": "{{count}} modifications",
+      "noChanges": "Aucune modification",
+      "hideChanges": "Masquer les modifications",
+      "removed": "Retiré depuis la publication :",
+      "putBack": "Remettre",
+      "settingsTitle": "Réglages",
+      "themeTitle": "Thème",
+      "themeHint": "S'applique à toutes les pages. Cliquez sur un élément de la page pour ne modifier que lui.",
+      "fixedText": "Vous avez remplacé le texte traduit : ce texte est maintenant le même dans toutes les langues.",
+      "useTranslated": "Utiliser à nouveau le texte traduit"
     }
   },
   "groups": {

@@ -6,10 +6,9 @@
  *
  * These two things are one contract: the renderer stamps parentage onto each
  * block's wrapper and the preview bridge navigates by it. Nesting broke exactly
- * this pair — the bridge used to find its drop parent with
- * `closest("[data-xt-region]")` and its siblings with `:scope > [data-xt-block]`,
- * both of which keep working perfectly on a flat document and quietly resolve to
- * the wrong parent and an empty list once anything is nested.
+ * this pair once — the bridge found its siblings with `:scope > [data-xt-block]`,
+ * which keeps working perfectly on a flat document and quietly resolves to an
+ * empty list once anything is nested.
  *
  * So the assertions below run the real bridge functions against DOM the real
  * renderer produced, rather than against a hand-built fixture that could agree
@@ -26,7 +25,7 @@ import { authStore } from "../lib/authStore";
 import { LayoutRegion, LayoutRenderer } from "./LayoutRenderer";
 import { setPreviewAudience } from "./useLayout";
 import { deregisterBlock, registerBlock } from "./blockRegistry";
-import { childrenOf, resolveDropParent } from "./previewBridge";
+import { childrenOf, collectDropSpots, nearestSpot, type DropSpot } from "./previewBridge";
 
 const TEST_TYPES = ["t.box", "t.row", "t.cell", "t.leaf", "t.boom"];
 
@@ -185,67 +184,68 @@ describe("previewBridge — sibling lookup", () => {
   });
 });
 
-describe("previewBridge — drop parent resolution", () => {
-  beforeEach(() => { render(<LayoutRegion document={tree()} region="main" />); });
+/**
+ * Where a drag can land (ADR-0012): every spot is worked out up front and the one
+ * nearest the pointer wins. jsdom has no layout, so the page's geometry is given:
+ *
+ *   region 0–600
+ *     box 0–300        leafIn 10–50, row 60–200 (cell 60–200: deep 70–100)
+ *     leafOut 310–350
+ */
+describe("previewBridge — drop spots", () => {
+  const RECTS: Record<string, [number, number]> = {
+    box: [0, 300], leafIn: [10, 50], row: [60, 200], cell: [60, 200], deep: [70, 100], leafOut: [310, 350],
+  };
+  const rect = (top: number, bottom: number) =>
+    ({ top, bottom, left: 0, right: 400, width: 400, height: bottom - top, x: 0, y: top, toJSON: () => ({}) }) as DOMRect;
 
-  const from = (id: string) => wrapper(id);
+  beforeEach(() => {
+    render(<LayoutRegion document={tree()} region="main" />);
+    vi.spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(function (this: Element) {
+      const el = this as HTMLElement;
+      if (el.dataset.xtRegion && !el.dataset.xtBlock) return rect(0, 600);
+      const owner = el.parentElement?.dataset.xtBlock;
+      const r = owner ? RECTS[owner] : undefined;
+      return r ? rect(r[0], r[1]) : rect(0, 0);
+    });
+  });
+  afterEach(() => { vi.restoreAllMocks(); });
 
-  it("resolves a leaf's own container, not the outer region", () => {
-    // The original bug: `closest("[data-xt-region]")` returned the region here,
-    // so dragging inside a section reordered the region instead.
-    const hit = resolveDropParent(from("leafIn"), "t.leaf", null);
-    expect(hit?.parentId).toBe("box");
-    expect(hit?.region).toBe("main");
+  const where = (s: DropSpot | null) => s && `${s.parentId ?? "region"}:${s.afterId ?? "-"}>${s.beforeId ?? "-"}`;
+
+  it("offers every list that takes the block, and none that refuses it", () => {
+    const spots = collectDropSpots("t.leaf", null, null);
+    const parents = new Set(spots.map((s) => s.parentId ?? "region"));
+    expect([...parents].sort()).toEqual(["box", "cell", "region"]);
+    // `t.row` takes only cells, so nothing is offered between its tracks.
+    expect(spots.some((s) => s.parentId === "row")).toBe(false);
   });
 
-  it("resolves the region for a block sitting in it", () => {
-    expect(resolveDropParent(from("leafOut"), "t.leaf", null)?.parentId).toBeNull();
+  it("picks the line nearest the pointer, inside the list it is in", () => {
+    const spots = collectDropSpots("t.leaf", null, null);
+    expect(where(nearestSpot(spots, 200, 55))).toBe("box:leafIn>row");
+    expect(where(nearestSpot(spots, 200, 305))).toBe("region:box>leafOut");
+    expect(where(nearestSpot(spots, 200, 345))).toBe("region:leafOut>-");
   });
 
-  it("resolves the deepest container for a deeply nested block", () => {
-    expect(resolveDropParent(from("deep"), "t.leaf", null)?.parentId).toBe("cell");
+  it("goes nowhere when the pointer is far from every spot", () => {
+    expect(nearestSpot(collectDropSpots("t.leaf", null, null), 2000, 2000)).toBeNull();
   });
 
-  it("aims INSIDE a hovered container", () => {
-    // Documented consequence: the preview cannot place a sibling next to a
-    // container. The tree addresses every level explicitly and covers that.
-    expect(resolveDropParent(from("box"), "t.leaf", null)?.parentId).toBe("box");
+  it("never offers a spot inside the moving block, or either side of it", () => {
+    const spots = collectDropSpots("t.box", wrapper("box"), null);
+    expect(spots.map(where)).toEqual(["region:leafOut>-"]);
   });
 
-  it("walks past a container that refuses the dragged type", () => {
-    // A `t.row` accepts only `t.cell`, so a leaf dragged over it lands in the
-    // row's own parent rather than nowhere.
-    expect(resolveDropParent(from("row"), "t.leaf", null)?.parentId).toBe("box");
-  });
-
-  it("honours a child that may only live in one container", () => {
-    // `t.cell` declares onlyInside: ["t.row"], so the box refuses it, the region
-    // refuses it too, and the walk runs out — there is no legal home, and saying
-    // so is better than dropping it somewhere it may not be.
-    expect(resolveDropParent(from("leafIn"), "t.cell", null)).toBeNull();
-    expect(resolveDropParent(from("row"), "t.cell", null)?.parentId).toBe("row");
-  });
-
-  it("never resolves to the dragged block itself", () => {
-    const hit = resolveDropParent(from("box"), "t.box", wrapper("box"));
-    expect(hit?.parentId).toBeNull(); // skipped itself, landed in the region
-  });
-
-  it("never resolves into the dragged block's own subtree", () => {
-    // The cycle: box would end up inside cell, which is inside box.
-    const hit = resolveDropParent(from("deep"), "t.box", wrapper("box"));
-    expect(hit?.parentId).toBeNull();
-  });
-
-  it("returns null outside any region", () => {
-    expect(resolveDropParent(document.body, "t.leaf", null)).toBeNull();
+  it("keeps a section between sections", () => {
+    const spots = collectDropSpots("section", null, null);
+    expect(spots.length).toBeGreaterThan(0);
+    expect(spots.every((s) => s.parentId === null)).toBe(true);
   });
 
   it("never aims into another document on the page", () => {
-    // The page also renders the site header and footer, which are other documents;
-    // a drop meant for the open one must not land in a region it does not have.
-    expect(resolveDropParent(from("leafIn"), "t.leaf", null, "chrome.header")).toBeNull();
-    expect(resolveDropParent(from("leafIn"), "t.leaf", null, "home")?.parentId).toBe("box");
+    expect(collectDropSpots("t.leaf", null, "chrome.header")).toEqual([]);
+    expect(collectDropSpots("t.leaf", null, "home").length).toBeGreaterThan(0);
   });
 });
 
@@ -255,7 +255,7 @@ describe("previewBridge — drop parent resolution", () => {
  * type with `dragNew`, and the drop comes back as `insert` in the editor's terms.
  */
 describe("previewBridge — a new block from the library", () => {
-  const messages: { type?: string; blockType?: string; region?: string; parentId?: string | null; index?: number }[] = [];
+  const messages: { type?: string; blockType?: string; region?: string; parentId?: string | null; index?: number; afterId?: string | null; beforeId?: string | null }[] = [];
   const onMessage = (e: MessageEvent) => { if (e.data?.source === "xt-preview") messages.push(e.data); };
   let teardown: () => void = () => {};
 
@@ -273,14 +273,23 @@ describe("previewBridge — a new block from the library", () => {
   const settle = () => new Promise((r) => setTimeout(r, 0));
   const drag = (type: string, el: Element) => el.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true }));
 
-  it("drops an announced block into the container under the pointer", async () => {
+  it("drops an announced block on the spot nearest the pointer", async () => {
+    // The gap between leafIn and the row, inside box (see "drop spots" above).
+    const RECTS: Record<string, [number, number]> = { box: [0, 300], leafIn: [10, 50], row: [60, 200], cell: [60, 200], deep: [70, 100], leafOut: [310, 350] };
+    vi.spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(function (this: Element) {
+      const el = this as HTMLElement;
+      const r = el.dataset.xtRegion && !el.dataset.xtBlock ? [0, 600] : RECTS[el.parentElement?.dataset.xtBlock ?? ""] ?? [0, 0];
+      return { top: r[0], bottom: r[1], left: 0, right: 400, width: 400, height: r[1]! - r[0]!, x: 0, y: r[0], toJSON: () => ({}) } as DOMRect;
+    });
     editor({ type: "document", templateKey: "home", document: tree() });
     editor({ type: "dragNew", blockType: "t.leaf" });
-    drag("dragover", wrapper("leafIn").firstElementChild!);
-    drag("drop", wrapper("leafIn").firstElementChild!);
+    const at = wrapper("leafIn").firstElementChild!;
+    at.dispatchEvent(new MouseEvent("dragover", { bubbles: true, cancelable: true, clientX: 200, clientY: 55 }));
+    at.dispatchEvent(new MouseEvent("drop", { bubbles: true, cancelable: true, clientX: 200, clientY: 55 }));
     await settle();
+    vi.restoreAllMocks();
     const insert = messages.find((m) => m.type === "insert");
-    expect(insert).toMatchObject({ blockType: "t.leaf", region: "main", parentId: "box" });
+    expect(insert).toMatchObject({ blockType: "t.leaf", region: "main", parentId: "box", afterId: "leafIn", beforeId: "row" });
   });
 
   it("does nothing for a drag nobody announced", async () => {
@@ -436,7 +445,7 @@ describe("LayoutRenderer — region order", () => {
   };
 
   // `:not([data-xt-block])` because block wrappers carry `data-xt-region` too —
-  // the same distinction the preview bridge's DROP_PARENT selector has to make.
+  // the same distinction the preview bridge's drop spots have to make.
   const domOrder = () =>
     [...document.querySelectorAll("[data-xt-region]:not([data-xt-block])")]
       .map((el) => (el as HTMLElement).dataset.xtRegion);
@@ -514,7 +523,7 @@ describe("LayoutRenderer — the live site gets no addressing nodes", () => {
     render(<LayoutRegion document={empty} region="main" />);
     const ph = document.querySelector(".xt-region--empty") as HTMLElement;
     expect(ph).not.toBeNull();
-    // `data-xt-region` makes it a legal drop target for DROP_PARENT; `data-xt-empty`
+    // `data-xt-region` makes it a legal drop target for the bridge's drop spots; `data-xt-empty`
     // is what the bridge reads to ask the editor to open the add picker.
     expect(ph.dataset.xtRegion).toBe("main");
     expect(ph.dataset.xtEmpty).toBe("main");

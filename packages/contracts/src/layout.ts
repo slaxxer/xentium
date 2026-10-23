@@ -1028,6 +1028,8 @@ export type LayoutDocument = z.infer<typeof layoutDocumentSchema>;
 export interface LayoutDraftResponse {
   document: LayoutDocument;
   version: string | null;
+  /** What is live for the same selector; sent by `GET`, for the editor's change marks. */
+  published?: LayoutDocument;
 }
 
 // ── Core block prop contracts ───────────────────────────────────────────────
