@@ -125,9 +125,25 @@ describe("renderEmailBody", () => {
 
   it("puts editor content inside the frame with the brand line", () => {
     const html = renderEmailBody("<p>Hello</p>", vars);
-    expect(html.startsWith("<div style=")).toBe(true);
+    expect(html.startsWith("<table ")).toBe(true);
     expect(html).toContain(">Acme</span>");
     expect(html).toContain("Hello</p>");
+  });
+
+  it("paints its own page and card, so a dark-mode client can't put dark text on black", () => {
+    const html = renderEmailBody("<p>Hello</p>", vars);
+    expect(html).toContain(`bgcolor="#f1f1f6"`);
+    expect(html).toContain(`bgcolor="#ffffff"`);
+    expect(html).toMatch(/color:#0d0d22">Acme<\/span>/);
+  });
+
+  it("names the site under the card, linking only a safe address", () => {
+    const linked = renderEmailBody("<p>x</p>", { ...vars, site_url: "https://acme.test" });
+    expect(linked).toContain(`Acme · <a href="https://acme.test"`);
+    expect(linked).toContain(">acme.test</a>");
+    const unsafe = renderEmailBody("<p>x</p>", { ...vars, site_url: "javascript:alert(1)" });
+    expect(unsafe).not.toContain("javascript:");
+    expect(unsafe).not.toContain("Acme · <a");
   });
 
   it("styles the tags the editor writes, keeping their own alignment", () => {

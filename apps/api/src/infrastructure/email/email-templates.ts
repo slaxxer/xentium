@@ -44,11 +44,30 @@ export interface EmailTemplateDef {
  *
  * Buttons and the code box are placeholders (`{{reset_button}}`, `{{code_box}}`):
  * markup no editor should be asked to author, rendered from their value here.
+ *
+ * The frame paints its OWN background: a white card on a grey page, as tables with
+ * `bgcolor`, which every client honours. Without it a dark-mode client (iCloud,
+ * Gmail, Outlook) puts its own near-black behind our dark text and the mail is
+ * unreadable; the colours below assume the white card.
  */
+const FONT = "font-family:system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
 const FRAME_OPEN =
-  `<div style="font-family:system-ui,sans-serif;max-width:480px;margin:0 auto;padding:32px 24px">` +
-  `<div style="margin-bottom:24px"><span style="font-size:20px;font-weight:800;letter-spacing:-0.03em">{{site_name}}</span></div>`;
-const FRAME_CLOSE = `</div>`;
+  `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f1f1f6" style="background-color:#f1f1f6;color-scheme:light;${FONT}">` +
+  `<tr><td align="center" style="padding:32px 16px">` +
+  `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff" style="max-width:520px;background-color:#ffffff;border:1px solid #e7e7f1;border-top:4px solid #7c6af7;border-radius:12px">` +
+  `<tr><td style="padding:28px 32px 12px">` +
+  `<div style="margin-bottom:24px"><span style="font-size:20px;font-weight:800;letter-spacing:-0.03em;color:#0d0d22">{{site_name}}</span></div>`;
+
+/** Closes the card; below it, the site's name and address in small grey type. */
+function frameClose(vars: Record<string, string | undefined>): string {
+  const url = vars.site_url && isSafeUrl(vars.site_url) ? vars.site_url : "";
+  const site = url
+    ? `{{site_name}} · <a href="{{site_url}}" style="color:#8a8aa8;text-decoration:underline">${escapeHtml(url.replace(/^https?:\/\//i, ""))}</a>`
+    : "{{site_name}}";
+  return `</td></tr></table>` +
+    `<div style="max-width:520px;margin:0 auto;padding:16px 8px 0;font-size:12px;line-height:1.5;color:#8a8aa8;text-align:center">${site}</div>` +
+    `</td></tr></table>`;
+}
 
 /** What each template can use; the texts themselves live in `locales/<lng>/email.json`. */
 const PLACEHOLDERS: Record<EmailTemplateKey, readonly string[]> = {
@@ -82,7 +101,7 @@ export function isLegacyBody(body: string): boolean {
   return /^\s*<div\s+style=/i.test(body);
 }
 
-/** Inline styles for what the editor writes; email clients ignore <style> blocks. */
+/** Inline styles for what the editor writes; Gmail ignores <style> blocks, so every tag carries its own. */
 const CONTENT_STYLES: Record<string, string> = {
   h1: "font-size:24px;font-weight:700;margin:0 0 10px;color:#0d0d22",
   h2: "font-size:20px;font-weight:700;margin:0 0 10px;color:#0d0d22",
@@ -134,7 +153,7 @@ function blockVars(vars: Record<string, string | undefined>, locale: ServerLocal
 export function renderEmailBody(body: string, vars: Record<string, string | undefined>, locale: ServerLocale = "en"): string {
   const all = { ...blockVars(vars, locale), ...vars };
   if (isLegacyBody(body)) return substitutePlaceholders(body, all);
-  return substitutePlaceholders(FRAME_OPEN + styleContent(unwrapBlockPlaceholders(body)) + FRAME_CLOSE, all);
+  return substitutePlaceholders(FRAME_OPEN + styleContent(unwrapBlockPlaceholders(body)) + frameClose(all), all);
 }
 
 export function escapeHtml(s: string): string {
