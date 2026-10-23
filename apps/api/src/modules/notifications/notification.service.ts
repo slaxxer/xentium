@@ -1,7 +1,7 @@
 import { prisma } from "../../infrastructure/db.js";
 import { env } from "../../config/env.js";
 import { queues } from "../../infrastructure/queue.js";
-import { renderEmailTemplate, renderLinkButton, siteVars } from "../../infrastructure/email/email-templates.js";
+import { renderEmailTemplate, siteVars } from "../../infrastructure/email/email-templates.js";
 import { notificationRepository } from "./notification.repository.js";
 import type { DispatchOptions, NotificationPreferenceResolved } from "./notification.types.js";
 import { primaryGroupOrder } from "../../shared/utils/userRef.js";
@@ -106,7 +106,7 @@ export const notificationService = {
           title:       text.title,
           body:        text.body,
           link_url:    opts.link,
-          link_button: renderLinkButton(opts.link, serverText(locale, "email", "buttons.view")),
+          link_label:  serverText(locale, "email", "buttons.view"),
         }, locale);
 
         await queues.emailNotification.add("email-notification", {

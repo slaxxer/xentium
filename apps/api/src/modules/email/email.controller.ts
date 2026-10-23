@@ -4,6 +4,7 @@ import {
   templateKeyParamSchema,
   saveTemplateSchema,
   testSendSchema,
+  emailDesignSchema,
 } from "./email.validation.js";
 import { recipientLocale, requestLocaleHint } from "../../shared/i18n/serverText.js";
 
@@ -37,6 +38,19 @@ export const emailController = {
     const { to, key } = testSendSchema.parse(req.body);
     // In the admin's own language, as the untouched template would reach them.
     res.json(await emailAdminService.sendTest(to, key, await recipientLocale({ userId: req.userId, hint: requestLocaleHint(req) })));
+  }) as RequestHandler,
+
+  getDesign: (async (_req, res) => {
+    res.json(await emailAdminService.getDesign());
+  }) as RequestHandler,
+
+  saveDesign: (async (req, res) => {
+    res.json(await emailAdminService.saveDesign(emailDesignSchema.parse(req.body)));
+  }) as RequestHandler,
+
+  previewDesign: (async (req, res) => {
+    const design = emailDesignSchema.parse(req.body);
+    res.json(await emailAdminService.previewDesign(design, await recipientLocale({ userId: req.userId, hint: requestLocaleHint(req) })));
   }) as RequestHandler,
 
   smtpStatus: (async (_req, res) => {
