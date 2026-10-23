@@ -14,6 +14,7 @@ You get:
 - **Files and images**, checked and cleaned, with sizes made for you.
 - **People and time**: members named the way core names them, birthdays as members allow,
   and the site's time zone.
+- **Notifications members control**, **rate limits** and a **cache**.
 - **The browser side**: pages, slots, an upload component and typed host members.
 
 Everything here is part of the 1.x promise in [versioning](./versioning.md): we only add to
@@ -352,6 +353,49 @@ viewer or whom the viewer blocked. It is the only way your plugin should learn a
 
 `host.time` works in the site's time zone from ACP → System Settings. When the site shows
 each visitor their own zone, there is no site zone on the server and these use UTC.
+
+## Notifications
+
+Send a notification with `ctx.notify({ userId, type, title, body, link, channels })`, and
+declare each type you send, so members can switch it off in Account → Notifications:
+
+```ts
+ctx.registerNotificationTypes([
+  { type: "gallery.comment", label: "mygallery:notify.comment", description: "mygallery:notify.commentHint" },
+  { type: "gallery.review", label: "mygallery:notify.review", email: false, permission: "mygallery.moderate" },
+]);
+```
+
+Each type gets an in-app switch, and an email switch unless you set `email: false` (email is
+off until the member turns it on). A type with a `permission` only shows to members who hold
+it, for notifications only staff receive. A type you never declare cannot be switched off, so
+declare every one. Types may not start with core's own prefixes (`social.`, `profile.`,
+`mention.`, `article.`, `progression.`, `badge.`, `system.`, `license.`, `mod.`).
+
+## Rate limits and cache
+
+Anything members can post needs a limit. `host.limits` counts on the site's Redis, so a limit
+holds across every process:
+
+```ts
+const perMember = host.limits.middleware("comment", { windowSec: 60, max: 10 });   // after requireAuth
+router.post("/comments", host.middleware.requireAuth, perMember, createComment);
+
+const { ok, retryAfterSec } = await host.limits.check("vote", userId, { windowSec: 3600, max: 50 });
+```
+
+Over a limit, a route answers `429` with a Retry-After header. Create middleware once in
+`onEnable`, not per request; `by: "ip"` counts per address, for routes guests can use.
+
+`host.cache` keeps small values for a while, as JSON:
+
+```ts
+const top = await host.cache.remember("top-photos", 300, () => loadTopPhotos());
+await host.cache.del("top-photos");
+```
+
+Keys belong to your plugin alone; no other plugin can read or clear them. Uninstalling your
+plugin with its data removes them.
 
 ## The browser side
 
