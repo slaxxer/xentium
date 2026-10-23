@@ -47,6 +47,10 @@ This release fixes two security problems. Please update.
   season.
 - **Keeping your site safe** is now part of our security policy: why to update, how backups
   and rollback work, and what an installed plugin can do on your site.
+- **What each version promises.** From 1.0.0 on, Xentium follows semantic versioning: fixes
+  (security fixes included) in patch releases, new features in minor releases, and breaking
+  changes only in a major release, after a deprecation. The new versioning guide says what
+  the promise covers, for sites, themes and plugins.
 - **The article editor's own search fields are gone.** How an article appears in search
   results is now up to an add-on that handles search appearance.
 
