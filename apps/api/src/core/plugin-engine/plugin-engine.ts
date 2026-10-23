@@ -23,6 +23,7 @@ import { pluginRouter } from "./plugin-router.js";
 import { deregisterEvents, emit } from "../events/events.js";
 import { deregisterJobs, dropPluginJobs, stopPluginSchedules } from "../plugin-platform/jobs.js";
 import { deregisterSettings } from "../plugin-platform/settings.js";
+import { deregisterResources } from "../plugin-platform/resources.js";
 
 const PLUGIN_STORE = path.join(env.UPLOAD_DIR, "plugins");
 
@@ -411,6 +412,7 @@ async function deregisterInProcess(pluginId: string): Promise<void> {
   deregisterEvents(pluginId);
   deregisterJobs(pluginId);
   deregisterSettings(pluginId);
+  deregisterResources(pluginId);
   loadedVersions.delete(pluginId);
 }
 
