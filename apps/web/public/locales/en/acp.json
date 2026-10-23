@@ -2626,7 +2626,9 @@
         "queued": "Waiting for the updater on your server to pick it up.",
         "running": "Don't stop the server. The site is offline for the minute it restarts.",
         "done": "Everything went through. The previous release stays on the server, so you can roll back from Migration History.",
-        "failed": "Something failed, so we put everything back the way it was. Your site runs {{from}}."
+        "failed": "Something failed, so we put everything back the way it was. Your site runs {{from}}.",
+        "confirmRollback": "The site goes back to the release it ran before this update. Once it runs you can close this.",
+        "doneRollback": "You're back on {{version}}. Reload the panel to load its version of the ACP. The newer release stays on the server."
       },
       "loading": "Loading…",
       "close": "Close",
@@ -2734,7 +2736,16 @@
       "stalledNote": "The updater hasn't reported for a while. Check it on the server: journalctl -u xentium-updater",
       "rollbackTo": "Roll back to {{version}}",
       "rollbackNote": "Switches back to {{version}}. The database stays as it is.",
-      "rollbackConfirm": "Roll back"
+      "rollbackConfirm": "Roll back",
+      "rollbackPromise": {
+        "switch": "We switch back",
+        "switchDesc": "{{version}} is still on the server and runs again.",
+        "database": "Your database stays as it is",
+        "databaseDesc": "Nothing is deleted. A full undo means restoring the update's backup by hand.",
+        "restart": "We restart the site",
+        "restartDesc": "It's offline for a few seconds."
+      },
+      "reauthDescRollback": "Rolling back replaces the code your site runs, so we ask for your password again."
     }
   },
   "license": {

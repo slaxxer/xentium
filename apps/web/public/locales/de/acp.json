@@ -2626,7 +2626,9 @@
         "queued": "Wartet darauf, dass der Updater auf deinem Server es übernimmt.",
         "running": "Halte den Server nicht an. Die Seite ist für die Minute des Neustarts offline.",
         "done": "Alles hat geklappt. Die vorige Version bleibt auf dem Server, du kannst sie unter Migrationsverlauf zurückholen.",
-        "failed": "Etwas ist schiefgegangen, deshalb haben wir alles wiederhergestellt. Deine Seite läuft mit {{from}}."
+        "failed": "Etwas ist schiefgegangen, deshalb haben wir alles wiederhergestellt. Deine Seite läuft mit {{from}}.",
+        "confirmRollback": "Die Seite kehrt zum Release zurück, das vor diesem Update lief. Sobald es läuft, kannst du das schließen.",
+        "doneRollback": "Du bist wieder auf {{version}}. Lade das Panel neu, um dessen Version des ACP zu laden. Das neuere Release bleibt auf dem Server."
       },
       "loading": "Lädt…",
       "close": "Schließen",
@@ -2734,7 +2736,16 @@
       "stalledNote": "Der Updater hat sich länger nicht gemeldet. Prüfe ihn auf dem Server: journalctl -u xentium-updater",
       "rollbackTo": "Zurück auf {{version}}",
       "rollbackNote": "Wechselt zurück auf {{version}}. Die Datenbank bleibt, wie sie ist.",
-      "rollbackConfirm": "Zurücksetzen"
+      "rollbackConfirm": "Zurücksetzen",
+      "rollbackPromise": {
+        "switch": "Wir wechseln zurück",
+        "switchDesc": "{{version}} liegt noch auf dem Server und läuft wieder.",
+        "database": "Deine Datenbank bleibt, wie sie ist",
+        "databaseDesc": "Nichts wird gelöscht. Für ein vollständiges Rückgängigmachen spielst du die Sicherung des Updates von Hand ein.",
+        "restart": "Wir starten die Seite neu",
+        "restartDesc": "Sie ist ein paar Sekunden offline."
+      },
+      "reauthDescRollback": "Ein Rollback ersetzt den Code, den deine Seite ausführt, deshalb fragen wir noch einmal nach deinem Passwort."
     }
   },
   "license": {

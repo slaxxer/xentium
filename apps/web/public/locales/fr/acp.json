@@ -2626,7 +2626,9 @@
         "queued": "En attente que le programme de mise à jour de votre serveur la prenne en charge.",
         "running": "N'arrêtez pas le serveur. Le site est hors ligne pendant la minute du redémarrage.",
         "done": "Tout s'est bien passé. La version précédente reste sur le serveur ; vous pouvez y revenir depuis l'historique des migrations.",
-        "failed": "Quelque chose a échoué, nous avons donc tout remis en l'état. Votre site tourne sur {{from}}."
+        "failed": "Quelque chose a échoué, nous avons donc tout remis en l'état. Votre site tourne sur {{from}}.",
+        "confirmRollback": "Le site revient à la version qu'il utilisait avant cette mise à jour. Une fois lancé, vous pouvez fermer ceci.",
+        "doneRollback": "Vous êtes de retour sur {{version}}. Rechargez le panneau pour charger sa version de l'ACP. La version plus récente reste sur le serveur."
       },
       "loading": "Chargement…",
       "close": "Fermer",
@@ -2734,7 +2736,16 @@
       "stalledNote": "Le programme de mise à jour n'a rien signalé depuis un moment. Vérifiez-le sur le serveur : journalctl -u xentium-updater",
       "rollbackTo": "Revenir à {{version}}",
       "rollbackNote": "Revient à {{version}}. La base de données reste telle quelle.",
-      "rollbackConfirm": "Revenir en arrière"
+      "rollbackConfirm": "Revenir en arrière",
+      "rollbackPromise": {
+        "switch": "Nous revenons en arrière",
+        "switchDesc": "{{version}} est toujours sur le serveur et tourne de nouveau.",
+        "database": "Votre base de données reste telle quelle",
+        "databaseDesc": "Rien n'est supprimé. Pour tout annuler, restaurez la sauvegarde de la mise à jour à la main.",
+        "restart": "Nous redémarrons le site",
+        "restartDesc": "Il est hors ligne quelques secondes."
+      },
+      "reauthDescRollback": "Revenir en arrière remplace le code exécuté par votre site, nous vous redemandons donc votre mot de passe."
     }
   },
   "license": {

@@ -2626,7 +2626,9 @@
         "queued": "Esperando a que el actualizador de tu servidor la recoja.",
         "running": "No detengas el servidor. El sitio está fuera de línea el minuto que tarda en reiniciarse.",
         "done": "Todo salió bien. La versión anterior sigue en el servidor y puedes volver a ella desde el Historial de migraciones.",
-        "failed": "Algo falló, así que lo dejamos todo como estaba. Tu sitio funciona con {{from}}."
+        "failed": "Algo falló, así que lo dejamos todo como estaba. Tu sitio funciona con {{from}}.",
+        "confirmRollback": "El sitio vuelve a la versión que usaba antes de esta actualización. Cuando empiece, puedes cerrar esto.",
+        "doneRollback": "Has vuelto a {{version}}. Recarga el panel para cargar su versión del ACP. La versión más nueva sigue en el servidor."
       },
       "loading": "Cargando…",
       "close": "Cerrar",
@@ -2734,7 +2736,16 @@
       "stalledNote": "El actualizador lleva rato sin informar. Revísalo en el servidor: journalctl -u xentium-updater",
       "rollbackTo": "Volver a {{version}}",
       "rollbackNote": "Vuelve a {{version}}. La base de datos se queda como está.",
-      "rollbackConfirm": "Volver atrás"
+      "rollbackConfirm": "Volver atrás",
+      "rollbackPromise": {
+        "switch": "Volvemos atrás",
+        "switchDesc": "{{version}} sigue en el servidor y vuelve a funcionar.",
+        "database": "Tu base de datos queda como está",
+        "databaseDesc": "No se borra nada. Para deshacerlo del todo, restaura a mano la copia de seguridad de la actualización.",
+        "restart": "Reiniciamos el sitio",
+        "restartDesc": "Estará sin conexión unos segundos."
+      },
+      "reauthDescRollback": "Volver atrás reemplaza el código que ejecuta tu sitio, así que te pedimos la contraseña otra vez."
     }
   },
   "license": {
