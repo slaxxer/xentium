@@ -133,7 +133,7 @@ offers a drop, so it never shows a drop target that would be refused. Core's
 tracks is the number of `column` children. A number that repeats what the tree already
 says will sooner or later disagree with it.
 
-**Nesting has a limit:** `MAX_BLOCK_DEPTH` is 5 (a region's own blocks count as 1). The
+**Nesting has a limit:** `MAX_BLOCK_DEPTH` is 8 (a region's own blocks count as 1). The
 editor enforces it, and so does every save, because a stored document didn't
 necessarily come from the editor.
 
@@ -275,6 +275,42 @@ Keep it **optional, without a default**. No value means no icon. A default would
 icon on every instance anyone ever creates.
 
 More in [Icons](icon-kits.md).
+
+## How the editor arranges your block
+
+Theme Studio shows a page as a stack of **sections**. A section has one to three
+columns, and blocks go into the columns. Your block needs nothing special for this:
+
+- **A block** can be dragged into any column, section or container that accepts it.
+  While an admin drags, the editor draws a line at every place it can go and drops it
+  on the line nearest the pointer.
+- **A section (or a `columns` row) only goes between sections.** If your container is
+  a section-like band, give admins a `section` with your block inside rather than a
+  container of your own, so it behaves like every other section.
+- **Your containers still take drops**, by the same `childTypes` and `onlyInside`
+  rules as before. On a page they show as one group that moves as a whole, with their
+  contents listed in the Outline tab.
+
+### Text admins can type over
+
+An admin can double-click text on the page and type over it. A block opts in by
+putting `data-xt-inline="<prop>"` on the element that shows exactly one prop's text,
+and nothing else:
+
+```tsx
+component: ({ props }) => (
+  <div className="mp-banner">
+    <h2 data-xt-inline="title">{props.title}</h2>
+    <p data-xt-inline="subtitle">{props.subtitle}</p>
+  </div>
+),
+```
+
+The prop has to be a plain string (or a `LocalizedText`) in your schema; the editor
+ignores names your schema doesn't have. When the element also holds an icon or a
+count, wrap just the text in a `<span>` and mark that. Don't mark text that you fill in
+from data (a member count, the site name), since typing over it would replace the live
+value with a fixed one. The attribute does nothing on the live site.
 
 ## CSS handles
 
