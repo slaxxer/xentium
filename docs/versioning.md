@@ -56,7 +56,9 @@ release contains one. See [the security policy](../SECURITY.md) for keeping a si
 A plugin names the core it needs with `minXentiumVersion` (and, if it must,
 `maxXentiumVersion`) in its manifest:
 
-- `"1.0"` means any 1.x release. Use this unless you need something newer.
+- `"1.0.0"` means any 1.x release, its release candidates included. Xentium begins at
+  1.0.0, so this is the lowest version there is and the one to use unless you need
+  something newer.
 - `"1.2.0"` means 1.2.0 or newer. Use it when your plugin needs something 1.2 added.
 - A version with a pre-release part (`"1.0.0-rc.2"`) means exactly that pre-release or
   newer.

@@ -635,7 +635,7 @@ We validate **`manifest.json`** on install:
   "name": "My Plugin",
   "version": "1.0.0",
   "vendor": "Acme",
-  "minXentiumVersion": "1.0",
+  "minXentiumVersion": "1.0.0",
   "licenseRequired": false,
   "tablePrefix": "myplugin_",
   "permissions": ["myplugin.thing.create"],
