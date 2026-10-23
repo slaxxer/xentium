@@ -10,8 +10,13 @@ describe("the environment rows", () => {
 
   it("passes Node 22.12 with a warning, and 24 cleanly", () => {
     expect(nodeRow("22.12.0")).toMatchObject({ ok: true, warn: true });
-    expect(nodeRow("24.1.0")).toMatchObject({ ok: true });
-    expect(nodeRow("24.1.0").warn).toBeUndefined();
+    expect(nodeRow("24.22.1")).toMatchObject({ ok: true });
+    expect(nodeRow("24.22.1").warn).toBeUndefined();
+  });
+
+  it("warns about a Node that misses security fixes", () => {
+    expect(nodeRow("22.22.1")).toMatchObject({ ok: true, warn: true });
+    expect(nodeRow("22.22.1").detail).toContain("update to 22.23.4");
   });
 
   it("warns on Postgres 14 to 16, refuses below 14", () => {

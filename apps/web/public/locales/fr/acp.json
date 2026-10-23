@@ -868,6 +868,12 @@
         "cause": "DEMO_MODE=true dans l'environnement du serveur.",
         "fix": "Rien à corriger sur une démo. Sur votre propre installation, laissez DEMO_MODE non défini."
       },
+      "XEC-API-4150": {
+        "msg": "Requête compressée refusée",
+        "desc": "Le corps de la requête a été envoyé compressé (gzip, deflate ou Brotli). L'API n'accepte que des corps non compressés, afin que des données compressées ne soient jamais décompressées.",
+        "cause": "Un client ou un script a ajouté un en-tête Content-Encoding à sa requête.",
+        "fix": "Envoyez le corps sans compression. Les navigateurs et la CLI Xentium le font déjà."
+      },
       "XEC-API-4004": {
         "msg": "Introuvable",
         "desc": "La ressource demandée n'existe pas.",

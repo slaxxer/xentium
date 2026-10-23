@@ -2,6 +2,7 @@
   "XEC-API-4001": "Please check your input and try again.",
   "XEC-API-4003": "You don't have permission to do that.",
   "XEC-API-4031": "This is disabled in the demo.",
+  "XEC-API-4150": "Compressed requests are not accepted.",
   "XEC-API-4004": "Not found.",
   "XEC-API-4290": "Too many requests. Please wait and try again.",
   "XEC-API-5000": "Something went wrong. Please try again.",
