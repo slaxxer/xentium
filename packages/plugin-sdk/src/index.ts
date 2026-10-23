@@ -672,6 +672,91 @@ export interface PluginTime {
   dayKey(date?: Date): Promise<string>;
 }
 
+// ── Resources (core 1.0.0) ──────────────────────────────────────────────────
+
+/**
+ * Who may do something with a resource:
+ *  - `"public"`: anyone, guests too (reading only);
+ *  - `"members"`: any signed-in member;
+ *  - `"own"`: the row's owner (needs `owner`), and managers;
+ *  - any other string: holders of that permission key (declare it with `registerPermissions`).
+ */
+export type ResourceAccess = "public" | "members" | "own" | (string & {});
+
+export interface ResourceHookContext {
+  /** Who is acting (always set for writes). */
+  userId: string | null;
+  /** Ask whether the actor holds a permission. */
+  can(permission: string): Promise<boolean>;
+}
+
+/**
+ * Your data, with endpoints from core. Create the table in a migration (it must carry
+ * your `tablePrefix`), describe it here, and core serves it at `/api/p/<pluginId>/<name>`:
+ *
+ *   GET /<name>?page&limit&sort=field|-field&<filter field>=value&q=search&deleted=1
+ *   GET /<name>/:id · POST /<name> · PATCH /<name>/:id · DELETE /<name>/:id · POST /<name>/:id/restore
+ *
+ * with validation (unknown keys refused), permission and ownership checks,
+ * pagination (`{ data, meta }`), soft delete, and events
+ * `<pluginId>.<name>.created|updated|deleted|restored` (`{ id, userId }`).
+ *
+ * The table needs an `id` column (text or uuid; core fills it), one column per schema
+ * field (camelCase field → snake_case column unless `columns` says otherwise), and:
+ * the `owner` column if set; `created_at` (and optionally `updated_at`) unless
+ * `timestamps: false`; `deleted_at` with `softDelete`. Core checks all of it when
+ * your plugin enables, and refuses to enable it when something is missing.
+ *
+ * Your own routes (`registerRoutes`) answer first, so you can replace any of these
+ * for something special; leave the rest to core.
+ */
+export interface PluginResourceDeclaration<S = any> {
+  /** The URL segment: a-z, 0-9, `-`. */
+  name: string;
+  /** Your table; must start with your `tablePrefix`. */
+  table: string;
+  /** The fields clients write, as a Zod object. Use `z.coerce.date()` for times. */
+  schema: S;
+  /** Column per field where it is not the field in snake_case. */
+  columns?: Record<string, string>;
+  /** Default "id". */
+  idColumn?: string;
+  /** The column holding the owner's user id; set on create. Enables "own". */
+  owner?: string;
+  /** created_at / updated_at, kept by core. Default true. */
+  timestamps?: boolean;
+  /** Delete sets deleted_at; managers see and restore deleted rows. */
+  softDelete?: boolean;
+  access: {
+    read: ResourceAccess;
+    create: Exclude<ResourceAccess, "public" | "own">;
+    update: Exclude<ResourceAccess, "public">;
+    delete: Exclude<ResourceAccess, "public">;
+    /** A permission that may do everything to every row, see deleted rows and restore them. */
+    manage?: string;
+  };
+  /** Fields a list may sort by (`createdAt` always may, with timestamps). */
+  sort?: string[];
+  /** Fields a list may filter on, by equality: `?field=value`. */
+  filter?: string[];
+  /** Fields `?q=` searches in. */
+  search?: string[];
+  /** Default "-createdAt" with timestamps. */
+  defaultSort?: string;
+  /**
+   * Your logic around core's. A `before*` hook may throw a XentiumError to refuse, or
+   * return changed data (validated again).
+   */
+  hooks?: {
+    beforeCreate?(data: Record<string, unknown>, ctx: ResourceHookContext): void | Record<string, unknown> | Promise<void | Record<string, unknown>>;
+    afterCreate?(row: Record<string, unknown>, ctx: ResourceHookContext): void | Promise<void>;
+    beforeUpdate?(patch: Record<string, unknown>, before: Record<string, unknown>, ctx: ResourceHookContext): void | Record<string, unknown> | Promise<void | Record<string, unknown>>;
+    afterUpdate?(row: Record<string, unknown>, ctx: ResourceHookContext): void | Promise<void>;
+    beforeDelete?(row: Record<string, unknown>, ctx: ResourceHookContext): void | Promise<void>;
+    afterDelete?(row: Record<string, unknown>, ctx: ResourceHookContext): void | Promise<void>;
+  };
+}
+
 // ── Context ──────────────────────────────────────────────────────────────────
 
 /**
@@ -690,6 +775,9 @@ export interface PluginContext extends BasePluginContext<PluginHost> {
    * accessor (also on `host.settings`): `const s = ctx.registerSettings({ schema }); await s.get()`.
    */
   registerSettings<S extends { _output: unknown }>(decl: PluginSettingsDeclaration<S>): PluginSettings<S["_output"]>;
+
+  /** Serve a table of yours through core's endpoints (see `PluginResourceDeclaration`). Await it in `onEnable`. */
+  registerResource(decl: PluginResourceDeclaration): Promise<void>;
 
   /** Listen to a core event (see `CoreEventMap`), or to another plugin's by its name. Dropped on disable. */
   on<K extends keyof CoreEventMap>(event: K, listener: EventListener<K>): void;

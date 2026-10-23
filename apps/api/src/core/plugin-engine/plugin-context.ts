@@ -1,5 +1,5 @@
 import type { Router } from "express";
-import type { PluginContext, PluginHost, PluginJobDeclaration, PluginSettings, PluginSettingsDeclaration, PermissionDeclaration, NavItemDeclaration, AcpPageDeclaration, SearchSource, HomeFeedSource, ReportTargetHandler, EmbedHandler, ContentKindHandler, StatSource, ProgressionCriteria, NotifyOptions, PluginRouter, XecCodeDeclaration, LayoutTemplateDeclaration, BadgeCriteria
+import type { PluginContext, PluginHost, PluginJobDeclaration, PluginResourceDeclaration, PluginSettings, PluginSettingsDeclaration, PermissionDeclaration, NavItemDeclaration, AcpPageDeclaration, SearchSource, HomeFeedSource, ReportTargetHandler, EmbedHandler, ContentKindHandler, StatSource, ProgressionCriteria, NotifyOptions, PluginRouter, XecCodeDeclaration, LayoutTemplateDeclaration, BadgeCriteria
 } from "@xentium/plugin-sdk";
 import { CorePermissions, registerTemplate } from "@xentium/contracts";
 import { progressionCriteriaRegistry } from "../progression-registry/progression-criteria-registry.js";
@@ -42,6 +42,8 @@ import { registerSettings, settingsFor } from "../plugin-platform/settings.js";
 import { z } from "zod";
 import { pluginUsers } from "../plugin-platform/people.js";
 import { pluginTime } from "../plugin-platform/time.js";
+import { registerResource } from "../plugin-platform/resources.js";
+import { pluginRegistry } from "./plugin-registry.js";
 
 /**
  * A plugin putting a member into a group (a paid membership, an earned role). The
@@ -145,6 +147,11 @@ export class PluginContextImpl implements PluginContext {
 
   constructor(public readonly pluginId: string) {
     this.host = { ...host, jobs: jobsFor(pluginId), settings: settingsFor(pluginId) };
+  }
+
+  async registerResource(decl: PluginResourceDeclaration): Promise<void> {
+    const manifest = pluginRegistry.get(this.pluginId)?.manifest as { tablePrefix?: string } | undefined;
+    await registerResource(this.pluginId, manifest?.tablePrefix, decl);
   }
 
   registerSettings<S extends { _output: unknown }>(decl: PluginSettingsDeclaration<S>): PluginSettings<S["_output"]> {
