@@ -74,6 +74,7 @@ export function BlockEdgeArtFields({ value, onChange, bare }: Props & { bare?: b
   /** What an extension's inspector section is handed: its own slice of `ext`. */
   const extProps = (namespace: string): EdgeInspectorProps => ({
     edge,
+    side,
     ext: edge?.ext?.[namespace],
     write,
     setExt: (next) => {
