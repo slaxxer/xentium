@@ -379,6 +379,10 @@ export interface PluginHost extends BasePluginHost {
   jobs: PluginJobs;
   /** THIS plugin's settings (see `ctx.registerSettings`). Core 1.0.0. */
   settings: PluginSettings;
+  /** Members, named and shown as their privacy allows. Core 1.0.0. */
+  users: PluginUsers;
+  /** The site's time zone and days. Core 1.0.0. */
+  time: PluginTime;
   /** The host's Zod 4, for settings schemas and validation, so you need not bundle your own. Core 1.0.0. */
   zod: typeof import("zod").z;
 
@@ -624,6 +628,48 @@ export interface PluginSettings<T = Record<string, unknown>> {
   get(): Promise<T>;
   /** Save some settings. Throws (422, a message per key) when a value does not fit. */
   set(patch: Partial<T>): Promise<T>;
+}
+
+// ── People and time (core 1.0.0) ────────────────────────────────────────────
+
+/** A member as core names them everywhere: link, avatar, group colour. */
+export interface PluginUserRef {
+  id: string;
+  username: string;
+  displayName: string | null;
+  /** Absolute or site-relative URL, or null for the default avatar. */
+  avatarUrl: string | null;
+  /** Their primary group's colour, for the name (null = none). */
+  badgeColor: string | null;
+  /** `/u/<username>`. */
+  profileUrl: string;
+  /** False while banned or deactivated. */
+  active: boolean;
+}
+
+/** A birthday a member shows: month and day, never the year. */
+export interface PluginBirthday { userId: string; month: number; day: number }
+
+export interface PluginUsers {
+  /** Name members like core does: one call for a batch of ids (up to 500). Unknown ids are left out. */
+  refs(ids: string[]): Promise<Record<string, PluginUserRef>>;
+  /**
+   * Birthdays between two dates (both included, up to a year): only members who
+   * chose to show their birthday, as the date field's visibility and blocks allow
+   * `viewerId` (null = a guest). The ONLY way a plugin should learn a birthday.
+   */
+  birthdays(from: Date, to: Date, viewerId: string | null): Promise<PluginBirthday[]>;
+  /** May this viewer see the member's profile, or their posts? Account → Privacy and blocks decide. */
+  canSee(viewerId: string | null, userId: string, what: "profile" | "posts"): Promise<boolean>;
+}
+
+export interface PluginTime {
+  /** The site's IANA time zone; UTC when the site shows each visitor their own. */
+  zone(): Promise<string>;
+  /** Midnight of the day `date` (default now) falls on, in the site's zone. */
+  startOfDay(date?: Date): Promise<Date>;
+  /** The calendar day `date` (default now) falls on in the site's zone: YYYY-MM-DD. */
+  dayKey(date?: Date): Promise<string>;
 }
 
 // ── Context ──────────────────────────────────────────────────────────────────

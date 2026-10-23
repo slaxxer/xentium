@@ -40,6 +40,8 @@ import { addFilter, addListener, emitAny, emitGroupsChanged } from "../events/ev
 import { jobsFor, registerJob } from "../plugin-platform/jobs.js";
 import { registerSettings, settingsFor } from "../plugin-platform/settings.js";
 import { z } from "zod";
+import { pluginUsers } from "../plugin-platform/people.js";
+import { pluginTime } from "../plugin-platform/time.js";
 
 /**
  * A plugin putting a member into a group (a paid membership, an earned role). The
@@ -72,6 +74,8 @@ export async function removeFromGroup(userId: string, groupId: string): Promise<
 const host: Omit<PluginHost, "jobs" | "settings"> = {
   prisma,
   zod: z,
+  users: pluginUsers,
+  time: pluginTime,
   queues,
   env,
   logger,
