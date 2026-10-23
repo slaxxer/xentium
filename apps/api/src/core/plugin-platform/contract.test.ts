@@ -6,7 +6,15 @@
  *
  * If this fails after a change to core, a published plugin would have broken too.
  */
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+
+// The fixture runs from source: it has no package whose files could be checked, and
+// no licence to ask the marketplace about. Everything else is the real engine.
+vi.mock("../plugin-engine/extraction-integrity.js", () => ({ assertExtractionIntact: async () => null }));
+vi.mock("../license-engine/license-engine.js", async (orig) => ({
+  ...(await orig<typeof import("../license-engine/license-engine.js")>()),
+  assertPluginEnableAllowed: async () => {},
+}));
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import request from "supertest";
@@ -17,7 +25,7 @@ const { assertDisposableDatabase } = await import("../../test/testDatabase.js");
 const { createSession } = await import("../../modules/auth/auth.tokens.js");
 const { __resetInstalledCache } = await import("../../shared/middleware/installGuard.js");
 const { createApp } = await import("../../app/app.js");
-const { disablePlugin, ensurePluginLoaded } = await import("../plugin-engine/plugin-engine.js");
+const { disablePlugin, enablePlugin, ensurePluginLoaded } = await import("../plugin-engine/plugin-engine.js");
 const { pluginRegistry } = await import("../plugin-engine/plugin-registry.js");
 const { acpPageRegistry } = await import("../plugin-engine/acp-page-registry.js");
 const { searchRegistry } = await import("../search-registry/search-registry.js");
@@ -134,5 +142,16 @@ describe("the plugin contract", () => {
     expect(searchRegistry.get(ID)).toBeUndefined();
     await expect(readSettings(ID)).rejects.toMatchObject({ httpStatus: 404 });
     expect(await contentRegistry.canView(`${ID}.note`, "visible", null)).toBe(false);
+  });
+
+  it("enables in a process that never saw it installed (several API processes)", async () => {
+    // Installed by one process, enabled through another: this one has no manifest in memory.
+    pluginRegistry.deregister(ID);
+    await enablePlugin(ID);
+    expect(pluginRegistry.getLoadError(ID)).toBeUndefined();
+    expect((await p("get", "/ping", false)).status).toBe(200);
+    // The resource needed the manifest's table prefix.
+    expect((await p("get", "/notes", false)).status).toBe(200);
+    await disablePlugin(ID);
   });
 });
