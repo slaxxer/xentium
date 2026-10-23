@@ -2,8 +2,7 @@ import { DelayedError, Worker, type Job } from "bullmq";
 import type { PluginJobDeclaration, PluginJobs } from "@xentium/plugin-sdk";
 import { bullConnection, bullPrefix, queues } from "../../infrastructure/queue.js";
 import { previewRuns } from "../../jobs/scheduledJobs.js";
-import { getSetting } from "../../shared/utils/settings.js";
-import { validZone } from "../../shared/utils/timeZone.js";
+import { siteZone } from "./time.js";
 
 /**
  * Background work for plugins (ADR-0011): one queue, `plugin-jobs`, run by the
@@ -35,11 +34,6 @@ const schedulerId = (pluginId: string, name: string) => `p__${pluginId}__${name}
 
 function fail(message: string): never {
   throw new Error(`[plugin jobs] ${message}`);
-}
-
-/** The site's zone for cron patterns; UTC when the site shows each visitor their own. */
-async function siteZone(): Promise<string> {
-  return validZone(await getSetting<string>("site.timezone", "UTC")) ?? "UTC";
 }
 
 export function registerJob(pluginId: string, decl: PluginJobDeclaration): void {
