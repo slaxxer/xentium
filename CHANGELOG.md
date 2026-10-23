@@ -62,6 +62,9 @@ This release fixes two security problems. Please update.
   minutes.
 - **More than one API process:** after the install finished, the other processes kept
   showing "not installed" until they were restarted. They now open as soon as it finishes.
+- **The install wizard's first check** could report "Could not read disk" on a new server
+  and keep Continue disabled, because the data folder didn't exist yet. It now checks the
+  disk the folder will be made on.
 - **The member directory stays fast on a big site.** It no longer counts every member on
   every page.
 
