@@ -1,5 +1,5 @@
 import type { Router } from "express";
-import type { PluginContext, PluginHost, PluginJobDeclaration, PluginResourceDeclaration, PluginSettings, PluginSettingsDeclaration, PermissionDeclaration, NavItemDeclaration, AcpPageDeclaration, SearchSource, HomeFeedSource, ReportTargetHandler, EmbedHandler, ContentKindHandler, StatSource, ProgressionCriteria, NotifyOptions, PluginRouter, XecCodeDeclaration, LayoutTemplateDeclaration, BadgeCriteria
+import type { NotificationTypeDeclaration, PluginContext, PluginHost, PluginJobDeclaration, PluginResourceDeclaration, PluginSettings, PluginSettingsDeclaration, PermissionDeclaration, NavItemDeclaration, AcpPageDeclaration, SearchSource, HomeFeedSource, ReportTargetHandler, EmbedHandler, ContentKindHandler, StatSource, ProgressionCriteria, NotifyOptions, PluginRouter, XecCodeDeclaration, LayoutTemplateDeclaration, BadgeCriteria
 } from "@xentium/plugin-sdk";
 import { CorePermissions, registerTemplate } from "@xentium/contracts";
 import { progressionCriteriaRegistry } from "../progression-registry/progression-criteria-registry.js";
@@ -45,6 +45,7 @@ import { pluginTime } from "../plugin-platform/time.js";
 import { registerResource } from "../plugin-platform/resources.js";
 import { pluginRegistry } from "./plugin-registry.js";
 import { filesFor } from "../plugin-platform/files.js";
+import { registerNotificationTypes } from "../plugin-platform/notificationTypes.js";
 
 /**
  * A plugin putting a member into a group (a paid membership, an earned role). The
@@ -231,9 +232,8 @@ export class PluginContextImpl implements PluginContext {
     acpPageRegistry.register(this.pluginId, page);
   }
 
-  registerNotificationTypes(types: string[]): void {
-    // Stored for future preference UI — no-op for now
-    logger.debug({ pluginId: this.pluginId, types }, "Plugin notification types registered");
+  registerNotificationTypes(types: Array<string | NotificationTypeDeclaration>): void {
+    registerNotificationTypes(this.pluginId, types);
   }
 
   registerSearchSource(source: SearchSource): void {

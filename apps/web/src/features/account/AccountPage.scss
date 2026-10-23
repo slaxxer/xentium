@@ -801,6 +801,16 @@
   &__cell  { display: flex; justify-content: center; }
   &__none  { color: var(--c-fg-subtle); }
 
+  /* An add-on's own types, under its name. */
+  &__group { margin-top: var(--sp-4); }
+  &__groupHead {
+    padding: 8px 0 4px;
+    border-bottom: 1px solid var(--c-rowline);
+    font-size: var(--fs-xs);
+    font-weight: 700;
+    color: var(--c-fg-muted);
+  }
+
   /* Narrow: the channel columns shrink before the event label does. */
   @media (max-width: 620px) {
     &__head, &__row { grid-template-columns: minmax(0, 1fr) 64px 64px; gap: 0 var(--sp-2); }
