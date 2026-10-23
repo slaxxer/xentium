@@ -1,6 +1,6 @@
 {
   "name": "@xentium/migrate-woltlab",
-  "version": "1.0.0-alpha.18",
+  "version": "1.0.0-alpha.19",
   "private": true,
   "description": "WoltLab Suite (Burning Board 4 and 5, WoltLab Suite 5 and 6) → Xentium migration adapter. Connects directly to the WoltLab MySQL database. Requires the xentium-forum plugin on the target.",
   "type": "module",
