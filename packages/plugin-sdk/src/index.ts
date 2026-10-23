@@ -375,17 +375,17 @@ export interface ContentKindHandler {
  * platform can offer.
  */
 export interface PluginHost extends BasePluginHost {
-  /** Background jobs for THIS plugin (see `ctx.registerJob`). Core 1.0.0. */
+  /** Background jobs for THIS plugin (see `ctx.registerJob`). */
   jobs: PluginJobs;
-  /** THIS plugin's settings (see `ctx.registerSettings`). Core 1.0.0. */
+  /** THIS plugin's settings (see `ctx.registerSettings`). */
   settings: PluginSettings;
-  /** Files and images for THIS plugin. Core 1.0.0. */
+  /** Files and images for THIS plugin. */
   files: PluginFiles;
-  /** Members, named and shown as their privacy allows. Core 1.0.0. */
+  /** Members, named and shown as their privacy allows. */
   users: PluginUsers;
-  /** The site's time zone and days. Core 1.0.0. */
+  /** The site's time zone and days. */
   time: PluginTime;
-  /** The host's Zod 4, for settings schemas and validation, so you need not bundle your own. Core 1.0.0. */
+  /** The host's Zod 4, for settings schemas and validation, so you need not bundle your own. */
   zod: typeof import("zod").z;
 
   /**
@@ -396,16 +396,15 @@ export interface PluginHost extends BasePluginHost {
   /**
    * Ask whether a user holds a permission (implied permissions included) — the same
    * answer `middleware.requirePermission` acts on, for code that must decide rather
-   * than refuse. OPTIONAL: older hosts do not provide it, so check before calling.
+   * than refuse.
    */
-  permissions?: {
+  permissions: {
     has: (userId: string, key: string) => Promise<boolean>;
   };
   /**
    * Content visibility and embeds (see `EmbedHandler`, `ContentKindHandler`).
-   * OPTIONAL: older hosts do not provide it — and then an embed must stay hidden.
    */
-  content?: {
+  content: {
     /** Fails closed: unknown kind, disabled owner or an error is `false`. */
     canView:      (kind: string, id: string, viewerId: string | null) => Promise<boolean>;
     /** Call after saving content that may hold embeds (HTML or ProseMirror JSON). */
@@ -440,9 +439,9 @@ export interface PluginHost extends BasePluginHost {
    * Email anyone, account or not (a guest who opened a support ticket), in the site's
    * notification email design: `title` and `body` are plain text (escaped), `link`
    * becomes the button. Queued, so it never slows the request. `localeOf` answers the
-   * language a member's emails go out in. Core 1.0.0-alpha.19+; optional before.
+   * language a member's emails go out in.
    */
-  email?: {
+  email: {
     send: (opts: { to: string; title: string; body: string; link?: string; buttonLabel?: string; locale?: string }) => Promise<void>;
     localeOf: (userId: string) => Promise<string>;
   };
@@ -451,20 +450,19 @@ export interface PluginHost extends BasePluginHost {
    * Core's LOCAL IP → country lookup (DB-IP Country Lite, refreshed monthly by the
    * `geoip-refresh` job). Nothing leaves the server. `countryOf` answers an ISO
    * 3166-1 alpha-2 code, or null for a private IP or before the first download.
-   * Optional: cores before 1.0.0-alpha.16 have none.
    */
-  geo?: {
+  geo: {
     countryOf: (ip: string) => string | null;
     available: () => boolean;
   };
 
   /**
-   * Search engines (core 1.0.0-alpha.19+; optional on older cores). `describe` answers
+   * Search engines. `describe` answers
    * what a page is as a guest may see it (any registered source), `defaults` the tags
    * core writes without a provider, `head` the tags actually written, `sources` every
    * page source (core's and plugins') for sitemaps.
    */
-  seo?: {
+  seo: {
     describe: (path: string) => Promise<PageInfo | null>;
     defaults: (path: string, info: PageInfo | null) => Promise<HeadTags>;
     head: (path: string) => Promise<HeadTags>;
@@ -479,7 +477,7 @@ export interface PluginHost extends BasePluginHost {
   };
 }
 
-// ── Events and filters (core 1.0.0) ─────────────────────────────────────────
+// ── Events and filters ─────────────────────────────────────────
 
 /**
  * What core announces, and what each event carries. Listen with `ctx.on(name, fn)`.
@@ -570,7 +568,7 @@ export type EventListener<K extends keyof CoreEventMap> =
 export type FilterHandler<K extends keyof CoreFilterMap> =
   (input: CoreFilterMap[K]["input"]) => CoreFilterMap[K]["output"] | Promise<CoreFilterMap[K]["output"]>;
 
-// ── Background jobs (core 1.0.0) ────────────────────────────────────────────
+// ── Background jobs ────────────────────────────────────────────
 
 /**
  * Work that runs in the background, in the site's worker: exactly once, retried on
@@ -602,7 +600,7 @@ export interface PluginJobs {
   stop(name: string): Promise<void>;
 }
 
-// ── Settings (core 1.0.0) ───────────────────────────────────────────────────
+// ── Settings ───────────────────────────────────────────────────
 
 /**
  * Your plugin's settings, declared as a Zod object (use `host.zod`, or your own Zod 4).
@@ -632,7 +630,7 @@ export interface PluginSettings<T = Record<string, unknown>> {
   set(patch: Partial<T>): Promise<T>;
 }
 
-// ── People and time (core 1.0.0) ────────────────────────────────────────────
+// ── People and time ────────────────────────────────────────────
 
 /** A member as core names them everywhere: link, avatar, group colour. */
 export interface PluginUserRef {
@@ -674,7 +672,7 @@ export interface PluginTime {
   dayKey(date?: Date): Promise<string>;
 }
 
-// ── Resources (core 1.0.0) ──────────────────────────────────────────────────
+// ── Resources ──────────────────────────────────────────────────
 
 /**
  * Who may do something with a resource:
@@ -759,7 +757,7 @@ export interface PluginResourceDeclaration<S = any> {
   };
 }
 
-// ── Files and images (core 1.0.0) ───────────────────────────────────────────
+// ── Files and images ───────────────────────────────────────────
 
 /** A file from the request (a multer file works as is), or its bytes. */
 export type PluginFileInput = Buffer | { buffer: Buffer; originalname?: string };
@@ -875,26 +873,24 @@ export interface PluginContext extends BasePluginContext<PluginHost> {
 
   /** Describe (and optionally remove) a kind of this plugin's content when it is
    *  reported, so ModCanvas can show it, link to it and act on its author.
-   *  Deregistered on disable. Optional on older cores — call it as
-   *  `ctx.registerReportTarget?.(…)`. */
-  registerReportTarget?(handler: ReportTargetHandler): void;
+   *  Deregistered on disable. */
+  registerReportTarget(handler: ReportTargetHandler): void;
 
   /** Show your items inside other content (a poll in a post). Deregistered on
-   *  disable. Optional on older cores: `ctx.registerEmbed?.(…)`. */
-  registerEmbed?(handler: EmbedHandler): void;
+   *  disable. */
+  registerEmbed(handler: EmbedHandler): void;
 
   /** Own a kind of content for `host.content.canView` (and so for embeds inside
-   *  it). Deregistered on disable — embeds in it then stay hidden. Optional on
-   *  older cores: `ctx.registerContentKind?.(…)`. */
-  registerContentKind?(handler: ContentKindHandler): void;
+   *  it). Deregistered on disable — embeds in it then stay hidden. */
+  registerContentKind(handler: ContentKindHandler): void;
 
   /** Describe your own pages for search engines and sitemaps (a thread, a file). Only
-   *  what a guest may open. Core 1.0.0-alpha.19+: call as `ctx.registerPageSource?.(…)`. */
-  registerPageSource?(source: PageSource): void;
+   *  what a guest may open. */
+  registerPageSource(source: PageSource): void;
 
   /** Become the site's SEO provider: the tags of every page, robots.txt and the
-   *  sitemaps. One at a time. Core 1.0.0-alpha.19+. */
-  registerSeoProvider?(provider: SeoProvider): void;
+   *  sitemaps. One at a time. */
+  registerSeoProvider(provider: SeoProvider): void;
 
   /** Register a site-stats source shown in the footer. Deregistered on disable. */
   registerStatSource(source: StatSource): void;
