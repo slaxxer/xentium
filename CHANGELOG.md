@@ -27,8 +27,10 @@ This release fixes two security problems. Please update.
   site. `robots.txt` is served at the site's root.
 - **For add-ons:** they can describe their own pages to search engines and the sitemap, take
   over search appearance as a whole, add panels to the editor next to Details, send email to
-  people without an account (a support request, say), and offer edge art for part of the year.
-  The developer guides cover each of these.
+  people without an account (a support request, say), offer edge art for part of the year,
+  colour things in a member's rank colour on their profile, and build block settings with
+  the site's own schema library instead of shipping their own. The developer guides cover
+  each of these.
 
 ### Changed
 
