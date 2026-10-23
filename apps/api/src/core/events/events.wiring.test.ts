@@ -12,7 +12,7 @@ import { adminUsersService } from "../../modules/admin/adminUsers.service.js";
 import { moderationService } from "../../modules/moderation/moderation.service.js";
 import { handleCallback, startFlow, updateProviderConfig } from "../../modules/auth/oauth.service.js";
 
-const EMAILS = ["events-made@example.test", "events-oauth@example.test", "events-mod@example.test", "events-blocked@example.test"];
+const EMAILS = ["events-made@example.test", "events-oauth@example.test", "events-mod@example.test", "events-blocked@example.test", "events-form@example.test"];
 const settle = () => new Promise((r) => setTimeout(r, 20));
 
 let modId: string;
@@ -77,6 +77,26 @@ describe("filters in core", () => {
     });
     expect(out).toMatchObject({ kind: "error", code: XEC.PLUGIN_REFUSED });
     expect(await prisma.user.count({ where: { email: "events-oauth@example.test" } })).toBe(0);
+  });
+
+  it("hands an add-on its own sign-up field, to check and then to keep", async () => {
+    const { register } = await import("../../modules/auth/auth.service.js");
+    const meta = { ip: "127.0.0.1", userAgent: "vitest" } as never;
+    addFilter("club", "registration.validate", (i) => ((i.addons?.club as { team?: string } | undefined)?.team ? undefined : { refuse: "club:errors.pickTeam" }));
+    const seen: unknown[] = [];
+    addListener("club", "user.registered", (p) => { seen.push(p); });
+
+    await expect(register("events-form@example.test", "events_form", "a-long-password-1", "000000", false, undefined, [], meta, undefined, undefined, {}))
+      .rejects.toMatchObject({ code: XEC.PLUGIN_REFUSED, details: { key: "club:errors.pickTeam" } });
+    // Whatever profile fields the site requires at sign-up get a plausible answer.
+    const required = await prisma.userProfileField.findMany({ where: { requiredOnRegistration: true }, select: { id: true, type: true, options: true } });
+    const answers = required.map((f) => ({
+      fieldId: f.id,
+      value: f.type === "date" ? "1990-01-01" : f.type === "choice" ? String((f.options as Array<{ value?: string } | string> | null)?.map((o) => (typeof o === "string" ? o : o.value))[0] ?? "x") : "x",
+    }));
+    const made = await register("events-form@example.test", "events_form", "a-long-password-1", "000000", false, undefined, answers, meta, undefined, undefined, { club: { team: "blue" } });
+    await settle();
+    expect(seen).toContainEqual({ userId: made.user.id, method: "password", addons: { club: { team: "blue" } } });
   });
 
   it("adds an add-on's data to a profile, under its id", async () => {

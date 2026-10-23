@@ -493,8 +493,11 @@ export interface PluginHost extends BasePluginHost {
  * This list only grows in 1.x: an event is never renamed or removed before 2.0.
  */
 export interface CoreEventMap {
-  /** A new account exists. `method`: how it was made. */
-  "user.registered": { userId: string; method: "password" | "oauth" | "admin" };
+  /**
+   * A new account exists. `method`: how it was made. `addons`: what add-ons' own
+   * sign-up fields collected, by add-on id (password sign-ups only); store your part.
+   */
+  "user.registered": { userId: string; method: "password" | "oauth" | "admin"; addons?: Record<string, unknown> };
   /** A member signed in (after any PIN step). */
   "user.loggedIn": { userId: string; method: string };
   /** A member changed their profile or account settings. `fields`: which ones. */
@@ -550,8 +553,8 @@ export interface FilterRefusal {
  * This list only grows in 1.x.
  */
 export interface CoreFilterMap {
-  /** Before an account is created (any sign-up path). */
-  "registration.validate": { input: { email: string; username: string; method: "password" | "oauth" | "admin" }; output: FilterRefusal | void };
+  /** Before an account is created (any sign-up path). `addons[<your id>]`: your sign-up field's value, when you have one. */
+  "registration.validate": { input: { email: string; username: string; method: "password" | "oauth" | "admin"; addons?: Record<string, unknown> }; output: FilterRefusal | void };
   /** Before an article is saved (created or edited). `body` is plain text. */
   "article.validate": { input: { userId: string; articleId: string | null; title: string; body: string; publish: boolean }; output: FilterRefusal | void };
   /** Before a comment is saved. `body` is plain text. */

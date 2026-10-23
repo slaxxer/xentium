@@ -236,6 +236,7 @@ export async function register(
   meta: Meta,
   inviteCode?: string,
   name?: string,
+  addons: Record<string, unknown> = {},
 ) {
   /**
    * Plugin gates run FIRST, and one of them may own registration outright.
@@ -290,7 +291,7 @@ export async function register(
   if (existingUsername) {
     throw new XentiumError({ code: "XEC-AUTH-2002", httpStatus: 409, message: "Username is already taken" });
   }
-  await assertAllowed("registration.validate", { email, username, method: "password" });
+  await assertAllowed("registration.validate", { email, username, method: "password", addons });
 
   // Optional display / full name (registration.collect_name). Only stored when
   // collection is on; required only when the admin marked it required.
@@ -344,7 +345,7 @@ export async function register(
   // The form's consent box covered every document members must accept (the
   // controller refused the sign-up without it): record each at its revision.
   await legalService.accept(user.id);
-  emit("user.registered", { userId: user.id, method: "password" });
+  emit("user.registered", { userId: user.id, method: "password", addons });
 
   // Invalidate the email verification code
   await redis.del(rkey("regcode", email));
