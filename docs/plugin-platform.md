@@ -464,5 +464,12 @@ and behaves like core.
 - `pnpm --filter <your package> typecheck`, `test` and `build` pass, and the plugin installs,
   enables, disables and uninstalls cleanly on a test site.
 
+## Coming in 1.1
+
+Comments, reactions, "watch this", tags and view counts as shared services for any item of
+yours, each with a ready-made component (`<Comments kind id />` and so on), moderation, search
+and notifications included. Until then, keep these in your own tables; moving onto the shared
+ones later is your choice, and nothing you build now breaks.
+
 When core offers something new to plugins, it appears in a minor release and on this page. If
 you need a hook that is not here, tell us: what you are building and where you got stuck.
