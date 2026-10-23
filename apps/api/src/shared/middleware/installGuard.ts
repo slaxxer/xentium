@@ -14,8 +14,12 @@ export function __resetInstalledCache(): void {
 }
 
 async function isInstalled(): Promise<boolean> {
-  // In development, skip the in-memory cache so a DB reset takes effect immediately.
-  if (!isDev && installedCache !== null) return installedCache;
+  // Only "installed" is cached: it never turns back. "Not installed" is asked again on
+  // every request, because the install may be finished by ANOTHER process (a second
+  // API instance, a restarted one) — caching false kept those answering 503 until they
+  // were restarted. The extra lookup only happens on a site that isn't installed yet.
+  // In development, skip the cache altogether so a DB reset takes effect immediately.
+  if (!isDev && installedCache === true) return true;
   try {
     const row = await prisma.install.findUnique({ where: { singleton: true }, select: { completedAt: true } });
     installedCache = !!row?.completedAt;

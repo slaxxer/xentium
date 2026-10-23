@@ -121,11 +121,20 @@ describe("edge art", () => {
     expect(edgeStyle({ ...drips, direction: "out", mirror: true }, "top")).toMatchObject({ bottom: "100%", transform: "scale(-1, -1)" });
   });
 
-  it("seasonal art shows only in season — judged on the date the editor is viewing", () => {
-    const seasonal = { ...drips, season: { from: "10-01", to: "11-01" } };
-    expect(edgeShows(seasonal, new Date("2026-06-01T12:00:00"))).toBe(false);
-    expect(edgeShows(seasonal, new Date("2026-10-31T12:00:00"))).toBe(true);
-    expect(edgeShows(seasonal, dateFromMonthDay("10-01"))).toBe(true);
+  it("core art always shows; a plugin may hide an edge for a while — judged on the date the editor is viewing", () => {
+    expect(edgeShows(drips, new Date("2026-06-01T12:00:00"))).toBe(true);
+    registerEdgeExtension({
+      namespace: "test", pluginId: "test-plugin",
+      shows: ({ ext, now }) => !(ext as { october?: boolean } | undefined)?.october || now.getMonth() === 9,
+    });
+    try {
+      const october = { ...drips, ext: { test: { october: true } } };
+      expect(edgeShows(october, new Date("2026-06-01T12:00:00"))).toBe(false);
+      expect(edgeShows(october, dateFromMonthDay("10-01"))).toBe(true);
+      expect(edgeShows(drips, new Date("2026-06-01T12:00:00"))).toBe(true);
+    } finally {
+      deregisterEdgeFor("test-plugin");
+    }
   });
 
   it("every shape draws a closed outline inside its band, at any repeat count", () => {

@@ -1,6 +1,40 @@
 import type { ComponentType, ReactNode } from "react";
 import { forgetConsentFor } from "../lib/consent";
 
+// ── Editor panel (a tab beside Details in a content editor, e.g. the SEO plugin's) ─
+/** What the editor knows about the content being written, kept current as you type. */
+export interface EditorDraft {
+  title: string;
+  slug: string | null;
+  excerpt: string;
+  /** The body as plain text. */
+  text: string;
+  firstParagraph: string;
+  headings: string[];
+  wordCount: number;
+  /** Links in the body that point at this site (`/…` or the site's own address). */
+  internalLinks: number;
+  images: number;
+  imagesWithoutAlt: number;
+  coverUrl: string | null;
+}
+export interface EditorPanelProps {
+  contentKind: string;
+  /** Null until the content has been saved once. */
+  contentId: string | null;
+  draft: EditorDraft;
+  /** A short label on the panel's tab (a score), or null for none. */
+  setBadge: (badge: { label: string; tone: "good" | "fair" | "bad" } | null) => void;
+}
+export interface EditorPanelSlot {
+  id: string;
+  /** Which editor it joins: `article` (core's), or a plugin's content kind. */
+  contentKind: string;
+  label: string;
+  order?: number;
+  component: ComponentType<EditorPanelProps>;
+}
+
 // ── Profile tab (registered by plugins, rendered in /u/:username) ─────────────
 export interface ProfileTabSlot {
   id: string;
@@ -131,6 +165,12 @@ export interface PluginMeta {
   pluginId: string;
   /** FontAwesome IconDefinition used in ACP sidebar and Marketplace */
   icon?: unknown;
+  /**
+   * One of the ACP rail's own icons (`forum`, `files`, `support`, `shop`, …), so the
+   * plugin's section matches core's: outline at rest, filled when active. Wins over
+   * `icon` in the rail. Unknown names fall back to `icon`.
+   */
+  acpIcon?: string;
   /** CSS color token used in Marketplace card accent */
   accentColor?: string;
   /** Section name as declared in registerAcpPage — used to match for icon/position */
@@ -334,6 +374,7 @@ class SlotRegistry {
   private accountSections:   AccountSectionSlot[]   = [];
   private privacySections:   PrivacySectionSlot[]   = [];
   private settingsSections:  SettingsSectionSlot[]  = [];
+  private editorPanels:      EditorPanelSlot[]      = [];
   private rootGates:         RootGateSlot[]         = [];
   private routes:            PluginRoute[]           = [];
   private pluginMetas:       PluginMeta[]            = [];
@@ -382,6 +423,7 @@ class SlotRegistry {
   registerAccountSection(slot: AccountSectionSlot)          { this._own(slot.id);     this.accountSections.push(slot); }
   registerPrivacySection(slot: PrivacySectionSlot)          { this._own(slot.id);     this.privacySections.push(slot); }
   registerSettingsSection(slot: SettingsSectionSlot)         { this._own(slot.id);     this.settingsSections.push(slot); }
+  registerEditorPanel(slot: EditorPanelSlot)                 { this._own(slot.id);     this.editorPanels.push(slot); }
   registerRootGate(slot: RootGateSlot)                       { this._own(slot.id);     this.rootGates.push(slot); }
   registerRoute(route: PluginRoute)                         { this._own(route.path);  this.routes.push(route); }
   registerSearchTab(tab: SearchTabSlot)                     { this._own(tab.id);      this.searchTabs.push(tab); }
@@ -417,6 +459,10 @@ class SlotRegistry {
     return [...this.settingsSections].sort((a, b) => (a.order ?? 100) - (b.order ?? 100));
   }
   getSearchTabs()        { return [...this.searchTabs]; }
+  /** Plugin panels for one editor, in `order`. */
+  getEditorPanels(contentKind: string) {
+    return this.editorPanels.filter((p) => p.contentKind === contentKind).sort((a, b) => (a.order ?? 100) - (b.order ?? 100));
+  }
   getModCanvasSections() { return [...this.modCanvasSections]; }
   getModQueues()         { return [...this.modQueues]; }
   getUserDetailPanels()  { return [...this.userDetailPanels].sort((a, b) => (a.order ?? 100) - (b.order ?? 100)); }
@@ -465,6 +511,7 @@ class SlotRegistry {
 
   deregister(pluginId: string) {
     this.profileTabs       = this.profileTabs.filter((s) => !this._ownedBy(s.id, pluginId));
+    this.editorPanels      = this.editorPanels.filter((s) => !this._ownedBy(s.id, pluginId));
     this.accountSections   = this.accountSections.filter((s) => !this._ownedBy(s.id, pluginId));
     this.privacySections   = this.privacySections.filter((s) => !this._ownedBy(s.id, pluginId));
     this.routes            = this.routes.filter((r) => !this._ownedBy(r.path, pluginId));

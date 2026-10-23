@@ -56,6 +56,8 @@ export interface PublicProfile {
   /** Online now (the members list's presence). */
   online?: boolean;
   viewerHasBlocked: boolean;
+  /** What this viewer may do, from the member's privacy settings and blocks. Absent on an older API = all. */
+  viewerCan?: { follow: boolean; comment: boolean; history: boolean };
   isBanned: boolean;
   isPermanentBan: boolean;
 }
@@ -244,6 +246,7 @@ const ARTICLES_PER_PAGE = 5;
 export function ProfileArticlesTab({ profile }: { profile: PublicProfile }) {
   const { t } = useTranslation("profiles");
   const [page, setPage] = useState(1);
+  const historyHidden = !profile.isOwn && profile.viewerCan?.history === false;
 
   // Always uses the public listing scoped to this author. Backend enforces
   // status=published + visibility filtering; private articles by the viewer
@@ -252,6 +255,7 @@ export function ProfileArticlesTab({ profile }: { profile: PublicProfile }) {
     queryKey: ["articles-by-author", profile.id, page],
     queryFn: () =>
       articlesApi.list({ authorId: profile.id, limit: ARTICLES_PER_PAGE, page }),
+    enabled: !historyHidden,
   });
 
   const items = query.data?.data ?? [];
@@ -259,9 +263,10 @@ export function ProfileArticlesTab({ profile }: { profile: PublicProfile }) {
 
   return (
     <div className="profile-articles">
-      {query.isLoading && <p className="profile-empty">{t("loadingArticles")}</p>}
+      {historyHidden && <p className="profile-empty">{t("historyPrivate", { username: profile.username })}</p>}
+      {!historyHidden && query.isLoading && <p className="profile-empty">{t("loadingArticles")}</p>}
 
-      {!query.isLoading && items.length === 0 && (
+      {!historyHidden && !query.isLoading && items.length === 0 && (
         <p className="profile-empty">
           {profile.isOwn
             ? t("emptyOwn")
@@ -520,8 +525,10 @@ export function ProfileWall({ profile }: { profile: PublicProfile }) {
     onError: (e) => swalToast(apiErrorMessage(e, t("likeError"))),
   });
 
-  // Owners cannot post new wall comments, but can reply to existing ones (§40)
-  const canComment = isAuthenticated && !profile.isOwn;
+  // Owners cannot post new wall comments, but can reply to existing ones (§40). Others
+  // only where the owner's privacy settings let them (Account → Privacy).
+  const wallOpen = profile.isOwn || profile.viewerCan?.comment !== false;
+  const canComment = isAuthenticated && !profile.isOwn && wallOpen;
   const canDeleteAny = userCan(authUser, "profile.comment.delete.any");
   const dt = useDateTime();
   const viewerLikedIds = new Set(data?.viewerLikedIds ?? []);
@@ -595,7 +602,7 @@ export function ProfileWall({ profile }: { profile: PublicProfile }) {
               </>
             )}
             <span className="profile-wall__comment-actions">
-              {isAuthenticated && (
+              {isAuthenticated && wallOpen && (
                 <button type="button" className="profile-wall__action"
                   onClick={() => setReplyTo({ topId: topId ?? c.id, commentId: c.id, username: c.author.username })}>
                   <FontAwesomeIcon icon={faReply} /> {t("reply")}
@@ -637,6 +644,9 @@ export function ProfileWall({ profile }: { profile: PublicProfile }) {
           onSubmit={handleSubmit}
           className="profile-wall__composer"
         />
+      )}
+      {isAuthenticated && !wallOpen && (
+        <p className="profile-empty">{t("wallClosed", { username: profile.username })}</p>
       )}
 
       {isLoading ? (
@@ -824,7 +834,8 @@ export function ProfilePage() {
   if (error)
     return (
       <div className="profile-state profile-state--error">
-        {(error as any)?.status === 404 ? t("notFound") : t("loadError")}
+        {(error as any)?.detail?.error?.code === "XEC-USER-4021" ? t("membersOnly")
+          : (error as any)?.status === 404 ? t("notFound") : t("loadError")}
       </div>
     );
   if (!profile) return <div className="profile-state">{t("notFound")}</div>;
@@ -863,8 +874,12 @@ export function ProfilePage() {
     blockPending: blockMutation.isPending,
   };
 
+  const rankColor = profile.groups.find((g) => g.badgeColor)?.badgeColor ?? null;
   return (
-    <div className="profile-page">
+    <div className="profile-page"
+      // The member's rank colour (their first group with one), for anything on the page
+      // that dresses itself in it: `var(--xt-rank-color)`. Absent when no group has one.
+      style={rankColor ? { ["--xt-rank-color" as string]: rankColor } : undefined}>
       <LayoutRenderer templateKey="profile" document={layout} context={context} />
     </div>
   );

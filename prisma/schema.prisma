@@ -156,6 +156,10 @@ model User {
   profileViews     ProfileView[] @relation("ProfileViewed")
   profileViewsMade ProfileView[] @relation("ProfileViewer")
 
+  // The member directory's sorts (most active, most followed, newest), active members only.
+  @@index([isActive, postCount(sort: Desc)])
+  @@index([isActive, followerCount(sort: Desc)])
+  @@index([isActive, createdAt(sort: Desc)])
   @@map("xcf_users")
 }
 

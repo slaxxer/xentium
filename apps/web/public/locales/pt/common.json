@@ -335,7 +335,7 @@
       "label": "Moderação",
       "labelWaiting": "Moderação, {{count}} aguardando",
       "title": "Moderação (Shift+M)",
-      "oldest": "O mais antigo espera mais",
+      "newest": "Mais recentes primeiro",
       "loading": "Carregando…",
       "nothing": "Nada aguardando.",
       "reports": "Denúncias",

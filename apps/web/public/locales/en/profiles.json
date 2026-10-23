@@ -188,5 +188,8 @@
   "signInToRate": "Sign in to rate",
   "lastSeen": "Last seen {{when}}",
   "lastSeenOn": "Last seen {{date}}",
-  "details": "Details"
+  "details": "Details",
+  "membersOnly": "This profile is visible to members only. Sign in to see it.",
+  "historyPrivate": "{{username}} keeps their post history private.",
+  "wallClosed": "{{username}} isn't taking posts on their wall."
 }

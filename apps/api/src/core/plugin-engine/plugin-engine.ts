@@ -1,4 +1,5 @@
 import fs from "node:fs/promises";
+import { seoRegistry } from "../../modules/seo/seo.registry.js";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { pathToFileURL, fileURLToPath } from "node:url";
@@ -352,6 +353,7 @@ export async function disablePlugin(pluginId: string): Promise<void> {
 
   const { searchRegistry } = await import("../search-registry/search-registry.js");
   searchRegistry.deregister(pluginId);
+  seoRegistry.dropOwner(pluginId);
 
   const { reportTargetRegistry } = await import("../report-target-registry/report-target-registry.js");
   reportTargetRegistry.deregister(pluginId);

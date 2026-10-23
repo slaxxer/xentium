@@ -94,8 +94,8 @@ describe("installer happy path", () => {
     const install = await prisma.install.findFirstOrThrow();
     expect(install.completedAt).not.toBeNull();
     expect(install.siteId).toBe(fin.body.siteId);
-    const priv = await prisma.setting.findUnique({ where: { key: "auth.jwtPrivateKey" } });
-    expect(priv?.value).toContain("BEGIN PRIVATE KEY");
+    // No unused RSA pair any more: tokens are signed with JWT_SECRET.
+    expect(await prisma.setting.findUnique({ where: { key: "auth.jwtPrivateKey" } })).toBeNull();
 
     // Self-removal: status still readable, mutating routes gone, app unlocked.
     const statusAfter = await request(app).get("/api/install/status");

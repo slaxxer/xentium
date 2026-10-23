@@ -10,6 +10,7 @@ export * from './tokens.js';
 export * from './themeStyle.js';
 export * from './coreTheme.js';
 export * from './legal.js';
+export * from "./seo.js";
 export * from './emojis.js';
 export * from './users.js';
 export * from './badges.js';

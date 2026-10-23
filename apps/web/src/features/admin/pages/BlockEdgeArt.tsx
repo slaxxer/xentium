@@ -31,21 +31,13 @@ import "./BlockEdgeArt.scss";
 
 type Side = "top" | "bottom";
 
-const MONTHS = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"];
-
-/** `MM-DD` from a month and a day, the day clamped to what the month can hold. */
-const monthDay = (m: string, d: number) => {
-  const max = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][Number(m) - 1] ?? 31;
-  return `${m}-${String(Math.min(Math.max(1, d || 1), max)).padStart(2, "0")}`;
-};
-
 interface Props {
   value: BlockEdges | undefined;
   onChange: (next: BlockEdges | undefined) => void;
 }
 
 export function BlockEdgeArtFields({ value, onChange, bare }: Props & { bare?: boolean }) {
-  const { t, i18n } = useTranslation("acp");
+  const { t } = useTranslation("acp");
   const [side, setSide] = useState<Side>(value?.bottom || !value?.top ? "bottom" : "top");
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -73,7 +65,7 @@ export function BlockEdgeArtFields({ value, onChange, bare }: Props & { bare?: b
     // purpose; a core shape needs none.
     const fallback = edgeShape(shape)?.fallback;
     if (!edge) return write(edgeArtSchema.parse({ shape, ...(fallback ? { fallback } : {}) }));
-    // Switching shape keeps the colours, height, season and every plugin's settings.
+    // Switching shape keeps the colours, height and every plugin's settings.
     // The unit count is per shape (24 teeth are not 24 waves).
     const { count: _count, fallback: _fallback, ...kept } = edge;
     write({ ...kept, shape, ...(fallback ? { fallback } : {}) });
@@ -112,26 +104,6 @@ export function BlockEdgeArtFields({ value, onChange, bare }: Props & { bare?: b
       if (fileRef.current) fileRef.current.value = "";
     }
   }
-
-  const monthName = (m: string) =>
-    new Date(2000, Number(m) - 1, 1).toLocaleString(i18n.language, { month: "short" });
-
-  const seasonEnd = (which: "from" | "to") => {
-    const md = edge?.season?.[which] ?? "10-01";
-    const [m, d] = md.split("-");
-    const set = (next: string) => edge?.season && patch({ season: { ...edge.season, [which]: next } });
-    return (
-      <span className="lay-edge__date">
-        <select className="acp-input" value={m} aria-label={t(`layoutEditor.edge.${which}`)}
-          onChange={(e) => set(monthDay(e.target.value, Number(d)))}>
-          {MONTHS.map((mm) => <option key={mm} value={mm}>{monthName(mm)}</option>)}
-        </select>
-        <input className="acp-input" type="number" min={1} max={31} value={Number(d)}
-          aria-label={t(`layoutEditor.edge.${which}Day`)}
-          onChange={(e) => set(monthDay(m!, Number(e.target.value)))} />
-      </span>
-    );
-  };
 
   return (
     <div className="lay-edge">
@@ -332,21 +304,6 @@ export function BlockEdgeArtFields({ value, onChange, bare }: Props & { bare?: b
               <Toggle on={edge.mirror} onToggle={() => patch({ mirror: !edge.mirror })} />
               <span>{t("layoutEditor.edge.mirror")}</span>
             </label>
-          )}
-
-          <label className="lay-edge__check">
-            <Toggle on={!!edge.season}
-              onToggle={() => patch({ season: edge.season ? undefined : { from: "10-01", to: "11-01" } })} />
-            <span>
-              <span>{t("layoutEditor.edge.season")}</span>
-              <span className="acp-hint">{t("layoutEditor.edge.seasonHint")}</span>
-            </span>
-          </label>
-          {edge.season && (
-            <div className="lay-edge__season">
-              <span>{t("layoutEditor.edge.from")}</span>{seasonEnd("from")}
-              <span>{t("layoutEditor.edge.to")}</span>{seasonEnd("to")}
-            </div>
           )}
 
           {edge.shape === "blank" && (

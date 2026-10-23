@@ -95,7 +95,7 @@ import { ChromeStyles } from "./ChromeStyles";
 import { StudioTour } from "./StudioTour";
 import { useUiFlag } from "../../../hooks/useUiFlag";
 import { PREVIEW_THEME_PARAM, useEditingTheme, withTheme } from "../../../lib/editingTheme";
-import type { SiteFrame } from "@xentium/contracts";
+import type { EdgeArt, SiteFrame } from "@xentium/contracts";
 import { BlockStyleFields } from "./BlockStyle";
 import { BlockMenuStyle, menuGroupsFor } from "./BlockMenuStyle";
 import { BlockBackgroundFields, BACKGROUND_PROPS } from "./BlockBackground";
@@ -1806,11 +1806,25 @@ function LayoutEditorInner({ themeKey }: { themeKey: string | null }) {
    * what is published. Without it the preview showed every template's staged state
    * at once, and a stale `chrome.header` draft read as the site header disappearing.
    */
-  /** The opening day of the first seasonal edge in the open document, for "Viewing on". */
+  /**
+   * A day worth previewing the open document on, for "Viewing on": the first one an
+   * edge's plugin names (`viewDate`) — art that shows only part of the year. Core's own
+   * edge art always shows, so it never names one.
+   */
   const seasonStart: string | null = (() => {
+    const dated = edgeExtensions().filter((x) => x.viewDate);
+    if (dated.length === 0) return null;
+    const dayOf = (e: EdgeArt | undefined): string | null => {
+      if (!e) return null;
+      for (const x of dated) {
+        const md = x.viewDate!(e.ext?.[x.namespace]);
+        if (md) return md;
+      }
+      return null;
+    };
     const walk = (nodes: BlockNode[]): string | null => {
       for (const n of nodes) {
-        const s = n.edges?.top?.season?.from ?? n.edges?.bottom?.season?.from;
+        const s = dayOf(n.edges?.top) ?? dayOf(n.edges?.bottom);
         if (s) return s;
         const hit = n.children ? walk(n.children) : null;
         if (hit) return hit;
@@ -2389,10 +2403,9 @@ function LayoutEditorInner({ themeKey }: { themeKey: string | null }) {
               </button>
             </div>
 
-            {/* Seasonal edge art is hidden most of the year, which is exactly when an
-                admin arranges things — so the canvas can pretend it is in season. */}
-            {/* Offered when the open document has seasonal art: "Today" and the first
-                season's opening day, which is when that art first shows. */}
+            {/* Plugin art that shows only part of the year is hidden most of it, which is
+                exactly when an admin arranges things — so the canvas can pretend it is
+                that day. Offered when an edge's plugin names one (`viewDate`). */}
             {advanced && seasonStart && (
               <>
                 <span className="lay__canvasbar-label">{t("layoutEditor.edge.viewingOn")}</span>

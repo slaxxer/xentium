@@ -1,43 +1,76 @@
 # Changelog
 
-## Update from the ACP
+## 1.0.0-alpha.19
+
+This release fixes two security problems. Please update.
+
+### Security
+
+- **A member could publish another member's draft.** Anyone allowed to publish their own
+  articles could publish someone else's unfinished draft by its id. Publishing is now limited
+  to the article's author, or staff who may edit any article.
+- **Privacy settings are now enforced by the server.** Several choices in Account → Privacy
+  were only reflected in the page and not checked on the server: a members-only profile,
+  who may follow you, who may post on your wall, allowing wall posts at all, and who may see
+  your post history. Each is now refused on the server, and a block keeps both of you from
+  following each other or posting on each other's wall. The profile page now hides what
+  you're not allowed to do instead of showing a button that fails.
+- **A Permissions-Policy header** switches off browser features a community site never asks
+  for (camera, microphone, location, USB).
 
 ### Added
 
-- **Update now.** When a new Xentium is out, the update dialog and **System → Migration
-  History** offer an **Update now** button. You confirm with your password, and the dialog
-  shows the update as it happens: each package as it downloads, every step, each database
-  migration and the restart. You can close it at any time; the update carries on, and
-  Migration History shows the same view, live, to every admin allowed to update.
-- **Rolled back by itself when something fails.** The database backup is restored and the
-  previous release runs again. Migration History then shows what failed, with the log.
-- **Roll back** a finished update from Migration History, back to the release it replaced.
-- **A new permission**, "Update Xentium from the ACP", under System. Administrators get it.
-
-### How it stays safe
-
-- The ACP never runs anything on your server. **Update now** only writes a request, and the
-  updater, a small service on your server, does the work as your site's user.
-- The updater installs nothing but a newer Xentium release whose npm provenance shows we built
-  it, and it checks every downloaded package against its published checksum.
+- **Real page titles and preview tags.** Every page, from the home page to articles,
+  profiles, the member list and your legal pages, now has its own title, description and
+  canonical address in the page itself, plus the tags social networks use for link previews.
+  They are written as a guest would see the page, and they follow you as you move around the
+  site. `robots.txt` is served at the site's root.
+- **For add-ons:** they can describe their own pages to search engines and the sitemap, take
+  over search appearance as a whole, add panels to the editor next to Details, send email to
+  people without an account (a support request, say), offer edge art for part of the year,
+  colour things in a member's rank colour on their profile, and build block settings with
+  the site's own schema library instead of shipping their own. The developer guides cover
+  each of these.
 
 ### Changed
 
-- **The installed version in the footer**, after "Powered by Xentium Community".
+- **One moderation feed, newest first.** The shield in the navbar used to list reports,
+  security cases and add-on queues in separate groups, each with the oldest first. It now
+  shows them together, newest on top, and every row says what it is.
+- **ACP section icons** have one outline style with clearer shapes. The section you're in
+  shows filled, in the rail, the top bar and the panel.
+- **Dialog icons breathe.** The icon on update, announcement and alert dialogs pulses softly
+  in its own colour, like the online status. Not if you prefer reduced motion.
+- **Edge art shows all year.** Showing edge art only between two dates is now up to add-ons
+  that offer seasonal art. Dates you set before are kept for them. Without such an add-on,
+  that edge art now shows all year; remove it in Theme Studio if you only wanted it for a
+  season.
+- **Keeping your site safe** is now part of our security policy: why to update, how backups
+  and rollback work, and what an installed plugin can do on your site.
+- **What each version promises.** From 1.0.0 on, Xentium follows semantic versioning: fixes
+  (security fixes included) in patch releases, new features in minor releases, and breaking
+  changes only in a major release, after a deprecation. The new versioning guide says what
+  the promise covers, for sites, themes and plugins.
+- **The article editor's own search fields are gone.** How an article appears in search
+  results is now up to an add-on that handles search appearance.
 
 ### Fixed
 
-- **Staying signed in during a restart.** A token refresh that reached the server while it
-  restarted used to sign you out in the browser. Now only a refused refresh signs you out.
+- **The article editor's byline** named whoever was editing. It now names the article's
+  author, also when a moderator edits someone else's article.
+- **An add-on's pages open straight away** after you enable it, instead of after a few
+  minutes.
+- **More than one API process:** after the install finished, the other processes kept
+  showing "not installed" until they were restarted. They now open as soon as it finishes.
+- **The install wizard's first check** could report "Could not read disk" on a new server
+  and keep Continue disabled, because the data folder didn't exist yet. It now checks the
+  disk the folder will be made on.
+- **The member directory stays fast on a big site.** It no longer counts every member on
+  every page.
 
 ## Upgrading
 
-- No database migrations this time.
-- To update from the ACP from now on, run this once in your site's directory after updating:
-
-  ```bash
-  npx xentium install-service
-  ```
-
-  It installs the updater next to your site's services. Without it, the update dialog keeps
-  showing the commands to run yourself.
+- One database migration: three indexes for the member directory. On a site with a very
+  large member list it takes a moment while the update runs.
+- On the first start, Xentium moves the dates of seasonal edge art to where add-ons read
+  them. Nothing to do on your side.

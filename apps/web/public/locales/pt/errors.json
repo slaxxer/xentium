@@ -50,5 +50,8 @@
   "XEC-UPDATE-4092": "Já há uma atualização a decorrer.",
   "XEC-UPDATE-4093": "Essa não é a versão oferecida a este site.",
   "XEC-UPDATE-4094": "Não há nenhuma atualização terminada para reverter.",
-  "XEC-UPDATE-4221": "Essa palavra-passe não está certa."
+  "XEC-UPDATE-4221": "Essa palavra-passe não está certa.",
+  "XEC-USER-4021": "Este perfil só é visível para membros.",
+  "XEC-USER-4022": "Não é possível seguir este membro.",
+  "XEC-USER-4023": "Este membro não aceita as suas publicações no mural."
 }

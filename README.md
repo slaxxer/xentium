@@ -95,7 +95,8 @@ these packages, so you can use them in your own Express app without taking the C
 ### Where it's at
 
 Alpha. It runs fine, and nothing merges without the full typecheck, lint, test and build
-passing. Still, APIs can change between alphas and you'll hit rough edges. Please don't
+passing. Still, APIs can change between alphas and you'll hit rough edges. From 1.0.0 on,
+versions follow semver: [what each version promises](docs/versioning.md). Please don't
 move your 20,000-member forum onto it yet. If you want to try it with real data, there are
 importers for WordPress, phpBB, XenForo, vBulletin and WoltLab, and users keep their
 passwords where the source allows it.
@@ -634,7 +635,7 @@ We validate **`manifest.json`** on install:
   "name": "My Plugin",
   "version": "1.0.0",
   "vendor": "Acme",
-  "minXentiumVersion": "1.0",
+  "minXentiumVersion": "1.0.0",
   "licenseRequired": false,
   "tablePrefix": "myplugin_",
   "permissions": ["myplugin.thing.create"],

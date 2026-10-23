@@ -9,15 +9,13 @@ import { test } from "@playwright/test";
  * on additional setup (a second user, the forum plugin, a dev license).
  */
 
-// All §56 e2e flows are now implemented across 01–07:
-//   01-install   · install wizard
-//   02-auth      · register, login, invalid-credentials
-//   03-article   · article publish + comment
-//   04-social    · follow/unfollow, block, profile wall, private follower list
-//   05-moderation· warn, ban, force-logout, password-reset, comment tombstone
-//   06-plugins   · plugin upload/install/enable (license activation = fixme,
-//                  blocked by a dev-env key bug — see 06-plugins.spec.ts)
-//   07-forum     · forum node + thread + reply
+// Covered today (01–06):
+//   01-install   · install wizard (8 steps)
+//   02-auth      · sign-up (account, security, verify), sign-in, wrong password
+//   03-article   · article publish through the editor + a member's comment
+//   04-social    · follow/unfollow, wall post, block, private follower list
+//   05-moderation· warn, ban, password reset + sign out everywhere, comment removal
+//   06-plugins   · upload, install (with a migration) and enable a test plugin
 //
 // This file is intentionally left as a placeholder for future flows.
 test.fixme("placeholder for future e2e flows", async () => {});

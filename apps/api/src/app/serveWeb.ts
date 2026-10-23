@@ -2,9 +2,9 @@ import express, { type Express, type Request, type Response } from "express";
 import fs from "node:fs";
 import path from "node:path";
 import { env, isProd } from "../config/env.js";
-import { getSettings } from "../shared/utils/settings.js";
 import { appearanceService, parseColourwayId } from "../modules/appearance/appearance.service.js";
 import { layoutService } from "../modules/layouts/layout.service.js";
+import { headFor, renderHead } from "../modules/seo/seo.service.js";
 
 /** Escapes a string for safe interpolation into a double-quoted HTML attribute. */
 function escapeAttr(value: string): string {
@@ -16,41 +16,16 @@ function escapeAttr(value: string): string {
 }
 
 /**
- * Injects canonical + Open Graph tags into the served index.html so link
- * unfurlers and non-JS crawlers see the admin-configured site URL (settings
- * `site.url`). The client-side CanonicalManager only sets these in the live
- * DOM, which JS-less consumers never execute — mirror its convention here:
- * canonical uses the clean pathname only (no query string).
+ * Put the page's head tags (title, description, canonical, preview tags, JSON-LD)
+ * into the served index.html, so search engines and link previews that never run
+ * our JavaScript read the real page. The tags come from `seo.service` (the SEO
+ * plugin when enabled, core's defaults otherwise); the app asks the same service
+ * on every navigation, so both agree. The build's own `<title>` is replaced.
  */
-export function injectSeoMeta(
-  html: string,
-  opts: { base: string; siteName: string; pathname: string },
-): string {
-  const base = opts.base.replace(/\/+$/, "");
-  if (!base) return html; // site URL not configured yet (pre-install) — leave head untouched
-
-  let href: string;
-  try {
-    href = new URL(opts.pathname, base + "/").toString();
-  } catch {
-    return html; // malformed site URL — don't write a broken canonical
-  }
-
-  const hrefAttr = escapeAttr(href);
-  const nameAttr = escapeAttr(opts.siteName || "Xentium");
-  const tags = [
-    `<link rel="canonical" href="${hrefAttr}" />`,
-    `<meta property="og:url" content="${hrefAttr}" />`,
-    `<meta property="og:type" content="website" />`,
-    `<meta property="og:site_name" content="${nameAttr}" />`,
-    `<meta property="og:title" content="${nameAttr}" />`,
-    `<meta name="twitter:card" content="summary" />`,
-  ].join("\n    ");
-
-  // Swap the static <title> to the configured site name so unfurlers that read
-  // <title> get the real name rather than the build-time "Xentium" placeholder.
-  const titled = html.replace(/<title>[^<]*<\/title>/i, `<title>${nameAttr}</title>`);
-  return titled.replace(/<\/head>/i, `    ${tags}\n  </head>`);
+export function injectHead(html: string, head: string): string {
+  const titleless = html.replace(/<title>[^<]*<\/title>\s*/i, "");
+  // A function, not a string: a description may contain `$&`.
+  return titleless.replace(/<\/head>/i, () => `    ${head}\n  </head>`);
 }
 
 /** The `<style>` the client's live style sync owns (lib/liveStyle.ts `STYLE_ID`). */
@@ -166,10 +141,7 @@ export function mountWebApp(app: Express): void {
   app.get(SPA_PATH, (req: Request, res: Response) => {
     void (async () => {
       try {
-        const s = await getSettings({ "site.url": "", "site.name": "Xentium" });
-        const base = typeof s["site.url"] === "string" ? s["site.url"] : "";
-        const siteName = typeof s["site.name"] === "string" ? s["site.name"] : "Xentium";
-        let html = injectSeoMeta(template, { base, siteName, pathname: req.path });
+        let html = injectHead(template, renderHead(await headFor(req.path)));
         // Best-effort: a stylesheet that cannot be built (a fresh, uninstalled
         // instance) must not cost the page, only the early paint.
         html = await injectThemeCss(html, req).catch(() => html);
