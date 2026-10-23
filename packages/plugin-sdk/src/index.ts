@@ -760,7 +760,7 @@ export interface PluginResourceDeclaration<S = any> {
 // ── Files and images ───────────────────────────────────────────
 
 /** A file from the request (a multer file works as is), or its bytes. */
-export type PluginFileInput = Buffer | { buffer: Buffer; originalname?: string };
+export type PluginFileInput = Uint8Array | { buffer: Uint8Array; originalname?: string };
 
 export interface PluginFileSaveOptions {
   /** `public`: served at its URL to anyone. `private`: only through your route, with `send`. */
