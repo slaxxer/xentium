@@ -4215,21 +4215,21 @@
         "body": "Wähle, welche Seite du anordnest: Startseite, Artikel, Profile oder den Kopf- und Fußbereich, den alle Seiten teilen. Kopf- und Fußbereich haben fertige Stile."
       },
       "select": {
-        "title": "Klick auf etwas auf der Seite",
-        "body": "Die Vorschau ist deine echte Seite. Klick auf einen Teil, um ihn auszuwählen: eine Überschrift, den Feed, die Navigation.",
+        "title": "Klick etwas auf der Seite an",
+        "body": "Die Vorschau ist deine echte Seite. Klick einen Teil an, um ihn auszuwählen. Doppelklicke eine Überschrift, um sie direkt dort zu überschreiben.",
         "task": "Klick etwas in der Vorschau an, um weiterzumachen."
       },
       "panel": {
-        "title": "Hier erscheinen seine Einstellungen",
-        "body": "Ändere die Einstellungen, verschiebe ihn nach oben oder unten oder nutze Verschieben…, um ihn woanders hinzusetzen, etwa in die Seitenleiste. Du kannst ihn auch auf der Seite ziehen. Strg+Z macht alles rückgängig."
+        "title": "Die Einstellungen stehen rechts",
+        "body": "Ändere die Einstellungen, wähle die Spalten eines Abschnitts oder lege fest, wer einen Block sieht. Ist nichts ausgewählt, zeigt diese Seite dein Theme. Strg+Z macht alles rückgängig."
       },
       "add": {
-        "title": "Weitere Blöcke hinzufügen",
-        "body": "Geh zurück zu Blöcke, um alles zu sehen, was du hinzufügen kannst. Zieh einen Block auf die Seite oder klick ihn an, um ihn nach dem gewählten Block einzufügen."
+        "title": "Mit Abschnitten bauen",
+        "body": "Eine Seite ist ein Stapel von Abschnitten. Zieh einen fertigen Abschnitt zwischen zwei Abschnitte und dann Blöcke in seine Spalten. Beim Ziehen zeigt eine Linie jeden Platz, an den er passt."
       },
       "mode": {
-        "title": "Einfach oder Erweitert",
-        "body": "Einfach zeigt, was du zum Start brauchst. Erweitert ergänzt Ebenen, Sichtbarkeit, Theme-Stile und Icons."
+        "title": "Sieh, was du geändert hast",
+        "body": "Hier steht, was eine Veröffentlichung ändern würde. Klick darauf, um jeden geänderten Block auf der Seite zu markieren und Entferntes zurückzulegen."
       },
       "publish": {
         "title": "Nichts ist live, bis du veröffentlichst",
@@ -4239,6 +4239,52 @@
         "title": "Das war's",
         "body": "Viel Spaß dabei, sie zu deiner zu machen. Die Tour findest du jederzeit wieder über den ?-Knopf."
       }
+    },
+    "sections": {
+      "title": "Abschnitte",
+      "add": "Hinzufügen",
+      "outline": "Gliederung",
+      "columns": "Spalten",
+      "columnsHint": "Weniger Spalten behalten jeden Block: Er rückt in die letzte Spalte.",
+      "columnsCustom": "Diese Spalten haben eigene Breiten. Wähle eine Form, um sie zu ersetzen.",
+      "layout": {
+        "one": "Eine Spalte",
+        "half": "Zwei Spalten",
+        "twoOne": "Zwei Spalten, links breit",
+        "oneTwo": "Zwei Spalten, rechts breit",
+        "three": "Drei Spalten"
+      },
+      "preset": {
+        "hero": "Hero",
+        "features": "Drei Vorteile",
+        "textBlock": "Text",
+        "callToAction": "Aufruf zum Handeln",
+        "emptyOne": "Leer, eine Spalte",
+        "emptyTwo": "Leer, zwei Spalten"
+      },
+      "words": {
+        "eyebrow": "Willkommen",
+        "title": "Ein Titel für diesen Abschnitt",
+        "body": "Schreib hier etwas. Doppelklicke einen Text auf der Seite, um ihn zu ändern.",
+        "featureTitle": "Ein Vorteil",
+        "featureBody": "Sag in einem Satz, warum er zählt.",
+        "ctaTitle": "Bereit mitzumachen?",
+        "ctaBody": "Sag Besuchern, was sie als Nächstes tun sollen."
+      },
+      "changedTag": "Geändert",
+      "dropHere": "Hier ablegen",
+      "emptyHere": "Block hier ablegen",
+      "changes": "{{count}} Änderung",
+      "changes_other": "{{count}} Änderungen",
+      "noChanges": "Keine Änderungen",
+      "hideChanges": "Änderungen ausblenden",
+      "removed": "Seit der Veröffentlichung entfernt:",
+      "putBack": "Zurücklegen",
+      "settingsTitle": "Einstellungen",
+      "themeTitle": "Theme",
+      "themeHint": "Gilt für jede Seite. Klicke etwas auf der Seite an, um nur das zu ändern.",
+      "fixedText": "Du hast den übersetzten Text überschrieben, daher ist dieser Text jetzt in jeder Sprache gleich.",
+      "useTranslated": "Wieder den übersetzten Text verwenden"
     }
   },
   "groups": {

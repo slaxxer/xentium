@@ -4343,20 +4343,20 @@
       },
       "select": {
         "title": "Click anything on the page",
-        "body": "The preview is your real page. Click a part of it to select it: a heading, the feed, the navigation.",
+        "body": "The preview is your real page. Click a part of it to select it. Double-click a heading to type over it right there.",
         "task": "Click something in the preview to continue."
       },
       "panel": {
-        "title": "Its settings appear here",
-        "body": "Change the settings, move it up or down, or use Move to… to put it somewhere else, like the sidebar. You can also drag it on the page. Ctrl+Z undoes anything."
+        "title": "Its settings are on the right",
+        "body": "Change the settings, pick a section's columns, or say who sees a block. With nothing selected, this side shows your theme. Ctrl+Z undoes anything."
       },
       "add": {
-        "title": "Add more blocks",
-        "body": "Go back to Blocks to see everything you can add. Drag a block onto the page, or click it to add it after the selected block."
+        "title": "Build with sections",
+        "body": "A page is a stack of sections. Drag a ready-made section between two sections, then drag blocks into its columns. While you drag, every place it can go shows a line."
       },
       "mode": {
-        "title": "Simple or Advanced",
-        "body": "Simple shows what you need to start. Advanced adds layers, who can see a block, theme styles and icons."
+        "title": "See what you changed",
+        "body": "This counts what publishing would change. Press it to mark every changed block on the page, and to put back anything you removed."
       },
       "publish": {
         "title": "Nothing is live until you publish",
@@ -4366,6 +4366,52 @@
         "title": "That's it",
         "body": "Have fun making it yours. You can see this tour again any time from the ? button."
       }
+    },
+    "sections": {
+      "title": "Sections",
+      "add": "Add",
+      "outline": "Outline",
+      "columns": "Columns",
+      "columnsHint": "Fewer columns keep every block: they move into the last column.",
+      "columnsCustom": "These columns have custom widths. Pick a shape to replace them.",
+      "layout": {
+        "one": "One column",
+        "half": "Two columns",
+        "twoOne": "Two columns, wide left",
+        "oneTwo": "Two columns, wide right",
+        "three": "Three columns"
+      },
+      "preset": {
+        "hero": "Hero",
+        "features": "Three features",
+        "textBlock": "Text",
+        "callToAction": "Call to action",
+        "emptyOne": "Empty, one column",
+        "emptyTwo": "Empty, two columns"
+      },
+      "words": {
+        "eyebrow": "Welcome",
+        "title": "A title for this section",
+        "body": "Write something here. Double-click any text on the page to change it.",
+        "featureTitle": "A feature",
+        "featureBody": "Say in a sentence why it matters.",
+        "ctaTitle": "Ready to join?",
+        "ctaBody": "Tell visitors what to do next."
+      },
+      "changedTag": "Changed",
+      "dropHere": "Drop it here",
+      "emptyHere": "Drop a block here",
+      "changes": "{{count}} change",
+      "changes_other": "{{count}} changes",
+      "noChanges": "No changes",
+      "hideChanges": "Hide changes",
+      "removed": "Removed since it was published:",
+      "putBack": "Put back",
+      "settingsTitle": "Settings",
+      "themeTitle": "Theme",
+      "themeHint": "Applies to every page. Click something on the page to change just that.",
+      "fixedText": "You typed over the translated text, so this text is now the same in every language.",
+      "useTranslated": "Use the translated text again"
     }
   },
   "groups": {

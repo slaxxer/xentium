@@ -11,12 +11,15 @@
  *                      nv:insertAfter an admin pressed the `+` under a block
  *                      nv:nudge       the chip's up/down
  *                      nv:iconPick    an admin clicked ONE icon, while icon mode is on
+ *                      nv:inlineEdit  an admin typed new text into a block on the page
  *   editor  → preview  nv:iconMode    turn icon picking on or off
  *                      nv:highlight   the tree selection changed (with its breadcrumb)
  *                      nv:dragNew     a library tile is being dragged — its type
  *                      nv:insertMark  where the next library pick lands, or nothing
  *                      nv:tokens      staged variant tokens, so a colour edit is
  *                                     visible before it is published
+ *                      nv:changes     which blocks publishing would change, and
+ *                                     whether to mark them
  *
  * Why an overlay instead of styling the block: each block is wrapped in a
  * `display: contents` element so the preview's layout is identical to the live
@@ -37,18 +40,20 @@
  * the landing spot with exactly the rules a move uses. The drop comes back as
  * `nv:insert`.
  *
- * ## Where a drop lands, once blocks can nest
+ * ## Where a drop lands (ADR-0012)
  *
- * The drop parent is the NEAREST enclosing container or region, walking outwards
- * until one is found that will actually take the dragged block: a `columns` row
- * refuses anything but a `column`, and a container cannot swallow itself or its
- * own descendant. That walk is why hovering a leaf inside a section reorders
- * within the section, and hovering the section's own padding appends inside it.
+ * Every place the dragged block could go is worked out when the drag STARTS and
+ * drawn as a faint line (or, for an empty column, a dashed box); the one nearest the
+ * pointer is drawn solid, and that is where the drop lands. One answer per pixel,
+ * and the admin sees all of them before letting go.
  *
- * A consequence worth knowing: hovering a container always aims INSIDE it, so
- * the preview cannot place a block as a container's SIBLING. That is what the
- * tree is for — it addresses every level explicitly, and it stays the complete
- * interface while the preview is the fast one.
+ * It replaced "the nearest container under the pointer", which could not place a
+ * block as a container's sibling and turned the same pixel into "inside this
+ * column", "after this column" or "after the row" depending on a few pixels of
+ * padding — the reason dragging felt unreliable.
+ *
+ * A section (or a `columns` row) only ever goes between sections: the top of a
+ * region, or the list it already sits in. Blocks go wherever a list accepts them.
  */
 
 import type { AudienceView, LayoutDocument, TemplateKey } from "@xentium/contracts";
@@ -72,6 +77,121 @@ const LINE_ID = "xt-preview-dropline";
 const ZONE_ID = "xt-preview-dropzone";
 const PLUS_ID = "xt-preview-plus";
 const MARK_ID = "xt-preview-insertmark";
+const SPOTS_ID = "xt-preview-spots";
+const CHANGES_ID = "xt-preview-changes";
+
+/** Types that are SECTIONS to the editor: they only ever go between sections. */
+const SECTION_TYPES = new Set(["section", "columns"]);
+
+/** Farther than this from every spot, a drop goes nowhere. */
+const SPOT_REACH = 180;
+
+/**
+ * One place a drag can land, in PAGE coordinates (so scrolling does not move it).
+ * `kind` is how it is drawn: a line across a list, a line down between items laid
+ * out side by side, or the box of an empty list.
+ */
+export interface DropSpot {
+  region: string;
+  parentId: string | null;
+  index: number;
+  beforeId: string | null;
+  afterId: string | null;
+  kind: "line" | "across" | "box";
+  x: number; y: number; w: number; h: number;
+  /** The list's own box, for the zone outline and the "pointer is inside" bias. */
+  parent: { x: number; y: number; w: number; h: number };
+}
+
+/**
+ * Every spot a block of `type` could be dropped at, in the open document.
+ *
+ * Exported for its tests. `dragged` is the block being moved (null for a new one):
+ * nothing can land inside it, and the two spots either side of it are skipped because
+ * dropping there would be no move at all.
+ */
+export function collectDropSpots(
+  type: string,
+  dragged: HTMLElement | null,
+  template: string | null,
+): DropSpot[] {
+  const sx = window.scrollX, sy = window.scrollY;
+  const sectionLevel = SECTION_TYPES.has(type);
+  const parents = [
+    ...document.querySelectorAll<HTMLElement>("[data-xt-region]:not([data-xt-block])"),
+    ...allWrappers().filter((el) => el.dataset.xtContainer),
+  ].filter((el) => !template || el.dataset.xtTemplate === template);
+
+  const out: DropSpot[] = [];
+  for (const el of parents) {
+    const parentId = el.dataset.xtBlock ?? null;
+    const region = el.dataset.xtRegion;
+    if (!region) continue;
+    if (dragged && (dragged === el || dragged.contains(el))) continue;
+    if (!acceptsChild(el.dataset.xtType ?? null, type)) continue;
+    // A section stays a section: between sections, or where it already is.
+    if (sectionLevel && parentId !== null && dragged?.dataset.xtParent !== parentId) continue;
+
+    const own = parentId ? boxOf(el) : el.getBoundingClientRect();
+    if (!own || (own.width === 0 && own.height === 0)) continue;
+    const parent = { x: own.left + sx, y: own.top + sy, w: own.width, h: own.height };
+
+    const all = childrenOf(parentId, region);
+    const kids = all
+      .map((w) => ({ w, r: boxOf(w) }))
+      .filter((k): k is { w: HTMLElement; r: DOMRect } => !!k.r);
+
+    if (kids.length === 0) {
+      if (all.some((w) => w === dragged)) continue; // its only child is the one moving
+      out.push({ region, parentId, index: all.length, beforeId: null, afterId: null, kind: "box", ...parent, parent });
+      continue;
+    }
+
+    // Side by side (a navbar, a row of tracks) or stacked: read from the first two.
+    const across = kids.length > 1 && kids[1]!.r.left >= kids[0]!.r.right - 2
+      && Math.abs(kids[1]!.r.top - kids[0]!.r.top) < kids[0]!.r.height;
+
+    for (let i = 0; i <= kids.length; i++) {
+      const prev = kids[i - 1];
+      const next = kids[i];
+      if (dragged && (prev?.w === dragged || next?.w === dragged)) continue;
+      const index = next ? all.indexOf(next.w) : all.length;
+      const ids = { beforeId: next?.w.dataset.xtBlock ?? null, afterId: prev?.w.dataset.xtBlock ?? null };
+      if (across) {
+        const top = Math.min(...kids.map((k) => k.r.top));
+        const bottom = Math.max(...kids.map((k) => k.r.bottom));
+        const x = prev && next ? (prev.r.right + next.r.left) / 2 : prev ? prev.r.right + 3 : next!.r.left - 3;
+        out.push({ region, parentId, index, ...ids, kind: "across", x: x + sx, y: top + sy, w: 0, h: bottom - top, parent });
+      } else {
+        const y = prev && next ? (prev.r.bottom + next.r.top) / 2 : prev ? prev.r.bottom + 3 : next!.r.top - 3;
+        out.push({ region, parentId, index, ...ids, kind: "line", x: own.left + sx, y: y + sy, w: own.width, h: 0, parent });
+      }
+    }
+  }
+  return out;
+}
+
+/** How far the pointer (page coordinates) is from a spot; lower wins. */
+export function spotDistance(s: DropSpot, px: number, py: number): number {
+  const outside = (v: number, lo: number, hi: number) => (v < lo ? lo - v : v > hi ? v - hi : 0);
+  const inParent = px >= s.parent.x && px <= s.parent.x + s.parent.w && py >= s.parent.y && py <= s.parent.y + s.parent.h;
+  // A list the pointer is inside beats an equally near one it is not: hovering a
+  // column's last block aims at that column, not at the gap under the whole row.
+  const bias = inParent ? 0 : 24;
+  if (s.kind === "box") return outside(px, s.x, s.x + s.w) + outside(py, s.y, s.y + s.h) + bias;
+  if (s.kind === "across") return Math.abs(px - s.x) + outside(py, s.y, s.y + s.h) * 1.5 + bias;
+  return Math.abs(py - s.y) + outside(px, s.x, s.x + s.w) * 1.5 + bias;
+}
+
+export function nearestSpot(spots: DropSpot[], px: number, py: number): DropSpot | null {
+  let best: DropSpot | null = null;
+  let bestD = SPOT_REACH;
+  for (const s of spots) {
+    const d = spotDistance(s, px, py);
+    if (d < bestD) { best = s; bestD = d; }
+  }
+  return best;
+}
 
 /** The chip's glyphs. Constant SVG, so setting them as markup injects nothing. */
 const GLYPH = {
@@ -97,6 +217,14 @@ type Msg =
       /** Container the block should land in, or null for the region itself. */
       parentId: string | null;
       index: number;
+      /**
+       * The neighbours the drop sits between. The editor places by THESE when it has
+       * them: the page may not draw every block in a list (another audience's, one
+       * that rendered nothing), so a count of what is on screen is not an index into
+       * the document.
+       */
+      beforeId?: string | null;
+      afterId?: string | null;
     }
   /** A keystroke this document swallowed that belongs to the editor around it. */
   | { source: "xt-preview"; type: "shortcut"; action: "undo" | "redo" }
@@ -125,7 +253,13 @@ type Msg =
       region: string;
       parentId: string | null;
       index: number;
+      beforeId?: string | null;
+      afterId?: string | null;
+      /** A ready-made section from the library, rather than one block. */
+      preset?: string;
     }
+  /** Text typed straight onto the page, for one prop of one block. */
+  | { source: "xt-preview"; type: "inlineEdit"; id: string; prop: string; value: string }
   /** The `+` under a block: the next library pick goes straight after it. */
   | { source: "xt-preview"; type: "insertAfter"; id: string }
   /**
@@ -151,9 +285,6 @@ type Msg =
 
 const post = (msg: Msg) => window.parent?.postMessage(msg, window.location.origin);
 
-/** Nearest legal drop parent: a container wrapper, or a region's own element. */
-const DROP_PARENT = "[data-xt-container],[data-xt-region]:not([data-xt-block])";
-
 /** The block's first real element — the `display: contents` wrapper has no box. */
 function boxOf(wrapper: Element): DOMRect | null {
   const el = wrapper.querySelector(":scope > *");
@@ -166,11 +297,9 @@ function boxOf(wrapper: Element): DOMRect | null {
 const allWrappers = (): HTMLElement[] =>
   [...document.querySelectorAll("[data-xt-block]")] as HTMLElement[];
 
-// `childrenOf` and `resolveDropParent` are exported for their tests, which run
-// them against DOM the real renderer produced. They are the two functions nesting
-// broke — the old versions used `closest("[data-xt-region]")` and `:scope >`,
-// which silently resolve to the wrong parent and an empty sibling list the moment
-// anything is nested — so they are worth pinning down directly.
+// `childrenOf` is exported for its tests, which run it against DOM the real renderer
+// produced. Nesting broke it once — `:scope >` silently finds an empty sibling list
+// the moment anything is nested — so it is worth pinning down directly.
 
 /** Looked up by scanning rather than by selector: a block id comes from a stored
  *  document, so it is not guaranteed to be safe to interpolate into one. */
@@ -190,47 +319,6 @@ export const childrenOf = (parentId: string | null, region: string): HTMLElement
       ? el.dataset.xtParent === "" && el.dataset.xtRegion === region
       : el.dataset.xtParent === parentId,
   );
-
-export interface DropParent { parentId: string | null; region: string; el: HTMLElement }
-
-/**
- * Walk outwards for a container or region that will accept the dragged block.
- *
- * Three reasons a candidate is skipped: it is the dragged block itself, it sits
- * inside the dragged block (both would build a cycle), or its type does not admit
- * this child. Skipping rather than refusing outright means dragging a heading over
- * a `columns` row still has somewhere sensible to go — the row's own parent.
- */
-export function resolveDropParent(
-  from: Element | null,
-  draggedType: string,
-  dragged: HTMLElement | null,
-  /**
-   * The OPEN document. The page also renders the site header and footer, which are
-   * other documents — a drop must never aim into one, or the editor would be handed
-   * a region its document does not have. Omitted, every document is a candidate.
-   */
-  template?: string | null,
-): DropParent | null {
-  let el: Element | null = from;
-  while (el) {
-    const cand = el.closest(DROP_PARENT) as HTMLElement | null;
-    if (!cand) return null;
-    const parentId = cand.dataset.xtBlock ?? null;
-    // `acceptsChild` keys off the block TYPE; the id would look up nothing in the
-    // registry and silently reject every container. A region candidate carries no
-    // type, which is exactly the null the region case wants.
-    const parentType = cand.dataset.xtType ?? null;
-    const region = cand.dataset.xtRegion;
-    const selfOrInside = !!dragged && (dragged === cand || dragged.contains(cand));
-    const otherDocument = !!template && cand.dataset.xtTemplate !== template;
-    if (region && !selfOrInside && !otherDocument && acceptsChild(parentType, draggedType)) {
-      return { parentId, region, el: cand };
-    }
-    el = cand.parentElement;
-  }
-  return null;
-}
 
 function ensure(id: string, className: string): HTMLElement {
   let el = document.getElementById(id);
@@ -278,6 +366,8 @@ export function installPreviewBridge(): () => void {
   const line = ensure(LINE_ID, "xt-preview-dropline");
   const zone = ensure(ZONE_ID, "xt-preview-dropzone");
   const mark = ensure(MARK_ID, "xt-preview-insertmark");
+  const spotLayer = ensure(SPOTS_ID, "xt-preview-spots");
+  const changeLayer = ensure(CHANGES_ID, "xt-preview-changes");
   const plus = (() => {
     let el = document.getElementById(PLUS_ID) as HTMLButtonElement | null;
     if (!el) {
@@ -315,9 +405,18 @@ export function installPreviewBridge(): () => void {
   /** The selection whose bounds the editor already has. */
   let reportedFor: string | null = null;
   let dragId: string | null = null;
-  let drop: { region: string; parentId: string | null; index: number } | null = null;
+  let drop: DropSpot | null = null;
+  /** Every place the current drag can land, worked out once when it starts. */
+  let spots: DropSpot[] = [];
   /** The library block being dragged in from the editor, announced by `nv:dragNew`. */
   let newType: string | null = null;
+  /** …and the ready-made section it is, when it is one. */
+  let newPreset: string | null = null;
+  /** Blocks publishing would change, and whether the editor wants them marked. */
+  let changedIds: string[] = [];
+  let showChanges = false;
+  /** The block whose text is being typed on the page, while it is. */
+  let inline: { el: HTMLElement; box: HTMLElement; id: string; prop: string; original: string } | null = null;
   /** The open document's template key, from the pushed document. */
   let openTemplate: string | null = null;
   /** The selected block's ancestors then itself, and whether it can move up/down. */
@@ -466,8 +565,61 @@ export function installPreviewBridge(): () => void {
     frame(target, !hovered && !!selectedId);
     drawPlus();
     drawMark();
+    drawChanges();
     reportBounds();
   };
+
+  /**
+   * "Changed" marks: an outline and a tag on every block publishing would change.
+   *
+   * Drawn like the selection frame, over the page and never on it, so a marked page
+   * is laid out exactly like an unmarked one.
+   */
+  function drawChanges() {
+    changeLayer.replaceChildren();
+    if (!showChanges) return;
+    for (const id of changedIds) {
+      const w = wrapperById(id);
+      const r = w && w.dataset.xtTemplate === openTemplate ? boxOf(w) : null;
+      if (!r) continue;
+      const box = document.createElement("div");
+      box.className = "xt-preview-changed";
+      Object.assign(box.style, {
+        top: `${r.top + window.scrollY}px`, left: `${r.left + window.scrollX}px`,
+        width: `${r.width}px`, height: `${r.height}px`,
+      });
+      const tag = document.createElement("span");
+      tag.textContent = chipLabels.changed ?? "Changed";
+      box.append(tag);
+      changeLayer.append(box);
+    }
+  }
+
+  /** The faint lines and boxes of every spot the current drag can land on. */
+  function drawSpots() {
+    spotLayer.replaceChildren();
+    for (const sp of spots) {
+      const el = document.createElement("div");
+      el.className = `xt-preview-spot xt-preview-spot--${sp.kind}${sp === drop ? " is-on" : ""}`;
+      Object.assign(el.style, {
+        top: `${sp.kind === "line" ? sp.y - 1 : sp.y}px`,
+        left: `${sp.kind === "across" ? sp.x - 1 : sp.x}px`,
+        width: sp.kind === "across" ? "3px" : `${sp.w}px`,
+        height: sp.kind === "line" ? "3px" : `${sp.h}px`,
+      });
+      if (sp.kind === "box") el.textContent = chipLabels.dropHere ?? "";
+      spotLayer.append(el);
+    }
+  }
+
+  /** Work out where the current drag can land; called once per drag (and on scroll). */
+  function refreshSpots() {
+    const dragged = dragId ? wrapperById(dragId) : null;
+    const type = dragId ? dragged?.dataset.xtType ?? "" : newType ?? "";
+    spots = type ? collectDropSpots(type, dragged, openTemplate) : [];
+    drop = null;
+    drawSpots();
+  }
 
   /**
    * The `+` under the hovered block: "put the next block right here".
@@ -646,6 +798,7 @@ export function installPreviewBridge(): () => void {
 
   // ── drag within the preview, and in from the library ─────────────────────
   const onDragStart = (e: DragEvent) => {
+    if (inline) { e.preventDefault(); return; }
     const w = wrapperFrom(e.target);
     if (!w?.dataset.xtBlock) return;
     dragId = w.dataset.xtBlock;
@@ -653,6 +806,8 @@ export function installPreviewBridge(): () => void {
     if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
     document.documentElement.classList.add("xt-dragging");
     plus.style.display = "none";
+    // After the browser has taken its drag image, so the faded block is not what it shows.
+    requestAnimationFrame(() => { w.classList.add("xt-drag-source"); refreshSpots(); });
   };
 
   const onDragOver = (e: DragEvent) => {
@@ -662,86 +817,40 @@ export function installPreviewBridge(): () => void {
     const EDGE = 48;
     if (e.clientY < EDGE) window.scrollBy(0, -Math.ceil((EDGE - e.clientY) / 3));
     else if (e.clientY > window.innerHeight - EDGE) window.scrollBy(0, Math.ceil((e.clientY - window.innerHeight + EDGE) / 3));
-    const dragged = dragId ? wrapperById(dragId) : null;
-    const type = dragId ? dragged?.dataset.xtType ?? "" : newType!;
-    const target = resolveDropParent(e.target as Element | null, type, dragged, openTemplate);
-    if (!target) { line.style.display = "none"; drawZone(null); drop = null; return; }
+    if (newType && spots.length === 0) refreshSpots();
 
+    const best = nearestSpot(spots, e.clientX + window.scrollX, e.clientY + window.scrollY);
+    if (best !== drop) {
+      drop = best;
+      drawSpots();
+      if (best) {
+        line.style.display = "none";
+        Object.assign(zone.style, {
+          display: best.parentId ? "block" : "none",
+          top: `${best.parent.y}px`, left: `${best.parent.x}px`,
+          width: `${best.parent.w}px`, height: `${best.parent.h}px`,
+        });
+      } else {
+        drawZone(null);
+      }
+    }
+    if (!drop) return;
     e.preventDefault();
     if (e.dataTransfer) e.dataTransfer.dropEffect = dragId ? "move" : "copy";
     document.documentElement.classList.add("xt-dragging");
-
-    // The dragged block stays in the list: `moveBlock` takes the index as the list
-    // is BEFORE the block is lifted out, which is exactly what this counts.
-    const siblings = childrenOf(target.parentId, target.region);
-    const w = wrapperFrom(e.target);
-
-    // Appending is the default, so hovering a container's own padding — rather
-    // than one of its children — puts the block at the end of it. Side by side
-    // (the tracks of a `columns` row) the halves are left and right, not top and
-    // bottom.
-    const across = target.el.dataset.xtType === "columns";
-    let index = siblings.length;
-    if (w) {
-      const own = siblings.find((s) => s === w || s.contains(w));
-      const i = own ? siblings.indexOf(own) : -1;
-      const rect = own ? boxOf(own) : null;
-      if (i !== -1 && rect) {
-        const after = across ? e.clientX > rect.left + rect.width / 2 : e.clientY > rect.top + rect.height / 2;
-        index = i + (after ? 1 : 0);
-      }
-    }
-    drop = { region: target.region, parentId: target.parentId, index };
-    drawZone(target.parentId ? target.el : null);
-
-    // Draw the insertion line where the block will actually land.
-    const at = siblings[Math.min(index, siblings.length - 1)];
-    const rect = at ? boxOf(at) : null;
-    if (rect) {
-      const atEnd = index >= siblings.length;
-      line.style.display = "block";
-      if (across) {
-        Object.assign(line.style, {
-          top:    `${rect.top + window.scrollY}px`,
-          left:   `${(atEnd ? rect.right + 4 : rect.left - 5) + window.scrollX}px`,
-          width:  "3px",
-          height: `${rect.height}px`,
-        });
-      } else {
-        Object.assign(line.style, {
-          top:    `${(atEnd ? rect.bottom + 3 : rect.top - 4) + window.scrollY}px`,
-          left:   `${rect.left + window.scrollX}px`,
-          width:  `${rect.width}px`,
-          height: "",
-        });
-      }
-    } else {
-      // An empty container or region has no sibling to anchor to; the drop
-      // parent's own box is the honest place to show the line.
-      const r = (boxOf(target.el) ?? target.el.getBoundingClientRect());
-      line.style.display = "block";
-      Object.assign(line.style, {
-        top:    `${r.top + r.height / 2 + window.scrollY}px`,
-        left:   `${r.left + window.scrollX}px`,
-        width:  `${r.width}px`,
-        height: "",
-      });
-    }
   };
 
   const onDrop = (e: DragEvent) => {
     if (!drop || (!dragId && !newType)) return;
     e.preventDefault();
+    const at = {
+      region: drop.region, parentId: drop.parentId, index: drop.index,
+      beforeId: drop.beforeId, afterId: drop.afterId,
+    };
     if (dragId) {
-      post({
-        source: "xt-preview", type: "move", id: dragId,
-        region: drop.region, parentId: drop.parentId, index: drop.index,
-      });
+      post({ source: "xt-preview", type: "move", id: dragId, ...at });
     } else if (newType) {
-      post({
-        source: "xt-preview", type: "insert", blockType: newType,
-        region: drop.region, parentId: drop.parentId, index: drop.index,
-      });
+      post({ source: "xt-preview", type: "insert", blockType: newType, ...at, ...(newPreset ? { preset: newPreset } : {}) });
     }
     endDrag();
   };
@@ -749,19 +858,94 @@ export function installPreviewBridge(): () => void {
   /** A drag that leaves the page (back to the editor) shows no stale line. */
   const onDragLeave = (e: DragEvent) => {
     if (e.relatedTarget) return;
-    line.style.display = "none";
-    drawZone(null);
     drop = null;
+    drawSpots();
+    drawZone(null);
   };
 
   function endDrag() {
+    if (dragId) wrapperById(dragId)?.classList.remove("xt-drag-source");
     dragId = null;
     newType = null;
+    newPreset = null;
     drop = null;
+    spots = [];
+    spotLayer.replaceChildren();
     line.style.display = "none";
     drawZone(null);
     document.documentElement.classList.remove("xt-dragging");
   }
+
+  /**
+   * Typing on the page: double-click a block's text.
+   *
+   * A block opts a piece of its markup in with `data-xt-inline="<prop>"`. The text is
+   * edited in a box laid over that element, not in the element itself: React owns the
+   * element's text, and editing it in place leaves React's idea of the DOM out of step
+   * the first time an edit is cancelled. The page re-renders from the document once
+   * the editor has applied the change, exactly as for any other edit.
+   *
+   * Only a CHANGE is sent. Text that is a translation reference shows in the admin's
+   * language; opening it and closing it again must not freeze it to that language.
+   */
+  function startInline(el: HTMLElement, wrapper: HTMLElement) {
+    const id = wrapper.dataset.xtBlock;
+    const prop = el.dataset.xtInline;
+    const r = el.getBoundingClientRect();
+    if (!id || !prop || r.width === 0) return;
+    const cs = getComputedStyle(el);
+    const box = document.createElement("div");
+    box.className = "xt-preview-inline";
+    box.contentEditable = "plaintext-only";
+    box.spellcheck = true;
+    box.textContent = el.textContent ?? "";
+    for (const k of ["font", "letterSpacing", "lineHeight", "textAlign", "textTransform", "color", "wordSpacing"] as const) {
+      box.style[k] = cs[k];
+    }
+    Object.assign(box.style, {
+      top: `${r.top + window.scrollY}px`, left: `${r.left + window.scrollX}px`,
+      width: `${Math.max(r.width, 80)}px`, minHeight: `${r.height}px`,
+    });
+    document.body.append(box);
+    el.style.visibility = "hidden";
+    inline = { el, box, id, prop, original: (el.textContent ?? "").trim() };
+    plus.style.display = "none";
+    box.focus();
+    const range = document.createRange();
+    range.selectNodeContents(box);
+    const sel = window.getSelection();
+    sel?.removeAllRanges();
+    sel?.addRange(range);
+    box.addEventListener("keydown", (e) => {
+      e.stopPropagation();
+      if (e.key === "Escape") { e.preventDefault(); endInline(false); }
+      else if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); endInline(true); }
+    });
+    box.addEventListener("blur", () => endInline(true));
+  }
+
+  function endInline(keep: boolean) {
+    const cur = inline;
+    if (!cur) return;
+    inline = null;
+    const value = (cur.box.textContent ?? "").replace(/\s+/g, " ").trim();
+    cur.box.remove();
+    cur.el.style.visibility = "";
+    if (keep && value && value !== cur.original) {
+      post({ source: "xt-preview", type: "inlineEdit", id: cur.id, prop: cur.prop, value });
+    }
+  }
+
+  const onDoubleClick = (e: MouseEvent) => {
+    if (iconMode || inline) return;
+    const el = (e.target as Element | null)?.closest?.("[data-xt-inline]") as HTMLElement | null;
+    const wrapper = el ? wrapperFrom(el) : null;
+    // Only the open document's blocks: the header's text belongs to another draft.
+    if (!el || !wrapper?.dataset.xtDrag) return;
+    e.preventDefault();
+    e.stopPropagation();
+    startInline(el, wrapper);
+  };
 
   /**
    * Undo/redo pressed inside the preview.
@@ -772,6 +956,8 @@ export function installPreviewBridge(): () => void {
    * Forwarded as intent; the editor owns the stacks, as it owns the document.
    */
   const onKeyDown = (e: KeyboardEvent) => {
+    // Typing on the page keeps the browser's own undo for the text being typed.
+    if (inline) return;
     const action = shortcutFor(e);
     if (!action) return;
     e.preventDefault();
@@ -787,6 +973,8 @@ export function installPreviewBridge(): () => void {
       const d = e.data as { audience?: Record<string, string>; chip?: Record<string, string> };
       audienceLabels = d.audience ?? {};
       chipLabels = d.chip ?? {};
+      // What an empty section or column says on the page; CSS draws it (coreBlocks.scss).
+      document.documentElement.style.setProperty("--xt-empty-label", JSON.stringify(chipLabels.empty ?? ""));
       redraw();
     }
 
@@ -795,9 +983,20 @@ export function installPreviewBridge(): () => void {
     // drag released over the editor never reaches this document at all.
     if (data.type === "dragNew") {
       newType = (e.data as { blockType?: string }).blockType ?? null;
+      newPreset = (e.data as { preset?: string }).preset ?? null;
       plus.style.display = "none";
+      // Worked out on the first dragover rather than now: the drag may still be over
+      // the editor, and the page can scroll before it arrives.
+      spots = [];
     }
     if (data.type === "dragNewEnd") endDrag();
+
+    if (data.type === "changes") {
+      const d = e.data as { ids?: string[]; show?: boolean };
+      changedIds = d.ids ?? [];
+      showChanges = d.show === true;
+      drawChanges();
+    }
 
     if (data.type === "insertMark") {
       insertMark = (e.data as { mark?: typeof insertMark }).mark ?? null;
@@ -891,6 +1090,7 @@ export function installPreviewBridge(): () => void {
   document.addEventListener("mouseover", onOver, true);
   document.addEventListener("mouseleave", onLeave);
   document.addEventListener("click", onClick, true);
+  document.addEventListener("dblclick", onDoubleClick, true);
   /*
    * "The editor is looking at this page", for CSS to read.
    *
@@ -916,7 +1116,18 @@ export function installPreviewBridge(): () => void {
   // ⚠ AFTER the listener is attached, never before: this is the whole point of the
   // handshake. The editor answers by pushing everything it holds.
   post({ source: "xt-preview", type: "ready" });
-  window.addEventListener("scroll", redraw, true);
+  /** Lists move as the page scrolls past sticky things; re-measure where a drag can go. */
+  const onScroll = () => {
+    redraw();
+    if (!dragId && !newType) return;
+    const keep = drop;
+    refreshSpots();
+    drop = keep
+      ? spots.find((sp) => sp.parentId === keep.parentId && sp.beforeId === keep.beforeId && sp.afterId === keep.afterId) ?? null
+      : null;
+    drawSpots();
+  };
+  window.addEventListener("scroll", onScroll, true);
   window.addEventListener("resize", redraw);
 
   const stopReopen = reopenTrigger();
@@ -926,6 +1137,7 @@ export function installPreviewBridge(): () => void {
     document.removeEventListener("mouseover", onOver, true);
     document.removeEventListener("mouseleave", onLeave);
     document.removeEventListener("click", onClick, true);
+    document.removeEventListener("dblclick", onDoubleClick, true);
     document.removeEventListener("dragstart", onDragStart, true);
     document.removeEventListener("dragover", onDragOver);
     document.removeEventListener("drop", onDrop);
@@ -934,9 +1146,11 @@ export function installPreviewBridge(): () => void {
     plus.removeEventListener("click", onPlus);
     document.removeEventListener("keydown", onKeyDown);
     window.removeEventListener("message", onMessage);
-    window.removeEventListener("scroll", redraw, true);
+    window.removeEventListener("scroll", onScroll, true);
     window.removeEventListener("resize", redraw);
+    endInline(false);
     overlay.remove(); label.remove(); line.remove(); zone.remove(); mark.remove(); plus.remove();
+    spotLayer.remove(); changeLayer.remove();
     document.documentElement.classList.remove("xt-dragging");
     delete document.documentElement.dataset.xtEditor;
   };

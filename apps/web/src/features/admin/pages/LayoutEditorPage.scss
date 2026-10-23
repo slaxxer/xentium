@@ -165,11 +165,25 @@
   /* TWO columns: the rail, then the canvas. The rail shows the blocks (or the tree)
      when nothing is selected and the selected block's settings when something is, so
      the canvas is the same width either way and nothing ever covers the page. */
+  /* THREE columns since ADR-0012: what you add (and the outline), the page, and what
+     the selected thing is — the theme's settings when nothing is selected. */
   &__grid {
     display: grid;
-    grid-template-columns: 320px minmax(0, 1fr);
+    grid-template-columns: 300px minmax(0, 1fr) 320px;
     gap: var(--sp-4);
     align-items: start;
+  }
+
+  &__inspector {
+    position: sticky;
+    top: var(--sp-2);
+    max-height: calc(100vh - var(--sp-8));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  @media (max-width: 1360px) {
+    &__grid { grid-template-columns: 260px minmax(0, 1fr) 280px; }
   }
 
   &__rail {
@@ -185,7 +199,88 @@
 
   @media (max-width: 1000px) {
     &__grid { grid-template-columns: minmax(0, 1fr); }
-    &__rail { position: static; max-height: none; overflow: visible; }
+    &__rail, &__inspector { position: static; max-height: none; overflow: visible; }
+  }
+
+  /* "3 changes": what publishing would change; pressed, the page marks each one. */
+  &__changes {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    height: 38px;
+    padding: 0 12px;
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-md);
+    background: var(--c-surface);
+    color: var(--c-fg-muted);
+    font: inherit;
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+
+    svg { color: var(--c-warn); }
+    &:disabled { cursor: default; opacity: 0.6; svg { color: inherit; } }
+    &:not(:disabled):hover { border-color: var(--c-warn); }
+    &.is-on {
+      border-color: var(--c-warn);
+      background: color-mix(in srgb, var(--c-warn) 12%, var(--c-surface));
+      color: var(--c-fg);
+    }
+  }
+
+  /* Removed since the last publish, each one a button that puts it back. */
+  &__removed {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--sp-2);
+    padding: var(--sp-2) var(--sp-3);
+    margin-bottom: var(--sp-3);
+    border: 1px solid var(--c-warn);
+    border-radius: var(--card-radius);
+    background: color-mix(in srgb, var(--c-warn) 8%, var(--card-bg));
+    font-size: var(--fs-sm);
+  }
+
+  &__removed-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border: 1px solid var(--c-border);
+    border-radius: 999px;
+    background: var(--c-surface);
+    color: var(--c-fg);
+    font: inherit;
+    font-size: var(--fs-xs);
+    font-weight: 600;
+    cursor: pointer;
+
+    em { font-style: normal; color: var(--c-accent); }
+    &:hover { border-color: var(--c-accent); }
+  }
+
+  &__props-bar-title {
+    font-size: var(--fs-2xs);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--c-fg-subtle);
+  }
+
+  /* Typed over a translated default: one language now, with the way back. */
+  &__fixedtext {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--sp-2);
+    padding: var(--sp-2) var(--sp-3);
+    margin-bottom: var(--sp-3);
+    border-radius: var(--radius-md);
+    background: var(--c-bg);
+
+    p { margin: 0; }
   }
 
   /* ── the document chip ─────────────────────────────────────────────────── */
@@ -1089,22 +1184,6 @@
     padding: var(--sp-3) var(--sp-4) var(--sp-4);
   }
 
-  &__props-back {
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    padding: 6px 10px;
-    margin-left: -10px;
-    border: 0;
-    border-radius: var(--radius-sm);
-    background: none;
-    color: var(--c-fg-muted);
-    font: inherit;
-    font-size: var(--fs-sm);
-    font-weight: 600;
-    cursor: pointer;
-    &:hover { background: var(--c-bg-hover); color: var(--c-fg); }
-  }
 
   /* Where the block sits: the area, then each container, as links up the tree. */
   &__props-path {
@@ -1228,8 +1307,9 @@
   &__props-acts {
     position: relative;
     display: flex;
+    flex-wrap: wrap;   /* the settings pane is narrower since it became its own column */
     align-items: center;
-    gap: 2px;
+    gap: 4px 2px;
     margin-top: var(--sp-3);
     padding: 6px 0;
     border-block: 1px solid var(--c-border);
