@@ -65,6 +65,15 @@ export const registerSchema = z.object({
     )
     .optional()
     .default([]),
+  /**
+   * What add-ons' own sign-up fields collected, by add-on id. Core stores none of it:
+   * each add-on reads its part in its `registration.validate` filter and its
+   * `user.registered` listener. Bounded: a sign-up is no place for a payload.
+   */
+  addons: z.record(z.string().regex(/^[a-z0-9][a-z0-9._-]{0,63}$/i), z.unknown())
+    .refine((v) => Object.keys(v).length <= 20 && JSON.stringify(v).length <= 16_384, "Too much add-on data")
+    .optional()
+    .default({}),
 });
 export type RegisterInput = z.infer<typeof registerSchema>;
 
