@@ -145,6 +145,11 @@ function useAcpAlerts() {
   const canUpdate = userCan(user, CorePermissions.SYSTEM_UPDATE);
   const updateRun = useCoreUpdateRun(!!user && canUpdate);
   const oneClick = canUpdate && !!updateRun.data?.available && !!updateRun.data.offered;
+  /** Why an admin who may update gets no button: said in the dialog, not left to guess. */
+  const oneClickMissing = canUpdate && !!updateRun.data && !updateRun.data.available
+    ? updateRun.data.unavailableReason : null;
+  /** The dialog is opened once; opening it before the updater's state is known lost the button. */
+  const oneClickKnown = !canUpdate || !updateRun.isPending;
 
   useEffect(() => {
     const licenseNeeds = !!status && (status.licenseExpiringSoon || status.licenseExpired) && !status.licenseAcknowledged;
@@ -178,7 +183,8 @@ function useAcpAlerts() {
         badgeTone:   coreUrgent ? "danger" : "calm",
         large:       true,
         bodyNode:    <CoreUpdateDialogBody update={core!} plugins={list}
-                       onUpdateNow={oneClick ? () => { resolveDialog(true); openCoreUpdateRun(); } : undefined} />,
+                       onUpdateNow={oneClick ? () => { resolveDialog(true); openCoreUpdateRun(); } : undefined}
+                       oneClickMissing={oneClickMissing} />,
         confirmText: withPlugins ? t("coreUpdate.dialogPlugins") : t("coreUpdate.dialogOk"),
         cancelText:  withPlugins ? t("coreUpdate.dialogClose") : undefined,
       }).then((ok) => {
@@ -267,7 +273,7 @@ function useAcpAlerts() {
     }
 
     // A new core carries the plugin list with it.
-    if (coreNeeds) { showCore(); return; }
+    if (coreNeeds) { if (oneClickKnown) showCore(); return; }
 
     if (!updatesNeed) return;
     if (shownFor.current === setHash || pluginsShownWithCore.current === setHash) return;
@@ -297,7 +303,7 @@ function useAcpAlerts() {
       // don't count, so the dialog returns on the next ACP entry.
       if (view) navigate("/admin/updates");
     });
-  }, [status, updates, broadcasts, t, navigate, qc, oneClick]);
+  }, [status, updates, broadcasts, t, navigate, qc, oneClick, oneClickMissing, oneClickKnown]);
 }
 
 function AcpShell() {

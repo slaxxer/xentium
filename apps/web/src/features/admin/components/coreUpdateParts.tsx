@@ -205,11 +205,13 @@ export function PluginUpdateList({ updates }: { updates: PluginUpdateRow[] }) {
 
 /** The dialog's body: the facts, what to watch out for, the changelog, how to
  *  install, and any plugin updates waiting at the same time. */
-export function CoreUpdateDialogBody({ update, plugins = [], onUpdateNow }: {
+export function CoreUpdateDialogBody({ update, plugins = [], onUpdateNow, oneClickMissing = null }: {
   update: CoreUpdate;
   plugins?: PluginUpdateRow[];
   /** Set where the updater runs and this admin may update: the one-click button. */
   onUpdateNow?: () => void;
+  /** This admin may update, but the site can't from here: why, instead of the button. */
+  oneClickMissing?: "not-cli-install" | "no-updater" | null;
 }) {
   const { t, i18n } = useTranslation("acp");
   const released = releaseDate(update.latest.publishedAt, i18n.language);
@@ -232,6 +234,11 @@ export function CoreUpdateDialogBody({ update, plugins = [], onUpdateNow }: {
           </div>
           <button type="button" className="btn-primary" onClick={onUpdateNow}>{t("coreUpdate.run.updateNow")}</button>
         </div>
+      )}
+      {!onUpdateNow && oneClickMissing && (
+        <p className="core-dialog__pre">
+          {t(oneClickMissing === "not-cli-install" ? "coreUpdate.run.notCli" : "coreUpdate.run.noUpdaterShort")}
+        </p>
       )}
       <UpdateCommand update={update} />
       {plugins.length > 0 && <PluginUpdateList updates={plugins} />}
