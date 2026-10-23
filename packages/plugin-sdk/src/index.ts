@@ -375,6 +375,9 @@ export interface ContentKindHandler {
  * platform can offer.
  */
 export interface PluginHost extends BasePluginHost {
+  /** Background jobs for THIS plugin (see `ctx.registerJob`). Core 1.0.0. */
+  jobs: PluginJobs;
+
   /**
    * Progression primitives (§38). Core owns the ladder; a plugin owns the
    * thresholds and limits for its own content, keyed by the group id this
@@ -557,6 +560,38 @@ export type EventListener<K extends keyof CoreEventMap> =
 export type FilterHandler<K extends keyof CoreFilterMap> =
   (input: CoreFilterMap[K]["input"]) => CoreFilterMap[K]["output"] | Promise<CoreFilterMap[K]["output"]>;
 
+// ── Background jobs (core 1.0.0) ────────────────────────────────────────────
+
+/**
+ * Work that runs in the background, in the site's worker: exactly once, retried on
+ * failure, and kept across restarts. Use it instead of `setInterval`, which runs once
+ * in EVERY process (each API process and the worker load your plugin) and loses
+ * anything pending when the site restarts.
+ */
+export interface PluginJobDeclaration<T = unknown> {
+  /** Unique within your plugin: letters, digits, `.`, `_`, `-` (no `__`), up to 64. */
+  name: string;
+  handler: (data: T, info: { attempt: number; jobId: string }) => unknown | Promise<unknown>;
+  /** Retries after the first attempt, with a growing pause. 0–10, default 3. */
+  retries?: number;
+}
+
+/** A cron pattern in the site's time zone (at most once a minute), or every N minutes (1–10080). */
+export type PluginJobSchedule = { cron: string } | { everyMinutes: number };
+
+export interface PluginJobs {
+  /** Run now, in the background. Returns the job id. */
+  run(name: string, data?: unknown): Promise<string>;
+  /** Run at `when`. With a `key`, scheduling the same key again MOVES the job. */
+  at(name: string, data: unknown, when: Date, opts?: { key?: string }): Promise<string>;
+  /** Remove a job scheduled with a key. False when there was none, or it is running right now. */
+  cancel(name: string, key: string): Promise<boolean>;
+  /** Repeat on a schedule; call it in `onEnable` (calling again replaces it). Stopped when the plugin is disabled. */
+  every(name: string, schedule: PluginJobSchedule, data?: unknown): Promise<void>;
+  /** Stop a repeating job. */
+  stop(name: string): Promise<void>;
+}
+
 // ── Context ──────────────────────────────────────────────────────────────────
 
 /**
@@ -564,6 +599,12 @@ export type FilterHandler<K extends keyof CoreFilterMap> =
  * registration that only makes sense on a content and community platform.
  */
 export interface PluginContext extends BasePluginContext<PluginHost> {
+  /**
+   * Declare a background job, in `onEnable`. Then `host.jobs.run / at / every` start it.
+   * While the plugin is disabled its jobs wait; uninstalling removes them.
+   */
+  registerJob<T = unknown>(job: PluginJobDeclaration<T>): void;
+
   /** Listen to a core event (see `CoreEventMap`), or to another plugin's by its name. Dropped on disable. */
   on<K extends keyof CoreEventMap>(event: K, listener: EventListener<K>): void;
   on(event: string, listener: (payload: unknown, meta: { event: string; at: string }) => void | Promise<void>): void;

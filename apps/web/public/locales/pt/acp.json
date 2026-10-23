@@ -1322,7 +1322,10 @@
     "scheduleSaved": "Agendamento guardado.",
     "saveFailed": "Não foi possível guardar o agendamento.",
     "queuedToRun": "«{{label}}» enfileirada para executar agora.",
-    "triggerFailed": "Não foi possível acionar a tarefa."
+    "triggerFailed": "Não foi possível acionar a tarefa.",
+    "fromAddons": "De complementos",
+    "fromAddonsHint": "Tarefas repetidas agendadas pelos seus complementos. Cada um gere o seu horário; altere-o nas definições dele.",
+    "everyMinutes": "A cada {{count}} min"
   },
   "tasks": {
     "title": "Tarefas personalizadas",

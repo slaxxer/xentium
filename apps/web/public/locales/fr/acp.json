@@ -1322,7 +1322,10 @@
     "scheduleSaved": "Planification enregistrée.",
     "saveFailed": "Impossible d'enregistrer la planification.",
     "queuedToRun": "« {{label}} » mise en file pour exécution immédiate.",
-    "triggerFailed": "Impossible de déclencher la tâche."
+    "triggerFailed": "Impossible de déclencher la tâche.",
+    "fromAddons": "Des extensions",
+    "fromAddonsHint": "Tâches répétées planifiées par vos extensions. Chacune gère son horaire ; modifiez-le dans ses réglages.",
+    "everyMinutes": "Toutes les {{count}} min"
   },
   "tasks": {
     "title": "Tâches personnalisées",

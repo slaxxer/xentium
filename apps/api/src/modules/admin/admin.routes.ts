@@ -156,6 +156,7 @@ adminRouter.patch("/auth-providers/:provider", adminGuard, adminProviderUpdateHa
 
 // Scheduled tasks (cron jobs)
 adminRouter.get("/jobs",            adminGuard, adminController.listJobs);
+adminRouter.get("/jobs/plugins",    adminGuard, adminController.listPluginJobs);
 adminRouter.put("/jobs/:key",       adminGuard, adminController.updateJob);
 adminRouter.post("/jobs/:key/run",  adminGuard, adminController.runJob);
 

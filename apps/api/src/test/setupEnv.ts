@@ -24,6 +24,11 @@ process.env.DATABASE_URL = resolveTestDatabaseUrl();
 // development database still points at.
 process.env.UPLOAD_DIR = path.join(os.tmpdir(), "xentium-test-uploads");
 
+// Redis too: the development worker shares this Redis, and with the same key prefix
+// it would pick up the tests' queued jobs (plugin jobs above all) and run them
+// against the development database.
+process.env.REDIS_KEY_PREFIX = `${process.env.REDIS_KEY_PREFIX ?? "xentium:"}test:`;
+
 // Some code paths relax behaviour for tests (rate limits, dev shortcuts); make the
 // mode explicit rather than inheriting whatever the shell had.
 process.env.NODE_ENV = "test";

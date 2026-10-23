@@ -29,6 +29,8 @@ export const queues = {
   geoipRefresh:           new Queue('geoip-refresh',             queueOpts),
   // One queue for ALL admin-created tasks; the scheduler id carries the task id.
   scheduledTask:          new Queue('scheduled-task',            queueOpts),
+  // Every plugin's background work (ADR-0011); the job data carries the plugin id.
+  pluginJobs:             new Queue('plugin-jobs',               queueOpts),
 } as const;
 
 export { bullConnection, prefix as bullPrefix, defaultJobOptions as _opts };

@@ -1,5 +1,5 @@
 import type { Router } from "express";
-import type { PluginContext, PluginHost, PermissionDeclaration, NavItemDeclaration, AcpPageDeclaration, SearchSource, HomeFeedSource, ReportTargetHandler, EmbedHandler, ContentKindHandler, StatSource, ProgressionCriteria, NotifyOptions, PluginRouter, XecCodeDeclaration, LayoutTemplateDeclaration, BadgeCriteria
+import type { PluginContext, PluginHost, PluginJobDeclaration, PermissionDeclaration, NavItemDeclaration, AcpPageDeclaration, SearchSource, HomeFeedSource, ReportTargetHandler, EmbedHandler, ContentKindHandler, StatSource, ProgressionCriteria, NotifyOptions, PluginRouter, XecCodeDeclaration, LayoutTemplateDeclaration, BadgeCriteria
 } from "@xentium/plugin-sdk";
 import { CorePermissions, registerTemplate } from "@xentium/contracts";
 import { progressionCriteriaRegistry } from "../progression-registry/progression-criteria-registry.js";
@@ -37,6 +37,7 @@ import { renderEmailTemplate, siteVars } from "../../infrastructure/email/email-
 import { recipientLocale, serverText, toServerLocale } from "../../shared/i18n/serverText.js";
 import { resolveCronPattern, previewRuns } from "../../jobs/scheduledJobs.js";
 import { addFilter, addListener, emitAny, emitGroupsChanged } from "../events/events.js";
+import { jobsFor, registerJob } from "../plugin-platform/jobs.js";
 
 /**
  * A plugin putting a member into a group (a paid membership, an earned role). The
@@ -65,8 +66,8 @@ export async function removeFromGroup(userId: string, groupId: string): Promise<
   if (count) emitGroupsChanged(userId, [groupId], []);
 }
 
-/** Host services injected into every plugin's onEnable/onDisable context. */
-const host: PluginHost = {
+/** Host services shared by every plugin; the plugin's own (`jobs`) are added per context. */
+const host: Omit<PluginHost, "jobs"> = {
   prisma,
   queues,
   env,
@@ -133,9 +134,15 @@ const host: PluginHost = {
 };
 
 export class PluginContextImpl implements PluginContext {
-  readonly host: PluginHost = host;
+  readonly host: PluginHost;
 
-  constructor(public readonly pluginId: string) {}
+  constructor(public readonly pluginId: string) {
+    this.host = { ...host, jobs: jobsFor(pluginId) };
+  }
+
+  registerJob<T = unknown>(job: PluginJobDeclaration<T>): void {
+    registerJob(this.pluginId, job as PluginJobDeclaration);
+  }
 
   registerRoutes(router: Router | PluginRouter): void {
     pluginRouter.register(this.pluginId, router as Router);

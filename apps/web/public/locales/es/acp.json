@@ -1322,7 +1322,10 @@
     "scheduleSaved": "Programación guardada.",
     "saveFailed": "No se pudo guardar la programación.",
     "queuedToRun": "«{{label}}» encolada para ejecutarse ahora.",
-    "triggerFailed": "No se pudo activar la tarea."
+    "triggerFailed": "No se pudo activar la tarea.",
+    "fromAddons": "De complementos",
+    "fromAddonsHint": "Tareas repetidas que programaron tus complementos. Cada uno decide su horario; cámbialo en sus ajustes.",
+    "everyMinutes": "Cada {{count}} min"
   },
   "tasks": {
     "title": "Tareas personalizadas",
