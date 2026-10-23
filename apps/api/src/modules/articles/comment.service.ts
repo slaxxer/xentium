@@ -14,6 +14,7 @@ import { hasPermission } from "../../shared/middleware/requirePermission.js";
 import { removeArticleComment } from "./comment.remove.js";
 import { CorePermissions } from "@xentium/contracts";
 import { enforceCommentLength, enforceDailyCommentLimit } from "../../shared/middleware/contentLimits.js";
+import { assertAllowed, emit, plainForFilter } from "../../core/events/events.js";
 
 const commentInclude = {
   author: {
@@ -238,6 +239,8 @@ export const commentService = {
       }
     }
 
+    await assertAllowed("comment.validate", { userId: authorId, articleId, body: plainForFilter(body) });
+
     const result = await prisma.$transaction(async (tx) => {
       const created = await tx.articleComment.create({
         data: { articleId, authorId, body: sanitizeRichText(body), parentId: parentId ?? null, status: commentStatus },
@@ -258,6 +261,7 @@ export const commentService = {
       return created;
     });
 
+    emit("comment.created", { commentId: result.id, articleId, authorId });
     const shaped = shapeRow(result);
     if (commentStatus === "pending") {
       return { ...shaped, pending: true };
@@ -299,6 +303,7 @@ export const commentService = {
     }
 
     await enforceCommentLength(viewerId, body);
+    await assertAllowed("comment.validate", { userId: viewerId, articleId: existing.articleId, body: plainForFilter(body) });
 
     const updated = await prisma.articleComment.update({
       where: { id: commentId },
@@ -349,6 +354,7 @@ export const commentService = {
     if (!isOwn) return moderationService.moderatorDeleteArticleComment(commentId, viewerId, reason!);
 
     await prisma.$transaction((tx) => removeArticleComment(tx, commentId, viewerId, null));
+    emit("comment.deleted", { commentId, articleId: existing.articleId, authorId: existing.authorId });
   },
 };
 

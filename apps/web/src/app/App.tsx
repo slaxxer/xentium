@@ -45,6 +45,7 @@ import { FatalErrorOverlay }     from "../components/FatalErrorOverlay";
 import { HeadManager }           from "../components/HeadManager";
 import { RouteErrorPage }        from "../features/errors/RouteErrorPage";
 import { ErrorBoundary }         from "../features/errors/ErrorBoundary";
+import { useRouteEvents } from "../plugins/hostEvents";
 
 // ── Loaded on demand ─────────────────────────────────────────────────────────
 // The ACP, the article editor and the installer are most of the app's code and
@@ -181,6 +182,7 @@ function AppGuard() {
   useActivityLogger();
   useCustomTokens(!!(data?.installed || (error as any)?.status === 410));
   usePreviewBridge();
+  useRouteEvents();
 
   // Pathless layout routes in React Router render for EVERY URL.
   // When on the install wizard, let InstallRoute own the page — return null

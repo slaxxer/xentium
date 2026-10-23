@@ -90,6 +90,7 @@ export const XEC = {
   PLUGIN_TABLE_NAMING: "XEC-PLUGIN-2013",      // migration object touches a reserved (xcf_/xentium_) name or violates the plugin's declared tablePrefix
   PLUGIN_DISABLED: "XEC-PLUGIN-2020",
   PLUGIN_INCOMPATIBLE: "XEC-PLUGIN-2030",
+  PLUGIN_REFUSED: "XEC-PLUGIN-4220",           // an add-on's filter refused the action; details carry its message key
 
   // Forum plugin (XEC-FORUM-6xxx)
   FORUM_NODE_NOT_FOUND:    "XEC-FORUM-6001",

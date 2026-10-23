@@ -14,6 +14,7 @@ import { notificationService } from "../notifications/notification.service.js";
 import { getSetting } from "../../shared/utils/settings.js";
 import { recipientLocale } from "../../shared/i18n/serverText.js";
 import { assertProfileFieldValues, privacyFor } from "../users/profileFieldValues.js";
+import { assertAllowed, emit } from "../../core/events/events.js";
 
 /** `cookies` carries the SIGNED cookies through to auth guards, which read their
  *  own (a beta plugin needs `xt_beta`). Core never inspects them itself. */
@@ -163,6 +164,7 @@ export async function login(identifier: string, password: string, pin: string | 
   }
 
   const tokens = await createSession(user.id, meta, { persistent: opts.persistent ?? true });
+  emit("user.loggedIn", { userId: user.id, method: "password" });
   return {
     user: { id: user.id, email: user.email },
     ...tokens,
@@ -288,6 +290,7 @@ export async function register(
   if (existingUsername) {
     throw new XentiumError({ code: "XEC-AUTH-2002", httpStatus: 409, message: "Username is already taken" });
   }
+  await assertAllowed("registration.validate", { email, username, method: "password" });
 
   // Optional display / full name (registration.collect_name). Only stored when
   // collection is on; required only when the admin marked it required.
@@ -341,6 +344,7 @@ export async function register(
   // The form's consent box covered every document members must accept (the
   // controller refused the sign-up without it): record each at its revision.
   await legalService.accept(user.id);
+  emit("user.registered", { userId: user.id, method: "password" });
 
   // Invalidate the email verification code
   await redis.del(rkey("regcode", email));

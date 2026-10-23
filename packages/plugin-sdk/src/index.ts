@@ -466,6 +466,97 @@ export interface PluginHost extends BasePluginHost {
   };
 }
 
+// ── Events and filters (core 1.0.0) ─────────────────────────────────────────
+
+/**
+ * What core announces, and what each event carries. Listen with `ctx.on(name, fn)`.
+ *
+ * Every event is sent AFTER the change is committed, and listeners run after the
+ * request has moved on: a listener cannot slow, fail or undo what happened. Payloads
+ * are ids and the few facts you need to decide; fetch the rest yourself, minding
+ * who may see it. A listener has 5 seconds; start a job for anything longer.
+ *
+ * Plugins announce their own events with `ctx.emit("<pluginId>.<what>", payload)`;
+ * other plugins listen to those by name.
+ *
+ * This list only grows in 1.x: an event is never renamed or removed before 2.0.
+ */
+export interface CoreEventMap {
+  /** A new account exists. `method`: how it was made. */
+  "user.registered": { userId: string; method: "password" | "oauth" | "admin" };
+  /** A member signed in (after any PIN step). */
+  "user.loggedIn": { userId: string; method: string };
+  /** A member changed their profile or account settings. `fields`: which ones. */
+  "user.updated": { userId: string; fields: string[] };
+  /** A member's email address changed (confirmed). */
+  "user.emailChanged": { userId: string };
+  /** A member joined or left groups. */
+  "user.groupsChanged": { userId: string; added: string[]; removed: string[] };
+  /** A member received a warning. */
+  "user.warned": { userId: string; warningId: string; byUserId: string | null };
+  /** A member was banned. `until`: ISO time, or null for permanent. */
+  "user.banned": { userId: string; until: string | null; byUserId: string | null };
+  /** A member's ban ended or was lifted. */
+  "user.unbanned": { userId: string };
+
+  "article.created": { articleId: string; authorId: string };
+  /** An article became visible to readers (published now, or a scheduled one went live). */
+  "article.published": { articleId: string; authorId: string };
+  "article.updated": { articleId: string; authorId: string };
+  "article.deleted": { articleId: string; authorId: string };
+
+  "comment.created": { commentId: string; articleId: string; authorId: string };
+  "comment.deleted": { commentId: string; articleId: string; authorId: string };
+
+  /** Someone reported content. `targetType` is core's (`article`, `comment`, `user`, …) or a plugin's kind. */
+  "content.reported": { reportId: string; targetType: string; targetId: string; reporterId: string };
+
+  /** A site setting was saved in the ACP. */
+  "setting.changed": { key: string };
+  "plugin.enabled": { pluginId: string };
+  "plugin.disabled": { pluginId: string };
+  /** The site switched themes. `themeKey`: "" = the built-in Core theme. */
+  "theme.switched": { themeKey: string };
+}
+
+/** Stop an action, with the message members see: a translation key in your namespace. */
+export interface FilterRefusal {
+  /** e.g. `"myplugin:errors.reservedName"`; shipped in your plugin's locales. */
+  refuse: string;
+  /** Values for the message's placeholders. */
+  params?: Record<string, string | number>;
+}
+
+/**
+ * Where core asks plugins before it acts. Register with `ctx.filter(name, fn)`.
+ *
+ * - `*.validate`: return a `FilterRefusal` to stop the action, or nothing to let it
+ *   through. The first refusal wins.
+ * - `profile.extra`: return data to add to a profile response; it appears under
+ *   `extra["<your plugin id>"]`. You add to responses; you cannot change core's fields.
+ *
+ * A filter has 2 seconds; one that throws or runs out of time counts as "no change".
+ * This list only grows in 1.x.
+ */
+export interface CoreFilterMap {
+  /** Before an account is created (any sign-up path). */
+  "registration.validate": { input: { email: string; username: string; method: "password" | "oauth" | "admin" }; output: FilterRefusal | void };
+  /** Before an article is saved (created or edited). `body` is plain text. */
+  "article.validate": { input: { userId: string; articleId: string | null; title: string; body: string; publish: boolean }; output: FilterRefusal | void };
+  /** Before a comment is saved. `body` is plain text. */
+  "comment.validate": { input: { userId: string; articleId: string; body: string }; output: FilterRefusal | void };
+  /** Before a notification is delivered (in-app and email). Refusing drops it silently. */
+  "notification.validate": { input: { userId: string; type: string; title: string; body: string | null }; output: FilterRefusal | void };
+  /** While a member's profile is answered. `viewerId`: who is looking (null = guest). */
+  "profile.extra": { input: { userId: string; viewerId: string | null }; output: unknown };
+}
+
+export type EventListener<K extends keyof CoreEventMap> =
+  (payload: CoreEventMap[K], meta: { event: K; at: string }) => void | Promise<void>;
+
+export type FilterHandler<K extends keyof CoreFilterMap> =
+  (input: CoreFilterMap[K]["input"]) => CoreFilterMap[K]["output"] | Promise<CoreFilterMap[K]["output"]>;
+
 // ── Context ──────────────────────────────────────────────────────────────────
 
 /**
@@ -473,6 +564,16 @@ export interface PluginHost extends BasePluginHost {
  * registration that only makes sense on a content and community platform.
  */
 export interface PluginContext extends BasePluginContext<PluginHost> {
+  /** Listen to a core event (see `CoreEventMap`), or to another plugin's by its name. Dropped on disable. */
+  on<K extends keyof CoreEventMap>(event: K, listener: EventListener<K>): void;
+  on(event: string, listener: (payload: unknown, meta: { event: string; at: string }) => void | Promise<void>): void;
+
+  /** Change or refuse what core does at one of the points in `CoreFilterMap`. Dropped on disable. */
+  filter<K extends keyof CoreFilterMap>(name: K, handler: FilterHandler<K>): void;
+
+  /** Announce your own event. The name must start with your plugin id: `"<pluginId>.photo.uploaded"`. */
+  emit(event: string, payload: unknown): void;
+
   /** Register a frontend nav item. */
   registerNavItem(item: NavItemDeclaration): Promise<void>;
 

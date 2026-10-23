@@ -10,6 +10,7 @@ import { assertCanComment, assertCanFollow, assertProfileVisible, profileAccess 
 import { getSetting } from "../../shared/utils/settings.js";
 import { buildPaginationMeta } from "@xentium/contracts";
 import { isUserOnline } from "../../shared/utils/presence.js";
+import { contribute } from "../../core/events/events.js";
 
 function formatDobValue(value: string, format: string | null): string {
   const date = new Date(value);
@@ -182,6 +183,8 @@ export const userService = {
       // The same presence the members list and "online now" show; a banned member reads offline.
       online,
       lastSeenAt,
+      // What add-ons add to a profile, each under its own id (`profile.extra` filter).
+      extra: await contribute("profile.extra", { userId: user.id, viewerId: viewerId ?? null }),
     };
   },
 

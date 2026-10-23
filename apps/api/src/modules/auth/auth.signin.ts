@@ -10,6 +10,7 @@ import { hasPermission } from "../../shared/middleware/requirePermission.js";
 import { setRefreshCookie } from "../../shared/http/cookies.js";
 import { verifyPassword } from "./auth.password.js";
 import { createSession } from "./auth.tokens.js";
+import { emit } from "../../core/events/events.js";
 
 /**
  * The last mile of every sign-in method that is not a password.
@@ -99,6 +100,7 @@ export async function finishSignIn(
     },
   });
   const tokens = await createSession(user.id, ctx, { persistent: opts.persistent });
+  emit("user.loggedIn", { userId: user.id, method: opts.method });
   return { kind: "session", ...tokens, user: { id: user.id, email: user.email } };
 }
 

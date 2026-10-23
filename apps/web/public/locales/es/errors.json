@@ -53,5 +53,6 @@
   "XEC-UPDATE-4221": "Esa contraseña no es correcta.",
   "XEC-USER-4021": "Este perfil solo es visible para miembros.",
   "XEC-USER-4022": "No se puede seguir a este miembro.",
-  "XEC-USER-4023": "Este miembro no acepta tus publicaciones en su muro."
+  "XEC-USER-4023": "Este miembro no acepta tus publicaciones en su muro.",
+  "XEC-PLUGIN-4220": "Un complemento de este sitio no lo ha permitido."
 }

@@ -9,6 +9,7 @@ import { renderEmailTemplate, siteVars } from "../../infrastructure/email/email-
 import { env } from "../../config/env.js";
 import { recipientLocale } from "../../shared/i18n/serverText.js";
 import { assertProfileFieldValues, choiceOptions, privacyFor } from "../users/profileFieldValues.js";
+import { emit } from "../../core/events/events.js";
 
 const USERNAME_COOLDOWN_DAYS_DEFAULT = 60;
 
@@ -31,6 +32,7 @@ export const accountService = {
       where: { id: userId },
       data: { avatar: relPath },
     });
+    emit("user.updated", { userId, fields: ["avatar"] });
     return storage.publicUrl(relPath);
   },
 
@@ -48,18 +50,21 @@ export const accountService = {
   async uploadCover(userId: string, fileBuffer: Buffer, ext: string): Promise<string> {
     const relPath = await storage.save("covers", `${userId}.${ext}`, fileBuffer);
     await prisma.user.update({ where: { id: userId }, data: { coverImage: relPath } });
+    emit("user.updated", { userId, fields: ["coverImage"] });
     return storage.publicUrl(relPath);
   },
 
   /** Drop the cover and fall back to whatever the layout's block draws. */
   async removeCover(userId: string): Promise<void> {
     await prisma.user.update({ where: { id: userId }, data: { coverImage: null } });
+    emit("user.updated", { userId, fields: ["coverImage"] });
   },
 
   async updateProfile(userId: string, data: {
     bio?: string; dobDisplay?: "hidden" | "age" | "birthday"; preferredLocale?: string | null;
   }) {
-    return prisma.user.update({
+    const fields = (["bio", "dobDisplay", "preferredLocale"] as const).filter((k) => data[k] !== undefined);
+    const updated = await prisma.user.update({
       where: { id: userId },
       data: {
         ...(data.bio        !== undefined ? { bio: data.bio } : {}),
@@ -71,6 +76,8 @@ export const accountService = {
         dobDisplay: true, preferredLocale: true,
       },
     });
+    if (fields.length) emit("user.updated", { userId, fields: [...fields] });
+    return updated;
   },
 
   async changeUsername(userId: string, newUsername: string) {
@@ -120,6 +127,7 @@ export const accountService = {
         data: { username: newUsername, usernameChangedAt: new Date() },
       }),
     ]);
+    emit("user.updated", { userId, fields: ["username"] });
 
     return { username: newUsername };
   },
@@ -208,6 +216,7 @@ export const accountService = {
       where: { userId },
       data: { settings: merged as any },
     });
+    emit("user.updated", { userId, fields: ["privacy"] });
     return merged;
   },
 
@@ -318,6 +327,7 @@ export const accountService = {
       prisma.user.update({ where: { id: record.userId }, data: { email: record.newEmail } }),
       prisma.emailChangeToken.update({ where: { id: record.id }, data: { usedAt: new Date() } }),
     ]);
+    emit("user.emailChanged", { userId: record.userId });
 
     return { email: record.newEmail };
   },
@@ -337,6 +347,7 @@ export const accountService = {
         }),
       ),
     );
+    emit("user.updated", { userId, fields: ["profileFields"] });
     const [fields, updated] = await Promise.all([
       prisma.userProfileField.findMany({ orderBy: { position: "asc" } }),
       prisma.userProfileFieldValue.findMany({ where: { userId } }),

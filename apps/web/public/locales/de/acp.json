@@ -1239,6 +1239,12 @@
         "desc": "Ohne diesen Passkey oder Anbieter gäbe es keine Möglichkeit mehr, sich anzumelden.",
         "cause": "Das Konto hat kein Passwort und keinen weiteren Passkey oder Anbieter.",
         "fix": "Zuerst ein Passwort festlegen (über einen Link zum Zurücksetzen) oder eine weitere Möglichkeit hinzufügen."
+      },
+      "XEC-PLUGIN-4220": {
+        "msg": "Von einem Add-on abgelehnt",
+        "desc": "Ein Filter eines installierten Plugins hat diese Aktion gestoppt.",
+        "cause": "Ein Plugin hat eine Prüfung registriert (etwa bei der Registrierung oder beim Speichern von Inhalten), die diese Eingabe abgelehnt hat.",
+        "fix": "Lies die Meldung, die dem Mitglied gezeigt wird; sie stammt vom Plugin. Um die Regel zu ändern, sieh in die Einstellungen dieses Plugins oder deaktiviere es."
       }
     },
     "memberPlaceholder": "Mitglied (optional)",
