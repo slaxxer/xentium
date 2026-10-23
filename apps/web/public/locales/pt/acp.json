@@ -2626,7 +2626,9 @@
         "queued": "À espera que o atualizador do seu servidor a apanhe.",
         "running": "Não pare o servidor. O site fica offline durante o minuto do reinício.",
         "done": "Correu tudo bem. A versão anterior fica no servidor e pode voltar a ela no Histórico de migrações.",
-        "failed": "Algo falhou, por isso deixámos tudo como estava. O seu site corre {{from}}."
+        "failed": "Algo falhou, por isso deixámos tudo como estava. O seu site corre {{from}}.",
+        "confirmRollback": "O site volta à versão que usava antes desta atualização. Quando começar, pode fechar isto.",
+        "doneRollback": "Voltou para {{version}}. Recarregue o painel para carregar a versão do ACP correspondente. A versão mais recente fica no servidor."
       },
       "loading": "A carregar…",
       "close": "Fechar",
@@ -2734,7 +2736,16 @@
       "stalledNote": "O atualizador não reporta há algum tempo. Verifique-o no servidor: journalctl -u xentium-updater",
       "rollbackTo": "Voltar a {{version}}",
       "rollbackNote": "Volta a {{version}}. A base de dados fica como está.",
-      "rollbackConfirm": "Reverter"
+      "rollbackConfirm": "Reverter",
+      "rollbackPromise": {
+        "switch": "Voltamos atrás",
+        "switchDesc": "{{version}} continua no servidor e volta a funcionar.",
+        "database": "A sua base de dados fica como está",
+        "databaseDesc": "Nada é apagado. Para desfazer tudo, restaure à mão o backup da atualização.",
+        "restart": "Reiniciamos o site",
+        "restartDesc": "Fica offline por alguns segundos."
+      },
+      "reauthDescRollback": "Voltar atrás substitui o código que o seu site executa, por isso pedimos a sua senha outra vez."
     }
   },
   "license": {
