@@ -9,6 +9,7 @@ import {
   isLegacyBody,
   renderEmailBody,
   styleContent,
+  emailIconUrl,
 } from "./email-templates.js";
 
 describe("substitutePlaceholders", () => {
@@ -135,6 +136,21 @@ describe("renderEmailBody", () => {
     expect(html).toContain(`bgcolor="#f1f1f6"`);
     expect(html).toContain(`bgcolor="#ffffff"`);
     expect(html).toMatch(/color:#0d0d22">Acme<\/span>/);
+  });
+
+  it("shows the site icon beside the name, and no image without a safe address", () => {
+    const withIcon = renderEmailBody("<p>x</p>", { ...vars, site_icon_url: "https://acme.test/brand/icon-192.png" });
+    expect(withIcon).toContain(`<img src="https://acme.test/brand/icon-192.png" width="30" height="30" alt=""`);
+    expect(renderEmailBody("<p>x</p>", vars)).not.toContain("<img");
+    expect(renderEmailBody("<p>x</p>", { ...vars, site_icon_url: "javascript:x" })).not.toContain("<img");
+  });
+
+  it("picks an icon mail clients can show, on the site's own address", () => {
+    expect(emailIconUrl("https://acme.test", null)).toBe("https://acme.test/brand/icon-192.png");
+    expect(emailIconUrl("https://acme.test", "branding/icon-1.png")).toBe("https://acme.test/uploads/branding/icon-1.png");
+    expect(emailIconUrl("https://acme.test", "branding/icon-1.svg")).toBe("https://acme.test/brand/icon-192.png");
+    expect(emailIconUrl("https://acme.test", "https://cdn.test/i.jpg")).toBe("https://cdn.test/i.jpg");
+    expect(emailIconUrl("", null)).toBe("");
   });
 
   it("names the site under the card, linking only a safe address", () => {
