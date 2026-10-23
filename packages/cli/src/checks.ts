@@ -26,6 +26,7 @@ import {
   checkVersion,
   compareVersions,
   displayVersion,
+  nodeSecurityUpdate,
   type VersionRequirement,
 } from "../../contracts/src/system.js";
 
@@ -125,8 +126,11 @@ const gb = (n: number) => `${(n / 1024 ** 3).toFixed(1)} GB`;
 // ── Always ───────────────────────────────────────────────────────────────────
 
 export function checkNode(version = process.versions.node): Check {
-  return versionCheck("node", "Node.js", version, SYSTEM_REQUIREMENTS.node,
+  const check = versionCheck("node", "Node.js", version, SYSTEM_REQUIREMENTS.node,
     "Install Node 24 from https://nodejs.org or with nvm, then run this again.");
+  const update = check.status === "fail" ? null : nodeSecurityUpdate(version);
+  // It runs, but Node itself has a security fix this server is missing.
+  return update ? warn("node", "Node.js", `${version} misses Node security fixes: update to ${update} or newer`) : check;
 }
 
 export async function checkNpm(): Promise<Check> {

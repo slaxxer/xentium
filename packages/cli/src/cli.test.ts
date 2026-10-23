@@ -23,7 +23,13 @@ describe("version checks", () => {
   it("refuses a Node below the minimum and warns below the recommended", () => {
     expect(checkNode("20.11.0").status).toBe("fail");
     expect(checkNode("22.12.0").status).toBe("warn");
-    expect(checkNode("24.1.0").status).toBe("ok");
+    expect(checkNode("24.22.1").status).toBe("ok");
+  });
+
+  it("warns about a Node that misses security fixes, naming the version", () => {
+    const c = checkNode("24.1.0");
+    expect(c.status).toBe("warn");
+    expect(c.detail).toContain("24.22.1");
   });
 
   it("warns about a small machine rather than refusing it", () => {

@@ -7,6 +7,7 @@ import { writeEnvConfig } from "../core/installer-engine/steps/writeConfig.js";
 import { nodeRow, type RequirementRow } from "../core/installer-engine/requirementRows.js";
 // Safe here: version.ts reads a package.json and validates nothing at load time.
 import { XENTIUM_VERSION } from "../config/version.js";
+import { rejectEncodedBodies } from "../shared/middleware/rejectEncodedBodies.js";
 
 /**
  * Pre-env setup server (§16, WordPress-style first run).
@@ -106,7 +107,8 @@ async function liteEnvironmentChecks() {
 export async function startSetupServer(options: SetupServerOptions): Promise<void> {
   const app = express();
   app.use(cors({ origin: true, credentials: true }));
-  app.use(express.json());
+  app.use(rejectEncodedBodies);
+  app.use(express.json({ inflate: false }));
 
   app.get("/api/health", (_req, res) => {
     res.json({ status: "ok", setupMode: true, version: XENTIUM_VERSION });

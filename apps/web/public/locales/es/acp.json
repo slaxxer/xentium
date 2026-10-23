@@ -868,6 +868,12 @@
         "cause": "DEMO_MODE=true en el entorno del servidor.",
         "fix": "No hay nada que corregir en una demo. En tu propia instalación, no definas DEMO_MODE."
       },
+      "XEC-API-4150": {
+        "msg": "Solicitud comprimida rechazada",
+        "desc": "El cuerpo de la solicitud se envió comprimido (gzip, deflate o Brotli). La API solo acepta cuerpos sin comprimir, así que los datos comprimidos nunca llegan a descomprimirse.",
+        "cause": "Un cliente o script puso una cabecera Content-Encoding en su solicitud.",
+        "fix": "Envía el cuerpo sin comprimir. Los navegadores y la CLI de Xentium ya lo hacen."
+      },
       "XEC-API-4004": {
         "msg": "No encontrado",
         "desc": "El recurso solicitado no existe.",

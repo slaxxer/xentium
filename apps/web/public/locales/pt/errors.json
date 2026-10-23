@@ -2,6 +2,7 @@
   "XEC-API-4001": "Verifique os dados e tente novamente.",
   "XEC-API-4003": "Não tem permissão para fazer isso.",
   "XEC-API-4031": "Isto está desativado na demo.",
+  "XEC-API-4150": "Pedidos comprimidos não são aceites.",
   "XEC-API-4004": "Não encontrado.",
   "XEC-API-4290": "Demasiados pedidos. Aguarde e tente novamente.",
   "XEC-API-5000": "Algo correu mal. Tente novamente.",

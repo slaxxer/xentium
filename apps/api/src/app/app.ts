@@ -11,6 +11,7 @@ import { errorMiddleware } from '../shared/errors/errorMiddleware.js';
 import { XentiumError } from '../shared/errors/XentiumError.js';
 import { authRouter } from '../modules/auth/auth.routes.js';
 import { installGuard } from "../shared/middleware/installGuard.js";
+import { rejectEncodedBodies } from "../shared/middleware/rejectEncodedBodies.js";
 import { usersRouter } from '../modules/users/users.routes.js';
 import { accountRouter } from '../modules/account/account.routes.js';
 import { installerRouter } from "../modules/installer/installer.routes.js";
@@ -83,7 +84,9 @@ export function createApp(): Express {
     credentials: true,
   }));
 
-  app.use(express.json({ limit: '4mb' }));
+  // Before every parser, core's and any plugin's: no compressed bodies (CVE-2026-111497).
+  app.use(rejectEncodedBodies);
+  app.use(express.json({ limit: '4mb', inflate: false }));
   app.use(cookieParser(env.COOKIE_SECRET));
   app.use(pinoHttp({ transport: isProd ? undefined : { target: 'pino-pretty' } }));
 
