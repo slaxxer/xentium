@@ -1,6 +1,6 @@
 {
   "name": "@xentium/server-kit",
-  "version": "1.0.0-alpha.18",
+  "version": "1.0.0-alpha.19",
   "private": false,
   "type": "module",
   "main": "./src/index.ts",
