@@ -8,6 +8,20 @@ From 1.0.0 on, Xentium follows [Semantic Versioning](https://semver.org/). A ver
 - **Major** (`2.0.0`): something you may rely on changes or goes away. The changelog lists
   each change and what to do about it.
 
+Each number counts on its own; they are not decimals. After `1.9.0` comes `1.10.0`, and
+`2.0.0` only comes when something breaks.
+
+## How often we release
+
+- **Patches** whenever a fix is ready. A security fix goes out as soon as it is ready, as a
+  patch on the newest release, so you can take it without taking new features along.
+- **Minor releases** when a set of features is done, roughly every four to six weeks.
+- **Major releases** rarely, and only after what they remove has been deprecated in a minor
+  release first (see below).
+
+For example: `1.0.0`, then `1.0.1` with fixes, `1.1.0` with new features, `1.1.1` with a
+security fix, `1.2.0` with more features.
+
 ## What the promise covers
 
 These are Xentium's public interfaces. Within a major version we don't break them:
@@ -64,3 +78,12 @@ A plugin names the core it needs with `minXentiumVersion` (and, if it must,
   newer.
 
 A plugin made for 1.x keeps working on every 1.x release.
+
+### A plugin's own version
+
+A plugin's `version` follows the same three rules: a fix raises the patch (`1.0.1`), a new
+feature the minor (`1.1.0`), and a change that breaks a site's existing setup or data the
+major (`2.0.0`). Every release gets a new version. Once a version is published, its
+package never changes: a site that installed `1.2.0` has exactly what `1.2.0` was, and an
+update notice only appears when there is something newer. Our own plugins work the same
+way.
