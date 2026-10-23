@@ -3,6 +3,7 @@ import { XENTIUM_VERSION } from "../../config/version.js";
 import { getSetting, getSettings } from "../../shared/utils/settings.js";
 import { memoTtl } from "../../shared/utils/memoTtl.js";
 import { statRegistry } from "../../core/stat-registry/stat-registry.js";
+import { validZone } from "../../shared/utils/timeZone.js";
 
 export type FeatureKey = "articles" | "home" | "members";
 
@@ -14,17 +15,6 @@ export async function isFeatureEnabled(feature: FeatureKey): Promise<boolean> {
 }
 
 interface LandingOption { value: string; label: string }
-
-/** An IANA time zone the runtime knows, or null for "each visitor's own". */
-function validZone(zone: unknown): string | null {
-  if (typeof zone !== "string" || !zone || zone === "visitor") return null;
-  try {
-    new Intl.DateTimeFormat("en", { timeZone: zone });
-    return zone;
-  } catch {
-    return null;
-  }
-}
 
 const ALERT_TONES = ["info", "success", "warning", "danger"] as const;
 const ALERT_AUDIENCES = ["everyone", "guests", "members"] as const;

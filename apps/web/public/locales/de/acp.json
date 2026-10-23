@@ -1322,7 +1322,10 @@
     "scheduleSaved": "Zeitplan gespeichert.",
     "saveFailed": "Zeitplan konnte nicht gespeichert werden.",
     "queuedToRun": "„{{label}}“ zur sofortigen Ausführung eingereiht.",
-    "triggerFailed": "Auftrag konnte nicht ausgelöst werden."
+    "triggerFailed": "Auftrag konnte nicht ausgelöst werden.",
+    "fromAddons": "Von Add-ons",
+    "fromAddonsHint": "Wiederkehrende Aufgaben deiner Add-ons. Jedes Add-on bestimmt seinen Zeitplan selbst; ändere ihn in dessen Einstellungen.",
+    "everyMinutes": "Alle {{count}} Min."
   },
   "tasks": {
     "title": "Eigene Aufgaben",

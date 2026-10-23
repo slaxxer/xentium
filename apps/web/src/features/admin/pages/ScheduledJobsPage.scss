@@ -182,3 +182,25 @@
 .ctask__run-time { color: var(--c-fg-subtle); }
 .ctask__run-dry  { color: var(--c-accent); font-weight: 700; }
 .ctask__run-text { color: var(--c-fg-muted); word-break: break-word; }
+
+/* Repeating jobs add-ons scheduled: a quiet read-only list. */
+.sched-plugins {
+  padding: 18px 20px;
+  margin-bottom: 16px;
+
+  &__head {
+    display: flex; flex-direction: column; gap: 2px; margin-bottom: 10px;
+    b { font-size: var(--fs-base); color: var(--c-fg); }
+    span { font-size: var(--fs-sm); color: var(--c-fg-muted); }
+  }
+  ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+  li {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    padding: 9px 0; border-top: 1px solid var(--c-border);
+    font-size: var(--fs-sm);
+    > svg { color: var(--c-accent); }
+  }
+  &__name { color: var(--c-fg); }
+  &__when { margin-left: auto; color: var(--c-fg-muted); }
+  code { font-family: var(--ff-mono, ui-monospace, monospace); font-size: var(--fs-xs); }
+}

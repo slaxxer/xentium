@@ -1322,7 +1322,10 @@
     "scheduleSaved": "Schedule saved.",
     "saveFailed": "Could not save schedule.",
     "queuedToRun": "\"{{label}}\" queued to run now.",
-    "triggerFailed": "Could not trigger the job."
+    "triggerFailed": "Could not trigger the job.",
+    "fromAddons": "From add-ons",
+    "fromAddonsHint": "Repeating jobs your add-ons scheduled. Each add-on owns its schedule; change it in that add-on's settings.",
+    "everyMinutes": "Every {{count}} min"
   },
   "tasks": {
     "title": "Custom tasks",
