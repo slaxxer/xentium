@@ -10,6 +10,8 @@ import { env } from "../../config/env.js";
 import { recipientLocale } from "../../shared/i18n/serverText.js";
 import { assertProfileFieldValues, choiceOptions, privacyFor } from "../users/profileFieldValues.js";
 import { emit } from "../../core/events/events.js";
+import { notificationTypeGroups, registeredType } from "../../core/plugin-platform/notificationTypes.js";
+import { hasPermission } from "../../shared/middleware/requirePermission.js";
 
 const USERNAME_COOLDOWN_DAYS_DEFAULT = 60;
 
@@ -394,6 +396,18 @@ export const accountService = {
         profile_activity: byPattern.get(m.profile_activity!)?.emailEnabled ?? false,
         mentions:         byPattern.get(m.mentions!)?.emailEnabled         ?? false,
       },
+      // Add-ons' own types, each a switch the member can turn off. A type for staff
+      // (`permission`) shows only to members holding it.
+      addons: (await Promise.all(notificationTypeGroups().map(async (g) => ({
+        pluginId: g.pluginId,
+        name: g.name,
+        types: (await Promise.all(g.types.map(async (t) =>
+          t.permission && !(await hasPermission(userId, t.permission as never)) ? null : {
+            type: t.type, label: t.label, description: t.description, emailOffered: t.email,
+            inApp: byPattern.get(t.type)?.inAppEnabled ?? true,
+            email: t.email ? byPattern.get(t.type)?.emailEnabled ?? false : false,
+          }))).filter((t): t is NonNullable<typeof t> => t !== null),
+      })))).filter((g) => g.types.length),
     };
   },
 
@@ -402,6 +416,7 @@ export const accountService = {
     prefs: {
       inApp: Record<"new_follower"|"profile_activity"|"mentions"|"article_activity"|"progression"|"badges", boolean>;
       email: Record<"new_follower"|"profile_activity"|"mentions", boolean>;
+      addons?: Record<string, { inApp: boolean; email: boolean }>;
     },
   ) {
     const m = accountService.NOTIF_PATTERN_MAP;
@@ -414,6 +429,12 @@ export const accountService = {
       // No email column: a badge is a thing you find on your profile, not post.
       [m.badges!]:           { inApp: prefs.inApp.badges,           email: false },
     };
+    // Add-on types: only ones an enabled add-on declared, and email only where it offers it.
+    for (const [type, v] of Object.entries(prefs.addons ?? {})) {
+      const known = registeredType(type);
+      if (!known) continue;
+      updates[type] = { inApp: v.inApp, email: known.email ? v.email : false };
+    }
     await prisma.$transaction(
       Object.entries(updates).map(([typePattern, { inApp, email }]) =>
         prisma.notificationPreference.upsert({

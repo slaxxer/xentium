@@ -33,6 +33,7 @@ const { contentRegistry } = await import("../content-registry/content-registry.j
 const { _emitAndWait, contribute, validate } = await import("../events/events.js");
 const { jobsFor, _resetPluginJobs } = await import("./jobs.js");
 const { readSettings, publicSettings } = await import("./settings.js");
+const { notificationTypeGroups } = await import("./notificationTypes.js");
 
 const ID = "plugin-contract";
 const ENTRY = path.join(path.dirname(fileURLToPath(import.meta.url)), "../../test/fixtures/plugin-contract/server.ts");
@@ -126,6 +127,7 @@ describe("the plugin contract", () => {
     expect(pages).toEqual(expect.arrayContaining(["/admin/contract", `/admin/addons/${ID}/settings`]));
     expect(searchRegistry.get(ID)?.label).toBe("Contract");
     expect(await contentRegistry.canView(`${ID}.note`, "visible", null)).toBe(true);
+    expect(notificationTypeGroups().find((g) => g.pluginId === ID)?.types.map((t) => t.type)).toEqual([`${ID}.ping`, `${ID}.review`]);
   });
 
   it("leaves nothing acting once disabled", async () => {
@@ -140,6 +142,7 @@ describe("the plugin contract", () => {
     expect(probe().events).toHaveLength(before);
     expect(acpPageRegistry.getAll().filter((x) => x.pluginId === ID)).toEqual([]);
     expect(searchRegistry.get(ID)).toBeUndefined();
+    expect(notificationTypeGroups().find((g) => g.pluginId === ID)).toBeUndefined();
     await expect(readSettings(ID)).rejects.toMatchObject({ httpStatus: 404 });
     expect(await contentRegistry.canView(`${ID}.note`, "visible", null)).toBe(false);
   });

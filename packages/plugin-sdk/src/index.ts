@@ -826,6 +826,25 @@ export interface PluginFiles {
   removeFor(filter: { kind?: string; itemId?: string }): Promise<number>;
 }
 
+// ── Notification types ──────────────────────────────────────────────────────
+
+/**
+ * A kind of notification your plugin sends (`ctx.notify({ type, … })`). Each one gets
+ * a switch in members' Account → Notifications, so a member can turn it off; a type
+ * you never declare cannot be turned off, which members will not thank you for.
+ */
+export interface NotificationTypeDeclaration {
+  /** As you pass it to `notify`: `"gallery.comment"`. Not one of core's prefixes (social., profile., mention., article., …). */
+  type: string;
+  /** The switch's label: plain text, or a translation key in your namespace. Default: made from the type ("gallery.new_comment" → "New comment"). */
+  label?: string;
+  description?: string;
+  /** Offer an email switch too (off until the member turns it on). Default true. */
+  email?: boolean;
+  /** Show the switch only to members holding this permission (a staff-only notification). */
+  permission?: string;
+}
+
 // ── Context ──────────────────────────────────────────────────────────────────
 
 /**
@@ -865,7 +884,7 @@ export interface PluginContext extends BasePluginContext<PluginHost> {
   registerAcpPage(page: AcpPageDeclaration): void;
 
   /** Register notification type strings for the user preference UI. */
-  registerNotificationTypes(types: string[]): void;
+  registerNotificationTypes(types: Array<string | NotificationTypeDeclaration>): void;
 
   /** Register a search content source. Core asks it to run the search and
    *  merges results — it never queries the plugin's tables. */

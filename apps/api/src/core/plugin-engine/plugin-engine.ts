@@ -24,6 +24,7 @@ import { deregisterEvents, emit } from "../events/events.js";
 import { deregisterJobs, dropPluginJobs, stopPluginSchedules } from "../plugin-platform/jobs.js";
 import { deregisterSettings } from "../plugin-platform/settings.js";
 import { deregisterResources } from "../plugin-platform/resources.js";
+import { deregisterNotificationTypes } from "../plugin-platform/notificationTypes.js";
 import { dropPluginFiles } from "../plugin-platform/files.js";
 import { bustSettingsCache } from "../../shared/utils/settings.js";
 
@@ -419,6 +420,7 @@ async function deregisterInProcess(pluginId: string): Promise<void> {
   deregisterJobs(pluginId);
   deregisterSettings(pluginId);
   deregisterResources(pluginId);
+  deregisterNotificationTypes(pluginId);
   loadedVersions.delete(pluginId);
 }
 

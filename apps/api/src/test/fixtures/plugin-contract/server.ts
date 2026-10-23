@@ -49,7 +49,7 @@ const definition: PluginDefinition = {
     // ── Where it shows ──
     await ctx.registerNavItem({ label: "Contract", url: "/contract" });
     ctx.registerAcpPage({ section: "extensions", label: "Contract", path: "/admin/contract" });
-    ctx.registerNotificationTypes([`${ID}.ping`]);
+    ctx.registerNotificationTypes([`${ID}.ping`, { type: `${ID}.review`, label: "Reviews", email: false, permission: `${ID}.manage` }]);
     ctx.registerLayoutTemplate({
       key: `${ID}.index`, label: "Contract", regions: ["main"],
       defaultDocument: { templateKey: `${ID}.index`, regions: { main: [] } },
