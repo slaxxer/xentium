@@ -93,8 +93,9 @@ export function filesFor(pluginId: string): PluginFiles {
 
   return {
     async save(input: PluginFileInput, opts: PluginFileSaveOptions) {
-      const buffer = Buffer.isBuffer(input) ? input : input?.buffer;
-      if (!Buffer.isBuffer(buffer) || !buffer.length) refused("No file was sent");
+      const raw = input instanceof Uint8Array ? input : input?.buffer;
+      if (!(raw instanceof Uint8Array) || !raw.length) refused("No file was sent");
+      const buffer = Buffer.isBuffer(raw) ? raw : Buffer.from(raw);
       const visibility = opts.visibility;
       if (visibility !== "public" && visibility !== "private") throw new Error(`[plugin files] visibility must be "public" or "private".`);
       const max = Math.min(opts.maxBytes ?? DEFAULT_MAX, HARD_MAX);
