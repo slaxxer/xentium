@@ -60,7 +60,7 @@ export const XENTIUM_DARK_PACKAGE = {
     name: 'Xentium Dark',
     version: '1.0.0',
     vendor: 'Xentium',
-    minXentiumVersion: '1.0',
+    minXentiumVersion: '1.0.0',
     description: 'The core look after dark: deep neutral surfaces and the same teal accent.',
     appearance: 'dark' as const,
     schemaVersion: 1,

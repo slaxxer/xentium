@@ -69,7 +69,7 @@ with it `assets/`, since export only collects assets that layouts reference. You
   "name": "Midnight",
   "version": "1.2.0",            // semver
   "vendor": "Someone",
-  "minXentiumVersion": "1.0",     // refused on older versions
+  "minXentiumVersion": "1.0.0",   // refused on older versions
   "maxXentiumVersion": "2.0",     // optional
   "description": "…",            // optional, up to 500 characters
 
