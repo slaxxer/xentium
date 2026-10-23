@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { EMAIL_TEMPLATE_KEYS } from "../../infrastructure/email/email-templates.js";
+import { EMAIL_FOOTER_MAX, EMAIL_HEADERS, EMAIL_TEMPLATE_KEYS } from "../../infrastructure/email/email-templates.js";
 
 export const templateKeyParamSchema = z.object({
   key: z.enum(EMAIL_TEMPLATE_KEYS),
@@ -15,4 +15,13 @@ export const saveTemplateSchema = z.object({
 export const testSendSchema = z.object({
   to: z.string().trim().email(),
   key: z.enum(EMAIL_TEMPLATE_KEYS).default("smtp_test"),
+});
+
+const hex = z.string().regex(/^#[0-9a-f]{6}$/i, "A colour like #0d7c72");
+
+export const emailDesignSchema = z.object({
+  accent: hex,
+  page: hex,
+  header: z.enum(EMAIL_HEADERS),
+  footer: z.string().max(EMAIL_FOOTER_MAX),
 });

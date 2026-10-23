@@ -4431,7 +4431,29 @@
     "testDesc": "Sendet die SMTP-Testvorlage an eine Adresse deiner Wahl.",
     "legacy": "Diese Vorlage wurde von einer früheren Version als reines HTML gespeichert und wird weiterhin genau so versendet. Setze sie auf den Standard zurück, um sie hier zu bearbeiten.",
     "langDefault": "Unverändert geht diese E-Mail in der Sprache jedes Mitglieds raus. Sobald du sie bearbeitest, erhalten alle deine Fassung.",
-    "langCustom": "Deine Fassung geht so an alle. Setze sie zurück, damit jedes Mitglied den Standard in seiner Sprache erhält."
+    "langCustom": "Deine Fassung geht so an alle. Setze sie zurück, damit jedes Mitglied den Standard in seiner Sprache erhält.",
+    "design": {
+      "title": "Design",
+      "desc": "So sehen alle E-Mails dieser Seite aus: die Farbe, der Kopf und ein Hinweis unter der Nachricht. Die Karte bleibt weiß mit dunkler Schrift, damit sie in jeder Mail-App lesbar ist, hell wie dunkel.",
+      "defaults": "Standard verwenden",
+      "accent": "Akzentfarbe",
+      "accentDesc": "Die Linie oben, Buttons und Links. Auf einer hellen Farbe wird die Button-Schrift dunkel.",
+      "page": "Seitenfarbe",
+      "pageDesc": "Der Hintergrund um die Nachricht.",
+      "header": "Kopf",
+      "headerDesc": "Was oben in jeder E-Mail steht. Bilder kommen aus Darstellung → Branding; Mail-Apps zeigen nur PNG, JPEG oder GIF.",
+      "logoMissing": "Es ist kein Logo in einem Format hochgeladen, das Mail-Apps zeigen, deshalb erscheinen Icon und Name.",
+      "headers": {
+        "icon": "Icon und Name",
+        "logo": "Logo",
+        "name": "Nur Name"
+      },
+      "footer": "Fußnote",
+      "footerDesc": "Einfacher Text unter der Nachricht, etwa deine Adresse. Name und Adresse der Seite folgen immer.",
+      "footerPlaceholder": "Beispiel GmbH · Hauptstraße 1 · 12345 Musterstadt",
+      "preview": "Vorschau",
+      "previewDesc": "Die E-Mail zum Zurücksetzen des Passworts mit deinen Änderungen, so wie sie verschickt wird."
+    }
   },
   "themes": {
     "title": "Themes",

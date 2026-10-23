@@ -10,6 +10,10 @@ import {
   renderEmailBody,
   styleContent,
   emailIconUrl,
+  emailImageUrl,
+  normalizeEmailDesign,
+  inkOn,
+  EMAIL_DESIGN_DEFAULTS,
 } from "./email-templates.js";
 
 describe("substitutePlaceholders", () => {
@@ -191,5 +195,66 @@ describe("renderEmailBody", () => {
 
   it("ships no default as a legacy document", () => {
     for (const key of EMAIL_TEMPLATE_KEYS) expect(isLegacyBody(EMAIL_TEMPLATE_DEFAULTS[key].body), key).toBe(false);
+  });
+});
+
+describe("email design", () => {
+  const vars = {
+    site_name: "Acme", site_url: "https://acme.test",
+    site_icon_url: "https://acme.test/brand/icon-192.png", site_logo_url: "https://acme.test/uploads/logo.png",
+    reset_url: "https://acme.test/r",
+  };
+  const design = (over: Partial<typeof EMAIL_DESIGN_DEFAULTS>) => ({ ...EMAIL_DESIGN_DEFAULTS, ...over });
+
+  it("keeps only safe values, whatever the stored row holds", () => {
+    expect(normalizeEmailDesign(null)).toEqual(EMAIL_DESIGN_DEFAULTS);
+    const bad = normalizeEmailDesign({ accent: "red;background:url(x)", page: "#FFF", header: "banner", footer: 5 });
+    expect(bad).toEqual(EMAIL_DESIGN_DEFAULTS);
+    expect(normalizeEmailDesign({ accent: "#AA0000" }).accent).toBe("#aa0000");
+    expect(normalizeEmailDesign({ footer: "x".repeat(900) }).footer).toHaveLength(300);
+  });
+
+  it("paints the accent on the top line, buttons and links, and the page colour around the card", () => {
+    const html = renderEmailBody(`<p>{{reset_button}}</p><p><a href="https://x.test">x</a></p>`, vars, "en",
+      design({ accent: "#aa0000", page: "#102030" }));
+    expect(html).toContain("border-top:4px solid #aa0000");
+    expect(html).toContain("background:#aa0000;color:#ffffff");
+    expect(html).toContain(`<a href="https://x.test" style="color:#aa0000">`);
+    expect(html).toContain(`bgcolor="#102030"`);
+  });
+
+  it("gives a light accent dark button text", () => {
+    expect(inkOn("#ffd400")).toBe("#0d0d22");
+    expect(inkOn("#0d7c72")).toBe("#ffffff");
+  });
+
+  it("renders each header, falling back to the name when an image is missing", () => {
+    const icon = renderEmailBody("<p>x</p>", vars, "en", design({ header: "icon" }));
+    expect(icon).toContain(`src="https://acme.test/brand/icon-192.png"`);
+    expect(icon).toContain(">Acme</span>");
+    const logo = renderEmailBody("<p>x</p>", vars, "en", design({ header: "logo" }));
+    expect(logo).toContain(`src="https://acme.test/uploads/logo.png"`);
+    expect(logo).not.toContain(">Acme</span>");
+    const noLogo = renderEmailBody("<p>x</p>", { ...vars, site_logo_url: "" }, "en", design({ header: "logo" }));
+    expect(noLogo).toContain("icon-192.png");
+    const name = renderEmailBody("<p>x</p>", vars, "en", design({ header: "name" }));
+    expect(name).not.toContain("<img");
+  });
+
+  it("shows the footer note as escaped text, line breaks kept", () => {
+    const html = renderEmailBody("<p>x</p>", vars, "en", design({ footer: "Acme Ltd\n<b>Main St</b>" }));
+    expect(html).toContain("Acme Ltd<br>&lt;b&gt;Main St&lt;/b&gt;");
+  });
+
+  it("builds the notification button from its link and label", () => {
+    const html = renderEmailBody("<p>{{link_button}}</p>", { ...vars, link_url: "https://acme.test/t/1", link_label: "Open" }, "en");
+    expect(html).toContain(`href="https://acme.test/t/1"`);
+    expect(html).toContain(">Open</a>");
+  });
+
+  it("takes only images a mail client can show as the logo", () => {
+    expect(emailImageUrl("https://acme.test", "branding/logo.webp")).toBe("");
+    expect(emailImageUrl("https://acme.test", "branding/logo.png")).toBe("https://acme.test/uploads/branding/logo.png");
+    expect(emailImageUrl("", "branding/logo.png")).toBe("");
   });
 });

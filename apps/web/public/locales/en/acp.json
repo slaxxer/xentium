@@ -4558,7 +4558,29 @@
     "testDesc": "Delivers the SMTP test template to an address of your choice.",
     "legacy": "This template was saved as raw HTML by an earlier version and is still sent exactly like that. Reset it to the default to edit it here.",
     "langDefault": "Unchanged, this email goes out in each member's language. Once you edit it, your version goes to everyone.",
-    "langCustom": "Your version goes to everyone as written. Reset it to send each member the default in their language."
+    "langCustom": "Your version goes to everyone as written. Reset it to send each member the default in their language.",
+    "design": {
+      "title": "Design",
+      "desc": "How every email this site sends looks: the colour, the header and a note under the message. The card stays white with dark text so it reads in every mail app, light or dark.",
+      "defaults": "Use defaults",
+      "accent": "Accent colour",
+      "accentDesc": "The line along the top, buttons and links. Button text turns dark on a light colour.",
+      "page": "Page colour",
+      "pageDesc": "The background around the message.",
+      "header": "Header",
+      "headerDesc": "What sits at the top of each email. Images come from Appearance → Branding; mail apps show PNG, JPEG or GIF only.",
+      "logoMissing": "No logo in a format mail apps can show is uploaded, so emails show the icon and name instead.",
+      "headers": {
+        "icon": "Icon and name",
+        "logo": "Logo",
+        "name": "Name only"
+      },
+      "footer": "Footer note",
+      "footerDesc": "Plain text under the message, such as your address. The site name and address always follow.",
+      "footerPlaceholder": "Example Ltd · 1 Main Street · Springfield",
+      "preview": "Preview",
+      "previewDesc": "The password-reset email with your changes, as it will be sent."
+    }
   },
   "themes": {
     "title": "Themes",

@@ -4431,7 +4431,29 @@
     "testDesc": "Envoie le modèle de test SMTP à l'adresse de votre choix.",
     "legacy": "Ce modèle a été enregistré en HTML brut par une version précédente et est toujours envoyé tel quel. Réinitialisez-le pour le modifier ici.",
     "langDefault": "Non modifié, cet e-mail est envoyé dans la langue de chaque membre. Dès que vous le modifiez, tout le monde reçoit votre version.",
-    "langCustom": "Votre version est envoyée telle quelle à tout le monde. Réinitialisez-la pour que chaque membre reçoive la version par défaut dans sa langue."
+    "langCustom": "Votre version est envoyée telle quelle à tout le monde. Réinitialisez-la pour que chaque membre reçoive la version par défaut dans sa langue.",
+    "design": {
+      "title": "Design",
+      "desc": "L'apparence de tous les e-mails envoyés par ce site : la couleur, l'en-tête et une note sous le message. La carte reste blanche avec un texte foncé pour rester lisible dans toutes les applis de messagerie, en mode clair ou sombre.",
+      "defaults": "Valeurs par défaut",
+      "accent": "Couleur d'accent",
+      "accentDesc": "La ligne du haut, les boutons et les liens. Sur une couleur claire, le texte du bouton devient foncé.",
+      "page": "Couleur de page",
+      "pageDesc": "Le fond autour du message.",
+      "header": "En-tête",
+      "headerDesc": "Ce qui apparaît en haut de chaque e-mail. Les images viennent d'Apparence → Identité ; les applis de messagerie n'affichent que PNG, JPEG ou GIF.",
+      "logoMissing": "Aucun logo dans un format lisible par les applis de messagerie n'est téléversé, les e-mails affichent donc l'icône et le nom.",
+      "headers": {
+        "icon": "Icône et nom",
+        "logo": "Logo",
+        "name": "Nom seul"
+      },
+      "footer": "Note de bas de page",
+      "footerDesc": "Texte simple sous le message, comme votre adresse. Le nom et l'adresse du site suivent toujours.",
+      "footerPlaceholder": "Exemple SARL · 1 rue Principale · Paris",
+      "preview": "Aperçu",
+      "previewDesc": "L'e-mail de réinitialisation du mot de passe avec vos modifications, tel qu'il sera envoyé."
+    }
   },
   "themes": {
     "title": "Thèmes",

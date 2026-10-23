@@ -4431,7 +4431,29 @@
     "testDesc": "Envia o modelo de teste SMTP para o endereço que escolher.",
     "legacy": "Este modelo foi guardado como HTML puro numa versão anterior e continua a ser enviado assim. Repõe o predefinido para o editares aqui.",
     "langDefault": "Sem alterações, este e-mail é enviado no idioma de cada membro. Assim que o editares, todos recebem a tua versão.",
-    "langCustom": "A tua versão é enviada a todos tal como está. Repõe-a para que cada membro receba a predefinida no seu idioma."
+    "langCustom": "A tua versão é enviada a todos tal como está. Repõe-a para que cada membro receba a predefinida no seu idioma.",
+    "design": {
+      "title": "Design",
+      "desc": "Como ficam todos os emails que este site envia: a cor, o cabeçalho e uma nota sob a mensagem. O cartão continua branco com texto escuro para ser legível em qualquer app de email, claro ou escuro.",
+      "defaults": "Usar padrões",
+      "accent": "Cor de destaque",
+      "accentDesc": "A linha no topo, os botões e os links. Numa cor clara, o texto do botão fica escuro.",
+      "page": "Cor da página",
+      "pageDesc": "O fundo em volta da mensagem.",
+      "header": "Cabeçalho",
+      "headerDesc": "O que aparece no topo de cada email. As imagens vêm de Aparência → Marca; apps de email só mostram PNG, JPEG ou GIF.",
+      "logoMissing": "Não há logo enviado num formato que apps de email mostrem, por isso os emails mostram o ícone e o nome.",
+      "headers": {
+        "icon": "Ícone e nome",
+        "logo": "Logo",
+        "name": "Só o nome"
+      },
+      "footer": "Nota de rodapé",
+      "footerDesc": "Texto simples sob a mensagem, como o seu endereço. O nome e o endereço do site aparecem sempre a seguir.",
+      "footerPlaceholder": "Exemplo Lda · Rua Principal 1 · Lisboa",
+      "preview": "Pré-visualização",
+      "previewDesc": "O email de redefinição de senha com as suas alterações, tal como será enviado."
+    }
   },
   "themes": {
     "title": "Temas",

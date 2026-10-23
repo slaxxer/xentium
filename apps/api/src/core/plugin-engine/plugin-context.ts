@@ -33,7 +33,7 @@ import { encryptSecret, decryptSecret } from "../../shared/utils/secretBox.js";
 import { countryOf, geoipAvailable } from "../../infrastructure/geoip.js";
 import { permissionCache } from "../../modules/permissions/permission.cache.js";
 import { sanitizeRichText } from "../../shared/sanitize/richText.js";
-import { renderEmailTemplate, renderLinkButton, siteVars } from "../../infrastructure/email/email-templates.js";
+import { renderEmailTemplate, siteVars } from "../../infrastructure/email/email-templates.js";
 import { recipientLocale, serverText, toServerLocale } from "../../shared/i18n/serverText.js";
 import { resolveCronPattern, previewRuns } from "../../jobs/scheduledJobs.js";
 
@@ -102,7 +102,7 @@ const host: PluginHost = {
         ...(await siteVars()),
         title, body,
         link_url:    link,
-        link_button: renderLinkButton(link, buttonLabel ?? serverText(lang, "email", "buttons.view")),
+        link_label:  buttonLabel ?? serverText(lang, "email", "buttons.view"),
       }, lang);
       await queues.emailNotification.add("email-notification", { to, subject, html });
     },

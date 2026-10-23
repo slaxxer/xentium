@@ -4431,7 +4431,29 @@
     "testDesc": "Envía la plantilla de prueba SMTP a la dirección que elijas.",
     "legacy": "Esta plantilla se guardó como HTML sin formato en una versión anterior y se sigue enviando tal cual. Restablécela a la predeterminada para editarla aquí.",
     "langDefault": "Sin cambios, este correo se envía en el idioma de cada miembro. En cuanto lo edites, todos recibirán tu versión.",
-    "langCustom": "Tu versión se envía a todos tal cual. Restablécela para que cada miembro reciba la predeterminada en su idioma."
+    "langCustom": "Tu versión se envía a todos tal cual. Restablécela para que cada miembro reciba la predeterminada en su idioma.",
+    "design": {
+      "title": "Diseño",
+      "desc": "Cómo se ven todos los correos que envía este sitio: el color, la cabecera y una nota bajo el mensaje. La tarjeta sigue blanca con texto oscuro para que se lea en cualquier app de correo, clara u oscura.",
+      "defaults": "Usar valores por defecto",
+      "accent": "Color de acento",
+      "accentDesc": "La línea superior, los botones y los enlaces. Sobre un color claro, el texto del botón se vuelve oscuro.",
+      "page": "Color de página",
+      "pageDesc": "El fondo alrededor del mensaje.",
+      "header": "Cabecera",
+      "headerDesc": "Lo que aparece arriba en cada correo. Las imágenes vienen de Apariencia → Marca; las apps de correo solo muestran PNG, JPEG o GIF.",
+      "logoMissing": "No hay un logo subido en un formato que las apps de correo muestren, así que se ven el icono y el nombre.",
+      "headers": {
+        "icon": "Icono y nombre",
+        "logo": "Logo",
+        "name": "Solo nombre"
+      },
+      "footer": "Nota al pie",
+      "footerDesc": "Texto simple bajo el mensaje, como tu dirección. El nombre y la dirección del sitio siempre aparecen después.",
+      "footerPlaceholder": "Ejemplo S.L. · Calle Mayor 1 · Madrid",
+      "preview": "Vista previa",
+      "previewDesc": "El correo de restablecer contraseña con tus cambios, tal como se enviará."
+    }
   },
   "themes": {
     "title": "Temas",

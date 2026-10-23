@@ -51,32 +51,88 @@ export interface EmailTemplateDef {
  * unreadable; the colours below assume the white card.
  */
 const FONT = "font-family:system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
+
 /**
- * Opens the card with the brand line: the site's icon beside its name. The icon is a
- * PNG from the site itself (`site_icon_url`, see `siteVars`) because Gmail and Outlook
- * show no SVG; without a public address there is no image, only the name.
+ * How this site's emails look, set in ACP → Email → Design (setting `email.design`).
+ * Only these four things: the card stays white and the text dark, because those are
+ * what keep a mail readable in every client — an admin picks the brand, not the ink.
+ * Colours land in inline styles, so they are checked on the way OUT too
+ * (`normalizeEmailDesign`), not only when saved: a settings row can come from a
+ * restored backup or a hand-edited database.
  */
-function frameOpen(vars: Record<string, string | undefined>): string {
-  const icon = vars.site_icon_url && isSafeUrl(vars.site_icon_url)
-    ? `<td width="40" style="padding:0 10px 0 0;vertical-align:middle"><img src="{{site_icon_url}}" width="30" height="30" alt="" style="display:block;width:30px;height:30px;border:0;border-radius:8px"></td>`
-    : "";
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f1f1f6" style="background-color:#f1f1f6;color-scheme:light;${FONT}">` +
-    `<tr><td align="center" style="padding:32px 16px">` +
-    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff" style="max-width:520px;background-color:#ffffff;border:1px solid #e7e7f1;border-top:4px solid #7c6af7;border-radius:12px">` +
-    `<tr><td style="padding:28px 32px 12px">` +
-    `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:24px"><tr>${icon}` +
-    `<td style="vertical-align:middle"><span style="font-size:20px;font-weight:800;letter-spacing:-0.03em;color:#0d0d22">{{site_name}}</span></td>` +
-    `</tr></table>`;
+export const EMAIL_HEADERS = ["icon", "logo", "name"] as const;
+export type EmailHeader = (typeof EMAIL_HEADERS)[number];
+export interface EmailDesign {
+  /** The line along the top of the card, buttons and links. */
+  accent: string;
+  /** The page around the card. */
+  page: string;
+  /** icon = the site icon beside its name; logo = the uploaded logo alone; name = text only. */
+  header: EmailHeader;
+  /** A plain-text note under the card (an address, a sign-off). */
+  footer: string;
+}
+export const EMAIL_DESIGN_DEFAULTS: EmailDesign = { accent: "#0d7c72", page: "#f1f1f6", header: "icon", footer: "" };
+export const EMAIL_FOOTER_MAX = 300;
+const HEX = /^#[0-9a-f]{6}$/i;
+
+export function normalizeEmailDesign(raw: unknown): EmailDesign {
+  const r = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+  const hex = (v: unknown, d: string) => (typeof v === "string" && HEX.test(v) ? v.toLowerCase() : d);
+  return {
+    accent: hex(r.accent, EMAIL_DESIGN_DEFAULTS.accent),
+    page:   hex(r.page, EMAIL_DESIGN_DEFAULTS.page),
+    header: (EMAIL_HEADERS as readonly unknown[]).includes(r.header) ? (r.header as EmailHeader) : EMAIL_DESIGN_DEFAULTS.header,
+    footer: typeof r.footer === "string" ? r.footer.slice(0, EMAIL_FOOTER_MAX) : "",
+  };
 }
 
-/** Closes the card; below it, the site's name and address in small grey type. */
-function frameClose(vars: Record<string, string | undefined>): string {
+export async function getEmailDesign(): Promise<EmailDesign> {
+  return normalizeEmailDesign(await getSetting<unknown>("email.design", null));
+}
+
+/** White or dark ink, whichever reads on `hex` — so any accent keeps a legible button. */
+export function inkOn(hex: string): string {
+  const n = parseInt(hex.slice(1), 16);
+  const lin = (c: number) => { const v = c / 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; };
+  const L = 0.2126 * lin((n >> 16) & 255) + 0.7152 * lin((n >> 8) & 255) + 0.0722 * lin(n & 255);
+  // White while it keeps 3:1 (the bar for bold button text), as buttons are usually
+  // white-on-colour; only a genuinely light accent gets the dark ink.
+  return 1.05 / (L + 0.05) >= 3 ? "#ffffff" : "#0d0d22";
+}
+
+/**
+ * Opens the card with the brand line. Images are PNG/JPEG/GIF from the site itself
+ * (`site_icon_url`, `site_logo_url`, see `siteVars`) because Gmail and Outlook show no
+ * SVG; without one the line falls back to the name, so it is never empty.
+ */
+function frameOpen(vars: Record<string, string | undefined>, design: EmailDesign): string {
+  const safe = (v: string | undefined) => !!v && isSafeUrl(v);
+  const name = `<td style="vertical-align:middle"><span style="font-size:20px;font-weight:800;letter-spacing:-0.03em;color:#0d0d22">{{site_name}}</span></td>`;
+  let brand = name;
+  if (design.header === "logo" && safe(vars.site_logo_url)) {
+    brand = `<td style="vertical-align:middle"><img src="{{site_logo_url}}" height="36" alt="{{site_name}}" style="display:block;height:36px;width:auto;max-width:240px;border:0"></td>`;
+  } else if (design.header !== "name" && safe(vars.site_icon_url)) {
+    brand = `<td width="40" style="padding:0 10px 0 0;vertical-align:middle"><img src="{{site_icon_url}}" width="30" height="30" alt="" style="display:block;width:30px;height:30px;border:0;border-radius:8px"></td>` + name;
+  }
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${design.page}" style="background-color:${design.page};color-scheme:light;${FONT}">` +
+    `<tr><td align="center" style="padding:32px 16px">` +
+    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff" style="max-width:520px;background-color:#ffffff;border:1px solid #e7e7f1;border-top:4px solid ${design.accent};border-radius:12px">` +
+    `<tr><td style="padding:28px 32px 12px">` +
+    `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:24px"><tr>${brand}</tr></table>`;
+}
+
+/** Closes the card; below it, the admin's note, then the site's name and address in small grey type. */
+function frameClose(vars: Record<string, string | undefined>, design: EmailDesign): string {
   const url = vars.site_url && isSafeUrl(vars.site_url) ? vars.site_url : "";
   const site = url
-    ? `{{site_name}} · <a href="{{site_url}}" style="color:#8a8aa8;text-decoration:underline">${escapeHtml(url.replace(/^https?:\/\//i, ""))}</a>`
+    ? `{{site_name}} · <a href="{{site_url}}" style="color:#6b6b88;text-decoration:underline">${escapeHtml(url.replace(/^https?:\/\//i, ""))}</a>`
     : "{{site_name}}";
+  const note = design.footer.trim()
+    ? `<div style="margin:0 0 6px">${escapeHtml(design.footer.trim()).replace(/\r?\n/g, "<br>")}</div>`
+    : "";
   return `</td></tr></table>` +
-    `<div style="max-width:520px;margin:0 auto;padding:16px 8px 0;font-size:12px;line-height:1.5;color:#8a8aa8;text-align:center">${site}</div>` +
+    `<div style="max-width:520px;margin:0 auto;padding:16px 8px 0;font-size:12px;line-height:1.5;color:#6b6b88;text-align:center">${note}${site}</div>` +
     `</td></tr></table>`;
 }
 
@@ -98,6 +154,7 @@ export function defaultTemplate(key: EmailTemplateKey, locale: ServerLocale = "e
     placeholders: PLACEHOLDERS[key],
   };
 }
+
 
 /** The shipped templates in English — the source language. */
 export const EMAIL_TEMPLATE_DEFAULTS: Record<EmailTemplateKey, EmailTemplateDef> =
@@ -123,14 +180,14 @@ const CONTENT_STYLES: Record<string, string> = {
   li: "margin:0 0 4px",
   blockquote: "margin:0 0 16px;padding:8px 14px;border-left:3px solid #e7e7f1;color:#6b7280",
   hr: "border:none;border-top:1px solid #e7e7f1;margin:24px 0 16px",
-  a: "color:#7c6af7",
   code: "font-family:ui-monospace,monospace;background:#f5f5fb;padding:1px 5px;border-radius:4px",
 };
 
 /** Give each known tag its email style, ahead of any style it already carries (alignment). */
-export function styleContent(html: string): string {
+export function styleContent(html: string, accent = EMAIL_DESIGN_DEFAULTS.accent): string {
   return html.replace(/<(h1|h2|h3|p|ul|ol|li|blockquote|hr|a|code)(\s[^>]*)?>/gi, (whole, tag: string, attrs = "") => {
-    const base = CONTENT_STYLES[tag.toLowerCase()];
+    const t = tag.toLowerCase();
+    const base = t === "a" ? `color:${accent}` : CONTENT_STYLES[t];
     if (!base) return whole;
     if (/\sstyle\s*=\s*"/i.test(attrs)) {
       return `<${tag}${attrs.replace(/\sstyle\s*=\s*"/i, ` style="${base};`)}>`;
@@ -151,20 +208,32 @@ export function renderCodeBox(code: string | undefined): string {
     `<span style="font-size:36px;font-weight:800;letter-spacing:0.18em;color:#1a1a2e">${escapeHtml(code)}</span></div>`;
 }
 
-/** Buttons and boxes rendered from the values they stand for, unless the caller sent its own. */
-function blockVars(vars: Record<string, string | undefined>, locale: ServerLocale): Record<string, string> {
+/**
+ * Buttons and boxes rendered from the values they stand for, in the site's accent.
+ * `link_button` is the notification's: its label comes as `link_label`.
+ */
+function blockVars(vars: Record<string, string | undefined>, locale: ServerLocale, design: EmailDesign): Record<string, string> {
   return {
-    reset_button: renderLinkButton(vars.reset_url, serverText(locale, "email", "buttons.reset")),
-    login_button: renderLinkButton(vars.login_url, serverText(locale, "email", "buttons.signIn")),
+    reset_button: renderLinkButton(vars.reset_url, serverText(locale, "email", "buttons.reset"), design.accent),
+    login_button: renderLinkButton(vars.login_url, serverText(locale, "email", "buttons.signIn"), design.accent),
+    link_button:  renderLinkButton(vars.link_url, vars.link_label || serverText(locale, "email", "buttons.view"), design.accent),
     code_box:     renderCodeBox(vars.code),
   };
 }
 
 /** Content → a ready-to-send body: styled, placeholders filled, inside the frame. */
-export function renderEmailBody(body: string, vars: Record<string, string | undefined>, locale: ServerLocale = "en"): string {
-  const all = { ...blockVars(vars, locale), ...vars };
+export function renderEmailBody(
+  body: string,
+  vars: Record<string, string | undefined>,
+  locale: ServerLocale = "en",
+  design: EmailDesign = EMAIL_DESIGN_DEFAULTS,
+): string {
+  const all = { ...vars, ...blockVars(vars, locale, design) };
   if (isLegacyBody(body)) return substitutePlaceholders(body, all);
-  return substitutePlaceholders(frameOpen(all) + styleContent(unwrapBlockPlaceholders(body)) + frameClose(all), all);
+  return substitutePlaceholders(
+    frameOpen(all, design) + styleContent(unwrapBlockPlaceholders(body), design.accent) + frameClose(all, design),
+    all,
+  );
 }
 
 export function escapeHtml(s: string): string {
@@ -236,7 +305,7 @@ export async function renderEmailTemplate(
     // Subjects are plain text; escaping there would surface literal &amp; in
     // the client's subject line, so strip tags instead.
     subject: substitutePlaceholders(tpl.subject, vars).replace(/<[^>]*>/g, "").trim(),
-    html: renderEmailBody(tpl.body, vars, locale),
+    html: renderEmailBody(tpl.body, vars, locale, await getEmailDesign()),
   };
 }
 
@@ -245,30 +314,35 @@ export async function renderEmailTemplate(
  * values the frontend renders in canonical meta, so branded mail follows what
  * the site publicly calls itself rather than a build-time constant.
  */
-export async function siteVars(): Promise<{ site_name: string; site_url: string; site_icon_url: string }> {
+export async function siteVars(): Promise<{ site_name: string; site_url: string; site_icon_url: string; site_logo_url: string }> {
   const site_url = (await getSetting<string>("site.url", "")).replace(/\/$/, "");
   return {
     site_name: await getSetting<string>("site.name", "Xentium"),
     site_url,
     site_icon_url: emailIconUrl(site_url, await getSetting<string | null>("appearance.logo.icon", null)),
+    site_logo_url: emailImageUrl(site_url, await getSetting<string | null>("appearance.logo.navbar", null)),
   };
 }
 
 /**
- * The icon an email shows: the admin's uploaded one when mail clients can show it
- * (PNG, JPEG, GIF; not SVG or ICO), else the Xentium icon every install ships.
- * Mail is read off-site, so the address must be absolute; no site address, no icon.
+ * An uploaded image as a mail client can show it: PNG, JPEG or GIF (no SVG, ICO or
+ * WebP — Gmail and Outlook drop them), at an absolute address, since mail is read
+ * off-site. Anything else is "".
  */
-export function emailIconUrl(siteUrl: string, uploaded: string | null): string {
-  if (uploaded && /\.(png|jpe?g|gif)$/i.test(uploaded)) {
-    if (/^https?:\/\//i.test(uploaded)) return uploaded;
-    if (siteUrl) return `${siteUrl}/uploads/${uploaded.replace(/^\/+/, "")}`;
-  }
-  return siteUrl ? `${siteUrl}/brand/icon-192.png` : "";
+export function emailImageUrl(siteUrl: string, uploaded: string | null): string {
+  if (!uploaded || !/\.(png|jpe?g|gif)$/i.test(uploaded)) return "";
+  if (/^https?:\/\//i.test(uploaded)) return uploaded;
+  return siteUrl ? `${siteUrl}/uploads/${uploaded.replace(/^\/+/, "")}` : "";
 }
 
-/** The purple CTA used by the notification default when a link is present. */
-export function renderLinkButton(url: string | undefined, label = "View →"): string {
+/** The admin's icon if a mail client can show it, else the Xentium icon every install ships. */
+export function emailIconUrl(siteUrl: string, uploaded: string | null): string {
+  return emailImageUrl(siteUrl, uploaded) || (siteUrl ? `${siteUrl}/brand/icon-192.png` : "");
+}
+
+/** The call-to-action button, in the accent with whichever ink reads on it. */
+export function renderLinkButton(url: string | undefined, label = "View →", accent = EMAIL_DESIGN_DEFAULTS.accent): string {
   if (!url || !isSafeUrl(url)) return "";
-  return `<p style="margin:0 0 20px"><a href="${escapeHtml(url)}" style="display:inline-block;background:#7c6af7;color:#fff;text-decoration:none;padding:11px 22px;border-radius:8px;font-weight:700;font-size:14px">${escapeHtml(label)}</a></p>`;
+  const bg = HEX.test(accent) ? accent : EMAIL_DESIGN_DEFAULTS.accent;
+  return `<p style="margin:0 0 20px"><a href="${escapeHtml(url)}" style="display:inline-block;background:${bg};color:${inkOn(bg)};text-decoration:none;padding:11px 22px;border-radius:8px;font-weight:700;font-size:14px">${escapeHtml(label)}</a></p>`;
 }
