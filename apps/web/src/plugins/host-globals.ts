@@ -88,6 +88,7 @@ import * as webEdgeRegistry from "@web/layout/edgeRegistry";
 import * as webEdgeArt from "@web/layout/edgeArt";
 import { hostEvents } from "./hostEvents";
 import { usePublicPluginSettings } from "./pluginSettings";
+import { Uploader } from "../components/Uploader";
 
 const HOST = {
   React,
@@ -140,6 +141,8 @@ const HOST = {
   webUseLayout,
   webEdgeRegistry,
   webEdgeArt,
+  // Drag-and-drop uploads with progress, to an add-on's own route (core 1.0.0).
+  webUploader: { Uploader },
   // An add-on's public settings in its own pages (core 1.0.0): `webPluginSettings.usePublic(id)`.
   webPluginSettings: { usePublic: usePublicPluginSettings },
   // Browser events (core 1.0.0): `events.on("route.changed" | "auth.changed", fn)` → unsubscribe.

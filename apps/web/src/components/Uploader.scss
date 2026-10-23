@@ -1,0 +1,46 @@
+.uploader {
+  display: grid;
+  gap: 10px;
+
+  &__zone {
+    display: grid;
+    place-items: center;
+    gap: 4px;
+    width: 100%;
+    min-height: 110px;
+    padding: 18px;
+    border: 2px dashed var(--c-border);
+    border-radius: var(--radius-md);
+    background: var(--c-bg);
+    color: var(--c-fg-muted);
+    font: inherit;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+
+    &:hover, &.is-over { border-color: var(--c-accent); background: color-mix(in srgb, var(--c-accent) 6%, var(--c-bg)); }
+    &:disabled { cursor: not-allowed; opacity: 0.6; }
+  }
+  &__label { font-weight: 600; color: var(--c-fg); }
+  &__hint { font-size: var(--fs-xs); }
+
+  &__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  &__item {
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr) minmax(0, 40%);
+    align-items: center;
+    gap: 10px;
+    font-size: var(--fs-sm);
+  }
+  &__thumb {
+    width: 40px; height: 40px; border-radius: var(--radius-sm); object-fit: cover;
+    background: var(--c-border);
+    &.is-file { display: block; }
+  }
+  &__name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--c-fg); }
+  &__bar {
+    height: 6px; border-radius: 999px; background: var(--c-border); overflow: hidden;
+    > span { display: block; height: 100%; background: var(--c-accent); transition: width 0.15s; }
+  }
+  .is-done &__bar > span { background: var(--c-success, var(--c-accent)); }
+  &__error { color: var(--c-danger); font-size: var(--fs-xs); }
+}
