@@ -6144,5 +6144,11 @@
     "rename": "Rename",
     "renamed": "Category renamed",
     "dragHint": "Drag to reorder (or Alt + ↑/↓)"
+  },
+  "addonSettings": {
+    "eyebrow": "Add-on",
+    "subtitle": "Settings this add-on offers. Changes apply once you save.",
+    "general": "General",
+    "unavailable": "This add-on has no settings here, or it is turned off."
   }
 }

@@ -6144,5 +6144,11 @@
     "rename": "Renombrar",
     "renamed": "Categoría renombrada",
     "dragHint": "Arrastra para ordenar (o Alt + ↑/↓)"
+  },
+  "addonSettings": {
+    "eyebrow": "Complemento",
+    "subtitle": "Los ajustes que ofrece este complemento. Los cambios se aplican al guardar.",
+    "general": "General",
+    "unavailable": "Este complemento no tiene ajustes aquí, o está desactivado."
   }
 }

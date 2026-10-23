@@ -377,6 +377,10 @@ export interface ContentKindHandler {
 export interface PluginHost extends BasePluginHost {
   /** Background jobs for THIS plugin (see `ctx.registerJob`). Core 1.0.0. */
   jobs: PluginJobs;
+  /** THIS plugin's settings (see `ctx.registerSettings`). Core 1.0.0. */
+  settings: PluginSettings;
+  /** The host's Zod 4, for settings schemas and validation, so you need not bundle your own. Core 1.0.0. */
+  zod: typeof import("zod").z;
 
   /**
    * Progression primitives (§38). Core owns the ladder; a plugin owns the
@@ -592,6 +596,36 @@ export interface PluginJobs {
   stop(name: string): Promise<void>;
 }
 
+// ── Settings (core 1.0.0) ───────────────────────────────────────────────────
+
+/**
+ * Your plugin's settings, declared as a Zod object (use `host.zod`, or your own Zod 4).
+ * Core stores them, applies defaults, validates every save, and DRAWS THE ACP PAGE
+ * from the schema: a toggle for a boolean, a number field (with its min/max), a
+ * choice for an enum, a text field otherwise. Per field `.meta({ … })`:
+ *  - `title`, `description`: plain text, or a translation key in your namespace;
+ *  - `section`: fields with the same section share a card;
+ *  - `widget: "color" | "textarea"`; `options: { value: "label" }` names an enum's choices;
+ *  - `public: true`: your own pages may read it (`GET /api/addons/<id>/settings`);
+ *    everything else only admins see.
+ * Every field needs a `.default(…)` (or `.optional()`). A stored value that no longer
+ * fits after an update falls back to that field's default.
+ */
+export interface PluginSettingsDeclaration<S = unknown> {
+  /** The page's title (and its ACP menu entry). Default: your plugin's name. */
+  title?: string;
+  /** The ACP section the page sits in (a core key such as "extensions", "content", "system", or your own). Default "extensions". */
+  section?: string;
+  schema: S;
+}
+
+export interface PluginSettings<T = Record<string, unknown>> {
+  /** Every setting, defaults applied. Cached; a save is visible at once. */
+  get(): Promise<T>;
+  /** Save some settings. Throws (422, a message per key) when a value does not fit. */
+  set(patch: Partial<T>): Promise<T>;
+}
+
 // ── Context ──────────────────────────────────────────────────────────────────
 
 /**
@@ -604,6 +638,12 @@ export interface PluginContext extends BasePluginContext<PluginHost> {
    * While the plugin is disabled its jobs wait; uninstalling removes them.
    */
   registerJob<T = unknown>(job: PluginJobDeclaration<T>): void;
+
+  /**
+   * Declare your settings, in `onEnable`; core draws their ACP page. Returns the typed
+   * accessor (also on `host.settings`): `const s = ctx.registerSettings({ schema }); await s.get()`.
+   */
+  registerSettings<S extends { _output: unknown }>(decl: PluginSettingsDeclaration<S>): PluginSettings<S["_output"]>;
 
   /** Listen to a core event (see `CoreEventMap`), or to another plugin's by its name. Dropped on disable. */
   on<K extends keyof CoreEventMap>(event: K, listener: EventListener<K>): void;

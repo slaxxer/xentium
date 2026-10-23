@@ -1,5 +1,5 @@
 import type { Router } from "express";
-import type { PluginContext, PluginHost, PluginJobDeclaration, PermissionDeclaration, NavItemDeclaration, AcpPageDeclaration, SearchSource, HomeFeedSource, ReportTargetHandler, EmbedHandler, ContentKindHandler, StatSource, ProgressionCriteria, NotifyOptions, PluginRouter, XecCodeDeclaration, LayoutTemplateDeclaration, BadgeCriteria
+import type { PluginContext, PluginHost, PluginJobDeclaration, PluginSettings, PluginSettingsDeclaration, PermissionDeclaration, NavItemDeclaration, AcpPageDeclaration, SearchSource, HomeFeedSource, ReportTargetHandler, EmbedHandler, ContentKindHandler, StatSource, ProgressionCriteria, NotifyOptions, PluginRouter, XecCodeDeclaration, LayoutTemplateDeclaration, BadgeCriteria
 } from "@xentium/plugin-sdk";
 import { CorePermissions, registerTemplate } from "@xentium/contracts";
 import { progressionCriteriaRegistry } from "../progression-registry/progression-criteria-registry.js";
@@ -38,6 +38,8 @@ import { recipientLocale, serverText, toServerLocale } from "../../shared/i18n/s
 import { resolveCronPattern, previewRuns } from "../../jobs/scheduledJobs.js";
 import { addFilter, addListener, emitAny, emitGroupsChanged } from "../events/events.js";
 import { jobsFor, registerJob } from "../plugin-platform/jobs.js";
+import { registerSettings, settingsFor } from "../plugin-platform/settings.js";
+import { z } from "zod";
 
 /**
  * A plugin putting a member into a group (a paid membership, an earned role). The
@@ -67,8 +69,9 @@ export async function removeFromGroup(userId: string, groupId: string): Promise<
 }
 
 /** Host services shared by every plugin; the plugin's own (`jobs`) are added per context. */
-const host: Omit<PluginHost, "jobs"> = {
+const host: Omit<PluginHost, "jobs" | "settings"> = {
   prisma,
+  zod: z,
   queues,
   env,
   logger,
@@ -137,7 +140,12 @@ export class PluginContextImpl implements PluginContext {
   readonly host: PluginHost;
 
   constructor(public readonly pluginId: string) {
-    this.host = { ...host, jobs: jobsFor(pluginId) };
+    this.host = { ...host, jobs: jobsFor(pluginId), settings: settingsFor(pluginId) };
+  }
+
+  registerSettings<S extends { _output: unknown }>(decl: PluginSettingsDeclaration<S>): PluginSettings<S["_output"]> {
+    registerSettings(this.pluginId, decl as PluginSettingsDeclaration);
+    return settingsFor(this.pluginId) as PluginSettings<S["_output"]>;
   }
 
   registerJob<T = unknown>(job: PluginJobDeclaration<T>): void {

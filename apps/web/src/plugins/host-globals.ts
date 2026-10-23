@@ -87,6 +87,7 @@ import * as webUseLayout from "@web/layout/useLayout";
 import * as webEdgeRegistry from "@web/layout/edgeRegistry";
 import * as webEdgeArt from "@web/layout/edgeArt";
 import { hostEvents } from "./hostEvents";
+import { usePublicPluginSettings } from "./pluginSettings";
 
 const HOST = {
   React,
@@ -139,6 +140,8 @@ const HOST = {
   webUseLayout,
   webEdgeRegistry,
   webEdgeArt,
+  // An add-on's public settings in its own pages (core 1.0.0): `webPluginSettings.usePublic(id)`.
+  webPluginSettings: { usePublic: usePublicPluginSettings },
   // Browser events (core 1.0.0): `events.on("route.changed" | "auth.changed", fn)` → unsubscribe.
   events: { on: hostEvents.on },
   // The schema library block props are written in (core 1.0.0-alpha.19+). A plugin that

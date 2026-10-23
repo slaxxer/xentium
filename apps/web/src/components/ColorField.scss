@@ -1,0 +1,19 @@
+.color-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  &__swatch {
+    position: relative;
+    width: 38px;
+    height: 38px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--c-border);
+    cursor: pointer;
+    flex: 0 0 auto;
+
+    input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  }
+
+  .inp.color-field__hex { width: 110px; flex: 0 0 auto; }
+}

@@ -22,6 +22,7 @@ import { authGuardRegistry } from "../auth-guard-registry/auth-guard-registry.js
 import { pluginRouter } from "./plugin-router.js";
 import { deregisterEvents, emit } from "../events/events.js";
 import { deregisterJobs, dropPluginJobs, stopPluginSchedules } from "../plugin-platform/jobs.js";
+import { deregisterSettings } from "../plugin-platform/settings.js";
 
 const PLUGIN_STORE = path.join(env.UPLOAD_DIR, "plugins");
 
@@ -409,6 +410,7 @@ async function deregisterInProcess(pluginId: string): Promise<void> {
   // refusing sign-ups or reacting to members.
   deregisterEvents(pluginId);
   deregisterJobs(pluginId);
+  deregisterSettings(pluginId);
   loadedVersions.delete(pluginId);
 }
 
