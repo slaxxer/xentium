@@ -3,6 +3,9 @@ import { useTranslation } from "react-i18next";
 import { api } from "../../../lib/api";
 import { Button } from "../../../components/AcpControls";
 import { AcpIcon } from "./acpIcons";
+import { ColorField, isHex } from "../../../components/ColorField";
+
+export { isHex };
 
 export type EmailHeader = "icon" | "logo" | "name";
 export interface EmailDesign { accent: string; page: string; header: EmailHeader; footer: string }
@@ -11,24 +14,6 @@ export interface EmailDesign { accent: string; page: string; header: EmailHeader
 export const EMAIL_DESIGN_DEFAULTS: EmailDesign = { accent: "#0d7c72", page: "#f1f1f6", header: "icon", footer: "" };
 const HEADERS: EmailHeader[] = ["icon", "logo", "name"];
 const FOOTER_MAX = 300;
-export const isHex = (v: string) => /^#[0-9a-f]{6}$/i.test(v);
-
-/** The browser's picker and a hex field — one value, two ways in. */
-function ColorField({ value, fallback, onChange, label }: {
-  value: string; fallback: string; onChange: (v: string) => void; label: string;
-}) {
-  return (
-    <div className="em-color">
-      <label className="em-color__swatch" style={{ background: isHex(value) ? value : fallback }}>
-        <input type="color" value={isHex(value) ? value : fallback} aria-label={label}
-               onChange={(e) => onChange(e.target.value)} />
-      </label>
-      <input className={`inp is-mono em-color__hex${isHex(value) ? "" : " is-invalid"}`} value={value} maxLength={7}
-             placeholder={fallback} aria-label={label} onChange={(e) => onChange(e.target.value.trim())} />
-    </div>
-  );
-}
-
 /**
  * ACP → Email → Design: the frame every email is sent in. The draft lives in
  * EmailPage (switching section is not leaving the page); this card renders it and

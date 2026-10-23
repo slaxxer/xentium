@@ -47,6 +47,7 @@ import { globalApiLimiter } from "../shared/middleware/rateLimit.js";
 import { mountWebApp } from "./serveWeb.js";
 import { registerCoreSources } from "../modules/seo/seo.core-sources.js";
 import { robots as seoRobots, sitemap as seoSitemap } from "../modules/seo/seo.service.js";
+import { addonsAdminRouter, addonsPublicRouter } from "../modules/addons/addons.routes.js";
 
 const ALLOWED_UPLOAD_DIRS = ['avatars', 'covers', 'articles', 'pages', 'groups', 'forum-attachments', 'themes', 'layouts', 'emojis'];
 
@@ -235,6 +236,7 @@ export function createApp(): Express {
   app.use("/api/admin/legal", legalAdminRouter);
   app.use("/api/admin/emojis", emojiAdminRouter);
   app.use("/api/admin/badges", badgesAdminRouter);
+  app.use("/api/admin/addons", addonsAdminRouter);
   app.use("/api/notifications", notificationRouter);
   app.use("/api/online",        onlineRouter);
   app.use("/api/activity",      activityRouter);
@@ -245,6 +247,7 @@ export function createApp(): Express {
   // Unauthenticated — an award is on show, and every card drawing it is public.
   app.use("/api/user-badges",   badgesPublicRouter);
   app.use("/api/site",          siteRouter);
+  app.use("/api/addons",        addonsPublicRouter);
   app.use("/api/members",       membersRouter);
   app.use("/api/home",          homeRouter);
   app.use("/api/search", optionalAuth, searchRouter);

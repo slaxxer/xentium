@@ -1,0 +1,18 @@
+// Only what acpSystem.scss (pg-head, set-card, set-rows, set-row) does not provide.
+
+.addon-set + .addon-set { margin-top: 16px; }
+
+// A per-field message from the server, under the field's label.
+.addon-set__error {
+  margin-top: 4px;
+  font-size: var(--fs-xs);
+  color: var(--c-danger);
+}
+
+// A long text takes the row's full width, below its label.
+.set-row.addon-set__stack {
+  display: block;
+  .set-row__control { margin-top: 9px; }
+}
+.addon-set__full { width: 100%; > * { width: 100%; } }
+.inp.addon-set__textarea { resize: vertical; min-height: 96px; }

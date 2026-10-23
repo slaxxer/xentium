@@ -17,7 +17,8 @@
   },
   "dependencies": {
     "@xentium/contracts": "workspace:*",
-    "@xentium/plugin-kit": "workspace:*"
+    "@xentium/plugin-kit": "workspace:*",
+    "zod": "catalog:"
   },
   "description": "The authoring contract for Xentium CMS plugins.",
   "license": "MIT",

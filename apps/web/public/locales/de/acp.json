@@ -6144,5 +6144,11 @@
     "rename": "Umbenennen",
     "renamed": "Kategorie umbenannt",
     "dragHint": "Zum Sortieren ziehen (oder Alt + ↑/↓)"
+  },
+  "addonSettings": {
+    "eyebrow": "Add-on",
+    "subtitle": "Einstellungen, die dieses Add-on anbietet. Änderungen gelten, sobald du speicherst.",
+    "general": "Allgemein",
+    "unavailable": "Dieses Add-on hat hier keine Einstellungen, oder es ist ausgeschaltet."
   }
 }

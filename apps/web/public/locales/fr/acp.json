@@ -6144,5 +6144,11 @@
     "rename": "Renommer",
     "renamed": "Catégorie renommée",
     "dragHint": "Glisser pour réordonner (ou Alt + ↑/↓)"
+  },
+  "addonSettings": {
+    "eyebrow": "Extension",
+    "subtitle": "Les réglages proposés par cette extension. Les changements s'appliquent à l'enregistrement.",
+    "general": "Général",
+    "unavailable": "Cette extension n'a pas de réglages ici, ou elle est désactivée."
   }
 }

@@ -822,6 +822,9 @@ importers:
       '@xentium/plugin-kit':
         specifier: workspace:*
         version: link:../plugin-kit
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.6
     devDependencies:
       '@xentium/config':
         specifier: workspace:*
