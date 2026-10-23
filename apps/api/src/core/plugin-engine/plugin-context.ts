@@ -46,6 +46,7 @@ import { registerResource } from "../plugin-platform/resources.js";
 import { pluginRegistry } from "./plugin-registry.js";
 import { filesFor } from "../plugin-platform/files.js";
 import { registerNotificationTypes } from "../plugin-platform/notificationTypes.js";
+import { cacheFor, limitsFor } from "../plugin-platform/limits.js";
 
 /**
  * A plugin putting a member into a group (a paid membership, an earned role). The
@@ -75,7 +76,7 @@ export async function removeFromGroup(userId: string, groupId: string): Promise<
 }
 
 /** Host services shared by every plugin; the plugin's own (`jobs`) are added per context. */
-const host: Omit<PluginHost, "jobs" | "settings" | "files"> = {
+const host: Omit<PluginHost, "jobs" | "settings" | "files" | "limits" | "cache"> = {
   prisma,
   zod: z,
   users: pluginUsers,
@@ -148,7 +149,11 @@ export class PluginContextImpl implements PluginContext {
   readonly host: PluginHost;
 
   constructor(public readonly pluginId: string) {
-    this.host = { ...host, jobs: jobsFor(pluginId), settings: settingsFor(pluginId), files: filesFor(pluginId) };
+    this.host = {
+      ...host,
+      jobs: jobsFor(pluginId), settings: settingsFor(pluginId), files: filesFor(pluginId),
+      limits: limitsFor(pluginId), cache: cacheFor(pluginId),
+    };
   }
 
   async registerResource(decl: PluginResourceDeclaration): Promise<void> {

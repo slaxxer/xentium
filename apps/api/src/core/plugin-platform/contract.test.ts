@@ -101,6 +101,8 @@ describe("the plugin contract", () => {
     expect(me.body).toMatchObject({ canSeeSelf: true, mayManage: false });
     expect(me.body.today).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect((await p("get", "/files")).body).toEqual({ count: 0 });
+    expect((await p("get", "/limited", false)).body).toEqual({ cached: 42 });
+    expect((await p("get", "/limited", false)).status).toBe(429);
   });
 
   it("serves its resource, and its own events fire", async () => {

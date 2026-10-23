@@ -42,6 +42,10 @@ const definition: PluginDefinition = {
       });
     });
     router.get("/files", async (_req, res) => { res.json({ count: (await host.files.list()).length }); });
+    const limited = host.limits.middleware("ping-limited", { windowSec: 60, max: 1, by: "ip" }) as never;
+    router.get("/limited", limited, async (_req, res) => {
+      res.json({ cached: await host.cache.remember("answer", 60, () => 42) });
+    });
     ctx.registerRoutes(router);
     await ctx.registerPermissions([{ key: `${ID}.manage`, label: "Manage the contract fixture", domain: "Contract", defaults: ["admin"] }]);
     ctx.registerNecCodes([{ code: "XEC-CONTRACT-7001", msg: "Contract", sev: "Info", domain: "Contract", desc: "d", cause: "c", fix: "f" }]);

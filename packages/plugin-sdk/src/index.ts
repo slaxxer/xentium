@@ -381,6 +381,10 @@ export interface PluginHost extends BasePluginHost {
   settings: PluginSettings;
   /** Files and images for THIS plugin. */
   files: PluginFiles;
+  /** Rate limits for THIS plugin's routes and actions. */
+  limits: PluginLimits;
+  /** A cache for THIS plugin. */
+  cache: PluginCache;
   /** Members, named and shown as their privacy allows. */
   users: PluginUsers;
   /** The site's time zone and days. */
@@ -843,6 +847,33 @@ export interface NotificationTypeDeclaration {
   email?: boolean;
   /** Show the switch only to members holding this permission (a staff-only notification). */
   permission?: string;
+}
+
+// ── Rate limits and cache ───────────────────────────────────────────────────
+
+/**
+ * Limits that hold across every process of the site. Over the limit, a request gets
+ * `429` (XEC-API-4290) with a Retry-After header.
+ */
+export interface PluginLimits {
+  /**
+   * Express middleware for your routes: at most `max` requests per `windowSec`, per
+   * member (put it after `requireAuth`) or, with `by: "ip"`, per address. Create it
+   * once in `onEnable`, not per request.
+   */
+  middleware(name: string, opts: { windowSec: number; max: number; by?: "user" | "ip" }): unknown;
+  /** Count one use of `key` (a member id, an address) and say whether it is still allowed. */
+  check(name: string, key: string, opts: { windowSec: number; max: number }): Promise<{ ok: boolean; remaining: number; retryAfterSec: number }>;
+}
+
+/** A small cache on the site's Redis, for THIS plugin. Values are stored as JSON. */
+export interface PluginCache {
+  get<T = unknown>(key: string): Promise<T | null>;
+  /** Default 300 seconds; at most 30 days. */
+  set(key: string, value: unknown, ttlSec?: number): Promise<void>;
+  del(key: string): Promise<void>;
+  /** The cached value, or `compute()`'s, stored for `ttlSec`. */
+  remember<T>(key: string, ttlSec: number, compute: () => Promise<T> | T): Promise<T>;
 }
 
 // ── Context ──────────────────────────────────────────────────────────────────
