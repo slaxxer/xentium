@@ -144,7 +144,7 @@ const HOST = {
   // Drag-and-drop uploads with progress, to an add-on's own route (core 1.0.0).
   webUploader: { Uploader },
   // An add-on's public settings in its own pages (core 1.0.0): `webPluginSettings.usePublic(id)`.
-  webPluginSettings: { usePublic: usePublicPluginSettings },
+  webPluginSettings: { usePublic: usePublicPluginSettings, usePublicPluginSettings },
   // Browser events (core 1.0.0): `events.on("route.changed" | "auth.changed", fn)` → unsubscribe.
   events: { on: hostEvents.on },
   // The schema library block props are written in (core 1.0.0-alpha.19+). A plugin that

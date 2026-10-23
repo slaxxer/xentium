@@ -30,7 +30,8 @@
     "e2e:reset": "node scripts/e2e.mjs --reset-only",
     "e2e": "node scripts/e2e.mjs",
     "e2e:ui": "node scripts/e2e.mjs --ui",
-    "pack:server": "node scripts/pack-server.mjs"
+    "pack:server": "node scripts/pack-server.mjs",
+    "plugin:new": "node scripts/new-plugin.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",

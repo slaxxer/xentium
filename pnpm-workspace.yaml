@@ -3,6 +3,7 @@ packages:
   - packages/*
   - plugins/official/*
   - plugins/community-examples/*
+  - plugins/local/*
   - themes/*
   - e2e
 

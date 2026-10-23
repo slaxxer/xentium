@@ -315,7 +315,11 @@ export async function enablePlugin(pluginId: string): Promise<void> {
     data:  { status: "enabled", enabledAt: new Date() },
   });
 
-  pluginRegistry.setStatus(pluginId, "enabled");
+  // REGISTER, not just set the status: this process may never have seen the plugin.
+  // With several API processes, the install can land on one and the enable on
+  // another — and a plugin missing from this registry has its routes refused by the
+  // guard and no manifest for what reads it (a resource's table prefix).
+  pluginRegistry.register(validateManifest(record.manifest) as PluginManifest, "enabled");
 
   // Re-activate plugin-owned nav items
   await prisma.navItem.updateMany({
