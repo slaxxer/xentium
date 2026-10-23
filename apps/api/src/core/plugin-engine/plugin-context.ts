@@ -36,6 +36,7 @@ import { sanitizeRichText } from "../../shared/sanitize/richText.js";
 import { renderEmailTemplate, siteVars } from "../../infrastructure/email/email-templates.js";
 import { recipientLocale, serverText, toServerLocale } from "../../shared/i18n/serverText.js";
 import { resolveCronPattern, previewRuns } from "../../jobs/scheduledJobs.js";
+import { addFilter, addListener, emitAny, emitGroupsChanged } from "../events/events.js";
 
 /**
  * A plugin putting a member into a group (a paid membership, an earned role). The
@@ -50,15 +51,18 @@ export async function addToGroup(userId: string, groupId: string): Promise<void>
   if (admin) {
     throw new XentiumError({ code: XEC.API_FORBIDDEN, httpStatus: 403, message: "A plugin cannot add members to a group with admin access" });
   }
+  const had = await prisma.userGroup.findUnique({ where: { userId_groupId: { userId, groupId } }, select: { userId: true } });
   await prisma.userGroup.upsert({
     where: { userId_groupId: { userId, groupId } }, update: {}, create: { userId, groupId },
   });
   await permissionCache.invalidate(userId);
+  if (!had) emitGroupsChanged(userId, [], [groupId]);
 }
 
 export async function removeFromGroup(userId: string, groupId: string): Promise<void> {
-  await prisma.userGroup.deleteMany({ where: { userId, groupId } });
+  const { count } = await prisma.userGroup.deleteMany({ where: { userId, groupId } });
   await permissionCache.invalidate(userId);
+  if (count) emitGroupsChanged(userId, [groupId], []);
 }
 
 /** Host services injected into every plugin's onEnable/onDisable context. */
@@ -302,6 +306,22 @@ export class PluginContextImpl implements PluginContext {
   claimSecurityPatterns(patterns: string[]): void {
     securityScanRegistry.claimPatterns(this.pluginId, patterns);
     logger.info({ pluginId: this.pluginId, patterns }, "Plugin claimed core security patterns");
+  }
+
+  on(event: string, listener: (payload: never, meta: never) => void | Promise<void>): void {
+    addListener(this.pluginId, event, listener);
+  }
+
+  filter(name: string, handler: (input: never) => unknown): void {
+    addFilter(this.pluginId, name as "profile.extra", handler as never);
+  }
+
+  /** A plugin announces only under its own id, so it can never pose as core or another plugin. */
+  emit(event: string, payload: unknown): void {
+    if (!event.startsWith(`${this.pluginId}.`)) {
+      throw new Error(`Plugin "${this.pluginId}" can only emit events named "${this.pluginId}.…", not "${event}".`);
+    }
+    emitAny(event, payload);
   }
 
   async notify(opts: NotifyOptions): Promise<void> {

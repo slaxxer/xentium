@@ -1239,6 +1239,12 @@
         "desc": "Removing this passkey or provider would leave the account with no way to sign in.",
         "cause": "The account has no password and no other passkey or provider.",
         "fix": "Set a password (through a reset link) or add another method first."
+      },
+      "XEC-PLUGIN-4220": {
+        "msg": "Refused by an add-on",
+        "desc": "An installed plugin's filter stopped this action.",
+        "cause": "A plugin registered a check (for example on sign-up or on saving content) and it refused this input.",
+        "fix": "Read the message shown to the member; it comes from the plugin. To change the rule, see that plugin's settings, or disable it."
       }
     },
     "memberPlaceholder": "Member (optional)",

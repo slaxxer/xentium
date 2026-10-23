@@ -1239,6 +1239,12 @@
         "desc": "Quitar esta llave o proveedor dejaría la cuenta sin forma de iniciar sesión.",
         "cause": "La cuenta no tiene contraseña ni otra llave o proveedor.",
         "fix": "Crea una contraseña (con un enlace de restablecimiento) o añade otro método primero."
+      },
+      "XEC-PLUGIN-4220": {
+        "msg": "Rechazado por un complemento",
+        "desc": "Un filtro de un plugin instalado detuvo esta acción.",
+        "cause": "Un plugin registró una comprobación (por ejemplo al registrarse o al guardar contenido) y rechazó esta entrada.",
+        "fix": "Lee el mensaje que ve el miembro; viene del plugin. Para cambiar la regla, revisa los ajustes de ese plugin o desactívalo."
       }
     },
     "memberPlaceholder": "Miembro (opcional)",

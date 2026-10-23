@@ -53,5 +53,6 @@
   "XEC-UPDATE-4221": "Das Passwort stimmt nicht.",
   "XEC-USER-4021": "Dieses Profil ist nur für Mitglieder sichtbar.",
   "XEC-USER-4022": "Diesem Mitglied kann man nicht folgen.",
-  "XEC-USER-4023": "Dieses Mitglied nimmt von dir keine Beiträge auf der Pinnwand an."
+  "XEC-USER-4023": "Dieses Mitglied nimmt von dir keine Beiträge auf der Pinnwand an.",
+  "XEC-PLUGIN-4220": "Ein Add-on dieser Seite hat das nicht erlaubt."
 }

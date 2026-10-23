@@ -1239,6 +1239,12 @@
         "desc": "Retirer cette clé ou ce fournisseur laisserait le compte sans moyen de connexion.",
         "cause": "Le compte n'a ni mot de passe ni autre clé ou fournisseur.",
         "fix": "Définissez d'abord un mot de passe (via un lien de réinitialisation) ou ajoutez un autre moyen."
+      },
+      "XEC-PLUGIN-4220": {
+        "msg": "Refusé par une extension",
+        "desc": "Un filtre d'un plugin installé a arrêté cette action.",
+        "cause": "Un plugin a enregistré une vérification (par exemple à l'inscription ou à l'enregistrement d'un contenu) qui a refusé cette saisie.",
+        "fix": "Lisez le message affiché au membre ; il vient du plugin. Pour changer la règle, voyez les réglages de ce plugin ou désactivez-le."
       }
     },
     "memberPlaceholder": "Membre (facultatif)",

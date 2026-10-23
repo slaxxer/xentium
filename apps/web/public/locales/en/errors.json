@@ -53,5 +53,6 @@
   "XEC-UPDATE-4221": "That password isn't right.",
   "XEC-USER-4021": "This profile is visible to members only.",
   "XEC-USER-4022": "This member can't be followed.",
-  "XEC-USER-4023": "This member isn't taking posts on their wall from you."
+  "XEC-USER-4023": "This member isn't taking posts on their wall from you.",
+  "XEC-PLUGIN-4220": "An add-on on this site didn't allow this."
 }

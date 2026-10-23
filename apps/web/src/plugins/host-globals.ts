@@ -86,6 +86,7 @@ import * as webUseLayout from "@web/layout/useLayout";
 // registry is a Map nothing reads.
 import * as webEdgeRegistry from "@web/layout/edgeRegistry";
 import * as webEdgeArt from "@web/layout/edgeArt";
+import { hostEvents } from "./hostEvents";
 
 const HOST = {
   React,
@@ -138,6 +139,8 @@ const HOST = {
   webUseLayout,
   webEdgeRegistry,
   webEdgeArt,
+  // Browser events (core 1.0.0): `events.on("route.changed" | "auth.changed", fn)` → unsubscribe.
+  events: { on: hostEvents.on },
   // The schema library block props are written in (core 1.0.0-alpha.19+). A plugin that
   // only needs it for a block schema can use this copy instead of bundling its own,
   // which keeps its bundle small; check for it, since older hosts lack it.

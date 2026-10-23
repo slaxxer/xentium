@@ -20,6 +20,7 @@ import { compareSemver } from "../../shared/utils/semver.js";
 import { acpPageRegistry } from "./acp-page-registry.js";
 import { authGuardRegistry } from "../auth-guard-registry/auth-guard-registry.js";
 import { pluginRouter } from "./plugin-router.js";
+import { deregisterEvents, emit } from "../events/events.js";
 
 const PLUGIN_STORE = path.join(env.UPLOAD_DIR, "plugins");
 
@@ -331,6 +332,7 @@ export async function enablePlugin(pluginId: string): Promise<void> {
   const { layoutService } = await import("../../modules/layouts/layout.service.js");
   layoutService.bustCache();
 
+  emit("plugin.enabled", { pluginId });
   logger.info({ pluginId }, "Plugin enabled");
 }
 
@@ -407,6 +409,10 @@ export async function disablePlugin(pluginId: string): Promise<void> {
     logger.info({ pluginId, templates: droppedTemplates }, "Plugin layout templates deregistered");
   }
 
+  // Its listeners and filters stop at once: a disabled plugin must not keep
+  // refusing sign-ups or reacting to members.
+  deregisterEvents(pluginId);
+
   // Deactivate plugin-owned nav items
   await prisma.navItem.updateMany({
     where: { pluginId },
@@ -417,6 +423,7 @@ export async function disablePlugin(pluginId: string): Promise<void> {
   await callPluginHook(record, "onDisable");
 
   pluginRegistry.setStatus(pluginId, "disabled");
+  emit("plugin.disabled", { pluginId });
   logger.info({ pluginId }, "Plugin disabled");
 }
 

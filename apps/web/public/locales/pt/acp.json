@@ -1239,6 +1239,12 @@
         "desc": "Remover esta chave ou fornecedor deixaria a conta sem forma de iniciar sessão.",
         "cause": "A conta não tem palavra-passe nem outra chave ou fornecedor.",
         "fix": "Define primeiro uma palavra-passe (através de um link de reposição) ou adiciona outro método."
+      },
+      "XEC-PLUGIN-4220": {
+        "msg": "Recusado por um complemento",
+        "desc": "Um filtro de um plugin instalado parou esta ação.",
+        "cause": "Um plugin registou uma verificação (por exemplo no registo ou ao guardar conteúdo) que recusou esta entrada.",
+        "fix": "Leia a mensagem mostrada ao membro; vem do plugin. Para mudar a regra, veja as definições desse plugin ou desative-o."
       }
     },
     "memberPlaceholder": "Membro (opcional)",

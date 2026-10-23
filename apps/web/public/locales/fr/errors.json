@@ -53,5 +53,6 @@
   "XEC-UPDATE-4221": "Ce mot de passe n'est pas le bon.",
   "XEC-USER-4021": "Ce profil n'est visible que par les membres.",
   "XEC-USER-4022": "Ce membre ne peut pas être suivi.",
-  "XEC-USER-4023": "Ce membre n'accepte pas vos messages sur son mur."
+  "XEC-USER-4023": "Ce membre n'accepte pas vos messages sur son mur.",
+  "XEC-PLUGIN-4220": "Une extension de ce site ne l'a pas permis."
 }
