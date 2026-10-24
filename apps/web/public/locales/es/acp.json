@@ -4521,7 +4521,7 @@
         "name": "Solo nombre"
       },
       "footer": "Nota al pie",
-      "footerDesc": "Texto simple bajo el mensaje, como tu dirección. El nombre y la dirección del sitio siempre aparecen después.",
+      "footerDesc": "Una nota bajo el mensaje, como tu dirección. El nombre y la dirección del sitio siempre aparecen después.",
       "footerPlaceholder": "Ejemplo S.L. · Calle Mayor 1 · Madrid",
       "preview": "Vista previa",
       "previewDesc": "El correo de restablecer contraseña con tus cambios, tal como se enviará."

@@ -4521,7 +4521,7 @@
         "name": "Nom seul"
       },
       "footer": "Note de bas de page",
-      "footerDesc": "Texte simple sous le message, comme votre adresse. Le nom et l'adresse du site suivent toujours.",
+      "footerDesc": "Une note sous le message, comme votre adresse. Le nom et l'adresse du site suivent toujours.",
       "footerPlaceholder": "Exemple SARL · 1 rue Principale · Paris",
       "preview": "Aperçu",
       "previewDesc": "L'e-mail de réinitialisation du mot de passe avec vos modifications, tel qu'il sera envoyé."

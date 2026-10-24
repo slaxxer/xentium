@@ -4521,7 +4521,7 @@
         "name": "Nur Name"
       },
       "footer": "Fußnote",
-      "footerDesc": "Einfacher Text unter der Nachricht, etwa deine Adresse. Name und Adresse der Seite folgen immer.",
+      "footerDesc": "Eine Notiz unter der Nachricht, etwa deine Adresse. Name und Adresse der Seite folgen immer.",
       "footerPlaceholder": "Beispiel GmbH · Hauptstraße 1 · 12345 Musterstadt",
       "preview": "Vorschau",
       "previewDesc": "Die E-Mail zum Zurücksetzen des Passworts mit deinen Änderungen, so wie sie verschickt wird."
