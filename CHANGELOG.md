@@ -11,6 +11,10 @@ fixes a security problem, so please update, and update Node too (see Security).
   compressed, which shields your site from a Node.js bug that could run code on the server
   (CVE-2026-111497). Please also update Node to 22.23.4 or 24.22.1 or newer. The installer
   and `xentium doctor` now warn when your Node is older.
+- **The reset form no longer gives away who has an account when mail fails.** If the mail
+  server couldn't be reached, asking for a password reset or a sign-in link showed an error
+  only for addresses that have an account. It now answers the same way for every address,
+  and the failure goes to the server log.
 - **Uploaded images lose their camera data.** Images are now re-encoded on upload, without
   the camera details and GPS location a photo can carry.
 
@@ -24,9 +28,15 @@ fixes a security problem, so please update, and update Node too (see Security).
 - **Type on the page.** Double-click a heading or the hero text and type over it.
 - **See what you changed.** The changes button counts what publishing would change and marks
   every new, edited or moved block on the page. A block you removed can be put back.
+- **A new look for every email.** Your name and the message's heading sit on a band in your
+  accent colour, buttons span the card, and small print sits in smaller type under the
+  message.
+- **The password reset email says who asked:** the time, the browser and system, and the
+  country it came from, with a "contact support" link for anyone who didn't ask.
 - **Design your emails** in ACP → Email → Design: the accent colour, the page colour, a
-  header with your icon or logo, and a footer note you write with the editor (bold, links,
-  lists), with a live preview.
+  header with your icon or logo, where "contact support" points (a web page or an email
+  address), and a footer note you write with the editor (bold, links, lists), with a live
+  preview.
 - **Members can switch off notifications from each add-on**, in the app and by email.
 - **For add-ons:** they can react to what happens on your site and refuse sign-ups,
   articles, comments and notifications; run background work once, at a time or on a
@@ -41,7 +51,7 @@ fixes a security problem, so please update, and update Node too (see Security).
 - **Theme Studio settings have their own pane** on the right. With nothing selected it shows
   the theme's colours and fonts. The desktop preview always shows the desktop layout, and
   Theme Studio folds the ACP menu to its icons to give the page more room.
-- **Email buttons and the top line are teal** by default instead of purple.
+- **Emails are teal** by default instead of purple.
 - **After an update, Migration History shows one line** with the way back, instead of every
   step.
 - **The edge art editor tells add-ons which side** you're editing.
