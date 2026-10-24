@@ -101,8 +101,18 @@ export const layoutController = {
     res.json(doc);
   }) as RequestHandler,
 
+  /**
+   * The draft, and what is LIVE beside it, so the editor can mark each block that
+   * publishing would change. One request: the two are only ever compared together.
+   */
   getDraft: (async (req, res) => {
-    res.json(await layoutService.getDraft(selectorOf(req), await themeOf(req)));
+    const selector = selectorOf(req);
+    const theme = await themeOf(req);
+    const [draft, published] = await Promise.all([
+      layoutService.getDraft(selector, theme),
+      layoutService.getPublished(selector, theme),
+    ]);
+    res.json({ ...draft, published });
   }) as RequestHandler,
 
   saveDraft: (async (req, res) => {

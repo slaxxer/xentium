@@ -744,5 +744,12 @@
     "bannedForever": "{{user}} fica banido para sempre",
     "fixed": "Definido pelo modelo. Os chefes de equipa com a permissão para o alterar podem fazê-lo.",
     "override": "Alterar (chefe de equipa)"
+  },
+  "uploader": {
+    "dropOne": "Largue um ficheiro aqui ou clique para escolher",
+    "dropMany": "Largue ficheiros aqui ou clique para escolher",
+    "max": "Até {{size}} cada",
+    "tooLarge": "Maior que {{size}}",
+    "failed": "O envio falhou. Tente de novo."
   }
 }

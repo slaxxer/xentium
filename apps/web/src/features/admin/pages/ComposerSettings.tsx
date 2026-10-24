@@ -12,7 +12,7 @@
  * appended, so the order the admin builds is the order members get.
  *
  * ⚠ A settings page: changes are a draft the ACP save bar saves (`useAutosave` is
- * the save-bar hook under its old name, `docs/plugin-acp-autosave.md`).
+ * the save-bar hook under its old name, `docs/plugin-acp-pages.md`).
  */
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";

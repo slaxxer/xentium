@@ -868,6 +868,12 @@
         "cause": "DEMO_MODE=true in der Serverumgebung.",
         "fix": "In einer Demo gibt es nichts zu beheben. Auf deiner eigenen Installation lässt du DEMO_MODE weg."
       },
+      "XEC-API-4150": {
+        "msg": "Komprimierte Anfrage abgelehnt",
+        "desc": "Der Inhalt der Anfrage wurde komprimiert gesendet (gzip, deflate oder Brotli). Die API nimmt nur unkomprimierte Inhalte an, damit komprimierte Daten nie entpackt werden.",
+        "cause": "Ein Client oder Skript hat bei der Anfrage einen Content-Encoding-Header gesetzt.",
+        "fix": "Sende den Inhalt unkomprimiert. Browser und die Xentium-CLI tun das bereits."
+      },
       "XEC-API-4004": {
         "msg": "Nicht gefunden",
         "desc": "Die angeforderte Ressource existiert nicht.",
@@ -1239,6 +1245,12 @@
         "desc": "Ohne diesen Passkey oder Anbieter gäbe es keine Möglichkeit mehr, sich anzumelden.",
         "cause": "Das Konto hat kein Passwort und keinen weiteren Passkey oder Anbieter.",
         "fix": "Zuerst ein Passwort festlegen (über einen Link zum Zurücksetzen) oder eine weitere Möglichkeit hinzufügen."
+      },
+      "XEC-PLUGIN-4220": {
+        "msg": "Von einem Add-on abgelehnt",
+        "desc": "Ein Filter eines installierten Plugins hat diese Aktion gestoppt.",
+        "cause": "Ein Plugin hat eine Prüfung registriert (etwa bei der Registrierung oder beim Speichern von Inhalten), die diese Eingabe abgelehnt hat.",
+        "fix": "Lies die Meldung, die dem Mitglied gezeigt wird; sie stammt vom Plugin. Um die Regel zu ändern, sieh in die Einstellungen dieses Plugins oder deaktiviere es."
       }
     },
     "memberPlaceholder": "Mitglied (optional)",
@@ -1316,7 +1328,10 @@
     "scheduleSaved": "Zeitplan gespeichert.",
     "saveFailed": "Zeitplan konnte nicht gespeichert werden.",
     "queuedToRun": "„{{label}}“ zur sofortigen Ausführung eingereiht.",
-    "triggerFailed": "Auftrag konnte nicht ausgelöst werden."
+    "triggerFailed": "Auftrag konnte nicht ausgelöst werden.",
+    "fromAddons": "Von Add-ons",
+    "fromAddonsHint": "Wiederkehrende Aufgaben deiner Add-ons. Jedes Add-on bestimmt seinen Zeitplan selbst; ändere ihn in dessen Einstellungen.",
+    "everyMinutes": "Alle {{count}} Min."
   },
   "tasks": {
     "title": "Eigene Aufgaben",
@@ -2626,7 +2641,9 @@
         "queued": "Wartet darauf, dass der Updater auf deinem Server es übernimmt.",
         "running": "Halte den Server nicht an. Die Seite ist für die Minute des Neustarts offline.",
         "done": "Alles hat geklappt. Die vorige Version bleibt auf dem Server, du kannst sie unter Migrationsverlauf zurückholen.",
-        "failed": "Etwas ist schiefgegangen, deshalb haben wir alles wiederhergestellt. Deine Seite läuft mit {{from}}."
+        "failed": "Etwas ist schiefgegangen, deshalb haben wir alles wiederhergestellt. Deine Seite läuft mit {{from}}.",
+        "confirmRollback": "Die Seite kehrt zum Release zurück, das vor diesem Update lief. Sobald es läuft, kannst du das schließen.",
+        "doneRollback": "Du bist wieder auf {{version}}. Lade das Panel neu, um dessen Version des ACP zu laden. Das neuere Release bleibt auf dem Server."
       },
       "loading": "Lädt…",
       "close": "Schließen",
@@ -2734,7 +2751,16 @@
       "stalledNote": "Der Updater hat sich länger nicht gemeldet. Prüfe ihn auf dem Server: journalctl -u xentium-updater",
       "rollbackTo": "Zurück auf {{version}}",
       "rollbackNote": "Wechselt zurück auf {{version}}. Die Datenbank bleibt, wie sie ist.",
-      "rollbackConfirm": "Zurücksetzen"
+      "rollbackConfirm": "Zurücksetzen",
+      "rollbackPromise": {
+        "switch": "Wir wechseln zurück",
+        "switchDesc": "{{version}} liegt noch auf dem Server und läuft wieder.",
+        "database": "Deine Datenbank bleibt, wie sie ist",
+        "databaseDesc": "Nichts wird gelöscht. Für ein vollständiges Rückgängigmachen spielst du die Sicherung des Updates von Hand ein.",
+        "restart": "Wir starten die Seite neu",
+        "restartDesc": "Sie ist ein paar Sekunden offline."
+      },
+      "reauthDescRollback": "Ein Rollback ersetzt den Code, den deine Seite ausführt, deshalb fragen wir noch einmal nach deinem Passwort."
     }
   },
   "license": {
@@ -4074,6 +4100,7 @@
         "out": "Nach außen",
         "in": "Nach innen"
       },
+      "clippedOut": "Das Theme schneidet die Ecken dieses Blocks ab und verbirgt damit auch alles außerhalb. Wähle Nach innen, um die Kante zu sehen.",
       "dirHint": {
         "bottom-out": "Hängt unter dem Block, über dem, was folgt.",
         "bottom-in": "Steigt von der Unterkante auf, über dem Block selbst.",
@@ -4195,21 +4222,21 @@
         "body": "Wähle, welche Seite du anordnest: Startseite, Artikel, Profile oder den Kopf- und Fußbereich, den alle Seiten teilen. Kopf- und Fußbereich haben fertige Stile."
       },
       "select": {
-        "title": "Klick auf etwas auf der Seite",
-        "body": "Die Vorschau ist deine echte Seite. Klick auf einen Teil, um ihn auszuwählen: eine Überschrift, den Feed, die Navigation.",
+        "title": "Klick etwas auf der Seite an",
+        "body": "Die Vorschau ist deine echte Seite. Klick einen Teil an, um ihn auszuwählen. Doppelklicke eine Überschrift, um sie direkt dort zu überschreiben.",
         "task": "Klick etwas in der Vorschau an, um weiterzumachen."
       },
       "panel": {
-        "title": "Hier erscheinen seine Einstellungen",
-        "body": "Ändere die Einstellungen, verschiebe ihn nach oben oder unten oder nutze Verschieben…, um ihn woanders hinzusetzen, etwa in die Seitenleiste. Du kannst ihn auch auf der Seite ziehen. Strg+Z macht alles rückgängig."
+        "title": "Die Einstellungen stehen rechts",
+        "body": "Ändere die Einstellungen, wähle die Spalten eines Abschnitts oder lege fest, wer einen Block sieht. Ist nichts ausgewählt, zeigt diese Seite dein Theme. Strg+Z macht alles rückgängig."
       },
       "add": {
-        "title": "Weitere Blöcke hinzufügen",
-        "body": "Geh zurück zu Blöcke, um alles zu sehen, was du hinzufügen kannst. Zieh einen Block auf die Seite oder klick ihn an, um ihn nach dem gewählten Block einzufügen."
+        "title": "Mit Abschnitten bauen",
+        "body": "Eine Seite ist ein Stapel von Abschnitten. Zieh einen fertigen Abschnitt zwischen zwei Abschnitte und dann Blöcke in seine Spalten. Beim Ziehen zeigt eine Linie jeden Platz, an den er passt."
       },
       "mode": {
-        "title": "Einfach oder Erweitert",
-        "body": "Einfach zeigt, was du zum Start brauchst. Erweitert ergänzt Ebenen, Sichtbarkeit, Theme-Stile und Icons."
+        "title": "Sieh, was du geändert hast",
+        "body": "Hier steht, was eine Veröffentlichung ändern würde. Klick darauf, um jeden geänderten Block auf der Seite zu markieren und Entferntes zurückzulegen."
       },
       "publish": {
         "title": "Nichts ist live, bis du veröffentlichst",
@@ -4219,6 +4246,52 @@
         "title": "Das war's",
         "body": "Viel Spaß dabei, sie zu deiner zu machen. Die Tour findest du jederzeit wieder über den ?-Knopf."
       }
+    },
+    "sections": {
+      "title": "Abschnitte",
+      "add": "Hinzufügen",
+      "outline": "Gliederung",
+      "columns": "Spalten",
+      "columnsHint": "Weniger Spalten behalten jeden Block: Er rückt in die letzte Spalte.",
+      "columnsCustom": "Diese Spalten haben eigene Breiten. Wähle eine Form, um sie zu ersetzen.",
+      "layout": {
+        "one": "Eine Spalte",
+        "half": "Zwei Spalten",
+        "twoOne": "Zwei Spalten, links breit",
+        "oneTwo": "Zwei Spalten, rechts breit",
+        "three": "Drei Spalten"
+      },
+      "preset": {
+        "hero": "Hero",
+        "features": "Drei Vorteile",
+        "textBlock": "Text",
+        "callToAction": "Aufruf zum Handeln",
+        "emptyOne": "Leer, eine Spalte",
+        "emptyTwo": "Leer, zwei Spalten"
+      },
+      "words": {
+        "eyebrow": "Willkommen",
+        "title": "Ein Titel für diesen Abschnitt",
+        "body": "Schreib hier etwas. Doppelklicke einen Text auf der Seite, um ihn zu ändern.",
+        "featureTitle": "Ein Vorteil",
+        "featureBody": "Sag in einem Satz, warum er zählt.",
+        "ctaTitle": "Bereit mitzumachen?",
+        "ctaBody": "Sag Besuchern, was sie als Nächstes tun sollen."
+      },
+      "changedTag": "Geändert",
+      "dropHere": "Hier ablegen",
+      "emptyHere": "Block hier ablegen",
+      "changes": "{{count}} Änderung",
+      "changes_other": "{{count}} Änderungen",
+      "noChanges": "Keine Änderungen",
+      "hideChanges": "Änderungen ausblenden",
+      "removed": "Seit der Veröffentlichung entfernt:",
+      "putBack": "Zurücklegen",
+      "settingsTitle": "Einstellungen",
+      "themeTitle": "Theme",
+      "themeHint": "Gilt für jede Seite. Klicke etwas auf der Seite an, um nur das zu ändern.",
+      "fixedText": "Du hast den übersetzten Text überschrieben, daher ist dieser Text jetzt in jeder Sprache gleich.",
+      "useTranslated": "Wieder den übersetzten Text verwenden"
     }
   },
   "groups": {
@@ -4431,7 +4504,33 @@
     "testDesc": "Sendet die SMTP-Testvorlage an eine Adresse deiner Wahl.",
     "legacy": "Diese Vorlage wurde von einer früheren Version als reines HTML gespeichert und wird weiterhin genau so versendet. Setze sie auf den Standard zurück, um sie hier zu bearbeiten.",
     "langDefault": "Unverändert geht diese E-Mail in der Sprache jedes Mitglieds raus. Sobald du sie bearbeitest, erhalten alle deine Fassung.",
-    "langCustom": "Deine Fassung geht so an alle. Setze sie zurück, damit jedes Mitglied den Standard in seiner Sprache erhält."
+    "langCustom": "Deine Fassung geht so an alle. Setze sie zurück, damit jedes Mitglied den Standard in seiner Sprache erhält.",
+    "design": {
+      "title": "Design",
+      "desc": "So sehen alle E-Mails dieser Seite aus: die Farbe, der Kopf und ein Hinweis unter der Nachricht. Die Karte bleibt weiß mit dunkler Schrift, damit sie in jeder Mail-App lesbar ist, hell wie dunkel.",
+      "defaults": "Standard verwenden",
+      "accent": "Akzentfarbe",
+      "accentDesc": "Das Band oben, Buttons und Links. Auf einer hellen Farbe wird die Schrift darauf dunkel.",
+      "page": "Seitenfarbe",
+      "pageDesc": "Der Hintergrund um die Nachricht.",
+      "header": "Kopf",
+      "headerDesc": "Was oben in jeder E-Mail steht. Bilder kommen aus Darstellung → Branding; Mail-Apps zeigen nur PNG, JPEG oder GIF.",
+      "logoMissing": "Es ist kein Logo in einem Format hochgeladen, das Mail-Apps zeigen, deshalb erscheinen Icon und Name.",
+      "headers": {
+        "icon": "Icon und Name",
+        "logo": "Logo",
+        "name": "Nur Name"
+      },
+      "support": "Link „Support kontaktieren“",
+      "supportDesc": "Wohin „wende dich an den Support“ in der E-Mail zum Zurücksetzen des Passworts führt: eine Webadresse oder eine E-Mail-Adresse. Leer zeigt die Worte ohne Link.",
+      "supportPlaceholder": "https://example.com/support oder support@example.com",
+      "supportInvalid": "Gib eine Webadresse (https://…) oder eine E-Mail-Adresse ein.",
+      "footer": "Fußnote",
+      "footerDesc": "Eine Notiz unter der Nachricht, etwa deine Adresse. Name und Adresse der Seite folgen immer.",
+      "footerPlaceholder": "Beispiel GmbH · Hauptstraße 1 · 12345 Musterstadt",
+      "preview": "Vorschau",
+      "previewDesc": "Die E-Mail zum Zurücksetzen des Passworts mit deinen Änderungen, so wie sie verschickt wird."
+    }
   },
   "themes": {
     "title": "Themes",
@@ -6102,5 +6201,11 @@
     "rename": "Umbenennen",
     "renamed": "Kategorie umbenannt",
     "dragHint": "Zum Sortieren ziehen (oder Alt + ↑/↓)"
+  },
+  "addonSettings": {
+    "eyebrow": "Add-on",
+    "subtitle": "Einstellungen, die dieses Add-on anbietet. Änderungen gelten, sobald du speicherst.",
+    "general": "Allgemein",
+    "unavailable": "Dieses Add-on hat hier keine Einstellungen, oder es ist ausgeschaltet."
   }
 }

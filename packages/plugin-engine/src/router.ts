@@ -2,7 +2,14 @@ import { Router, type Express } from "express";
 import { pluginRegistry } from "./registry.js";
 
 export class PluginRouter {
+  /** The composed, guarded router per plugin, rebuilt when a slot changes. */
   private routers = new Map<string, Router>();
+  /**
+   * A plugin's routers by slot: `"routes"` (its own, `ctx.registerRoutes`) and any
+   * the host serves on its behalf (an application's generated endpoints). The
+   * plugin's own come first, so it can answer a path itself before the host does.
+   */
+  private slots = new Map<string, Map<string, Router>>();
 
   /** Mount the plugin runtime middleware onto the Express app (call once at startup). */
   mount(app: Express): void {
@@ -20,8 +27,20 @@ export class PluginRouter {
     });
   }
 
-  /** Register a plugin's router. The guard middleware is injected automatically. */
-  register(pluginId: string, router: Router): void {
+  /**
+   * Register a plugin's router in a slot (default: its own routes; registering the
+   * same slot again replaces it). The guard middleware is injected automatically.
+   */
+  register(pluginId: string, router: Router, slot = "routes"): void {
+    const mine = this.slots.get(pluginId) ?? new Map<string, Router>();
+    mine.set(slot, router);
+    this.slots.set(pluginId, mine);
+    this.rebuild(pluginId);
+  }
+
+  private rebuild(pluginId: string): void {
+    const mine = this.slots.get(pluginId);
+    if (!mine?.size) { this.routers.delete(pluginId); return; }
     const guarded = Router();
 
     // Injected guard — returns 404 if plugin is not currently enabled
@@ -32,11 +51,13 @@ export class PluginRouter {
       next();
     });
 
-    guarded.use(router);
+    const ordered = [...mine.entries()].sort(([a], [b]) => (a === "routes" ? -1 : b === "routes" ? 1 : 0));
+    for (const [, router] of ordered) guarded.use(router);
     this.routers.set(pluginId, guarded);
   }
 
   deregister(pluginId: string): void {
+    this.slots.delete(pluginId);
     this.routers.delete(pluginId);
   }
 }

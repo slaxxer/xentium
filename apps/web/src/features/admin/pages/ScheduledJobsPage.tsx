@@ -186,6 +186,41 @@ function JobCard({ job }: { job: JobView }) {
   );
 }
 
+interface PluginJobRow {
+  pluginId: string; pluginName: string; name: string;
+  pattern: string | null; everyMs: number | null; tz: string | null; next: string | null;
+}
+
+/** Repeating jobs add-ons scheduled. Read-only: each add-on owns its schedule. */
+function PluginJobsCard() {
+  const { t } = useTranslation("acp");
+  const { data: rows = [] } = useQuery<PluginJobRow[]>({
+    queryKey: ["acp-jobs-plugins"],
+    queryFn:  () => api.get("/admin/jobs/plugins"),
+  });
+  if (!rows.length) return null;
+  return (
+    <div className="acp-card sched-plugins">
+      <div className="sched-plugins__head">
+        <b>{t("scheduled.fromAddons")}</b>
+        <span>{t("scheduled.fromAddonsHint")}</span>
+      </div>
+      <ul>
+        {rows.map((r) => (
+          <li key={`${r.pluginId}:${r.name}`}>
+            <FontAwesomeIcon icon={faClock} />
+            <span className="sched-plugins__name"><b>{r.pluginName}</b> · <code>{r.name}</code></span>
+            <span className="sched-plugins__when">
+              {r.pattern ? <code>{r.pattern}</code> : r.everyMs ? t("scheduled.everyMinutes", { count: Math.round(r.everyMs / 60_000) }) : null}
+              {r.next && <> · {t("scheduled.nextRun")} {fmt(r.next)}</>}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 export function ScheduledJobsPage() {
   const { t } = useTranslation("acp");
   const { data: jobs = [], isLoading } = useQuery<JobView[]>({
@@ -217,6 +252,7 @@ export function ScheduledJobsPage() {
           ) : (
             jobs.map((job) => <JobCard key={job.key} job={job} />)
           )}
+          <PluginJobsCard />
         </div>
         <div className="sched-aside">
           <CustomTasksSection />

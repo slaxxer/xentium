@@ -24,6 +24,7 @@ import { toast } from "../../../lib/toast";
 import { useEditingTheme, withTheme } from "../../../lib/editingTheme";
 import { useThemeTokens } from "./ThemeStyle";
 import { tokenLabel } from "./styleTokens";
+import { ColorInput } from "../../../components/ColorInput";
 
 interface AdminTokens { tokens?: ScopedTokenSet; theme?: ScopedTokenSet }
 
@@ -147,8 +148,8 @@ export function BlockMenuStyle({ groups }: { groups: TokenGroup[] }) {
                     </>
                   ) : (
                     <>
-                      <input type="color" value={toHex(value)} aria-label={tokenLabel(d.var, t)}
-                        onChange={(e) => edit(d.var, e.target.value)} />
+                      <ColorInput value={toHex(value)} aria-label={tokenLabel(d.var, t)}
+                        onChange={(v) => edit(d.var, v)} />
                       {/* The text field keeps rgba()/color-mix() values a swatch would flatten. */}
                       <input className="acp-input" value={value} placeholder="#rrggbb"
                         onChange={(e) => edit(d.var, e.target.value)} />

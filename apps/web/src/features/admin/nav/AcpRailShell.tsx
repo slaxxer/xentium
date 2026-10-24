@@ -14,7 +14,13 @@ import { useAcpCollapsed, PANEL_DOCK_MIN_WIDTH } from "./acpChrome";
  *   narrow    — below PANEL_DOCK_MIN_WIDTH the panel cannot dock at all, so the
  *               admin's preference is overridden rather than lost. It comes
  *               back untouched when the window is wide enough again.
+ *
+ * Theme Studio collapses it too, the same way (preference kept): it is three panes
+ * around a live page, and the section panel's 248px is the page's to use.
  */
+
+/** Pages that are a workspace, not a settings page: they want the whole width. */
+const WORKSPACES = ["/admin/theme-studio"];
 
 function subscribeWidth(fn: () => void) {
   const mq = window.matchMedia(`(max-width: ${PANEL_DOCK_MIN_WIDTH - 1}px)`);
@@ -29,9 +35,10 @@ function isNarrow() {
 export function AcpRailShell({ nav, children }: { nav: NavItem[]; children: React.ReactNode }) {
   const prefersCollapsed = useAcpCollapsed();
   const narrow = useSyncExternalStore(subscribeWidth, isNarrow, () => false);
-  const collapsed = prefersCollapsed || narrow;
-
   const { pathname } = useLocation();
+  const workspace = WORKSPACES.some((p) => pathname.startsWith(p));
+  const collapsed = prefersCollapsed || narrow || workspace;
+
   const [flyout, setFlyout] = useState<string | null>(null);
 
   const section = activeNavSection(nav, pathname);

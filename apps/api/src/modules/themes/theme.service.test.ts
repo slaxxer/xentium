@@ -17,6 +17,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import AdmZip from "adm-zip";
+import sharp from "sharp";
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   DEFAULT_LAYOUTS,
@@ -245,6 +246,13 @@ async function putOn(buf: Buffer, userId: string) {
 
 // ── Fixtures ─────────────────────────────────────────────────────────────────
 
+/** Same format and size, and no metadata: what storage keeps of an image it cleaned. */
+async function expectSameImage(stored: Buffer, original: Buffer): Promise<void> {
+  const [a, b] = await Promise.all([sharp(stored).metadata(), sharp(original).metadata()]);
+  expect([a.format, a.width, a.height]).toEqual([b.format, b.width, b.height]);
+  expect(a.exif).toBeUndefined();
+}
+
 /** A real 1×1 PNG: the point is that `file-type` sniffs it, so it must be genuine. */
 const PNG = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
@@ -461,7 +469,9 @@ describe("import", () => {
     expect(report.assetsImported).toBe(1);
 
     const stored = path.join(UPLOAD_DIR, "themes", META.id, "hero.png");
-    expect(await fs.readFile(stored)).toEqual(PNG);
+    // Re-encoded on the way into storage (camera data stripped), so the same
+    // image rather than the same bytes.
+    await expectSameImage(await fs.readFile(stored), PNG);
 
     const staged = savedDrafts.get("home|")!;
     // Not `assets/hero.png` any more, and not the exporting site's path either.
@@ -480,7 +490,7 @@ describe("import", () => {
       await putOn(exported, "user-1");
 
       expect(appearance.savedInstalled!.screenshot).toBe(`themes/${META.id}/screenshot.png`);
-      expect(await fs.readFile(path.join(UPLOAD_DIR, "themes", META.id, "screenshot.png"))).toEqual(PNG);
+      await expectSameImage(await fs.readFile(path.join(UPLOAD_DIR, "themes", META.id, "screenshot.png")), PNG);
     });
 
     /** A theme may be pointing at a CDN. Blanking a value the package did not

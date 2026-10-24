@@ -73,14 +73,14 @@ export async function checkAvailabilityHandler(req: Request, res: Response) {
 export async function registerHandler(req: Request, res: Response) {
   const parsed = registerSchema.parse(req.body);
 
-  const { email, username, password, emailCode, loginPinEnabled, loginPin, fields, inviteCode, name } = parsed;
+  const { email, username, password, emailCode, loginPinEnabled, loginPin, fields, inviteCode, name, addons } = parsed;
   // The form asks for consent while terms or a privacy policy are published; the server
   // holds it to that, since the account records that it was given.
   if (!parsed.acceptLegal && await legalService.consentRequired()) {
     throw new XentiumError({ code: XEC.AUTH_LEGAL_CONSENT_REQUIRED, httpStatus: 422, message: "Accept the documents members must accept to register" });
   }
   const meta           = getRequestMeta(req, res);
-  const result = await register(email, username, password, emailCode, loginPinEnabled, loginPin, fields, meta, inviteCode, name);
+  const result = await register(email, username, password, emailCode, loginPinEnabled, loginPin, fields, meta, inviteCode, name, addons);
   setRefreshCookie(res, result.refreshToken);
   res.status(201).json({ accessToken: result.accessToken, user: result.user });
 }
@@ -192,7 +192,7 @@ export async function refreshHandler(req: Request, res: Response) {
 export async function requestPasswordResetHandler(req: Request, res: Response) {
   const parsed = requestPasswordResetSchema.parse(req.body);
 
-  await requestPasswordReset(parsed.email, requestLocaleHint(req));
+  await requestPasswordReset(parsed.email, requestLocaleHint(req), { ip: req.ip, userAgent: uaOf(req) });
   res.json({ ok: true });
 }
 

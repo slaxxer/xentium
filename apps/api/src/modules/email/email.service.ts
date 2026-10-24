@@ -1,7 +1,6 @@
 import { prisma } from "../../infrastructure/db.js";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
 import { XEC } from "@xentium/contracts";
-import { getSetting } from "../../shared/utils/settings.js";
 import {
   EMAIL_TEMPLATE_DEFAULTS,
   EMAIL_TEMPLATE_KEYS,
@@ -9,9 +8,14 @@ import {
   getEffectiveTemplate,
   isLegacyBody,
   renderEmailTemplate,
-  renderLinkButton,
+  siteVars,
+  renderEmailBody,
+  getEmailDesign,
+  normalizeEmailDesign,
+  type EmailDesign,
   type EmailTemplateKey,
 } from "../../infrastructure/email/email-templates.js";
+import { bustSettingsCache } from "../../shared/utils/settings.js";
 import { sendEmail, verifySmtp, isEmailConfigured } from "../../infrastructure/email/email.service.js";
 import { SERVER_LOCALES, type ServerLocale } from "../../shared/i18n/serverText.js";
 
@@ -33,21 +37,22 @@ function isShippedCopy(key: EmailTemplateKey, subject: string, body: string): bo
 
 /** Sample values so a test send and the ACP preview show something realistic. */
 async function sampleVars(): Promise<Record<string, string>> {
-  const siteName = await getSetting<string>("site.name", "Xentium");
-  const siteUrl = await getSetting<string>("site.url", "");
+  const site = await siteVars();
+  const siteUrl = site.site_url;
   return {
-    site_name: siteName,
-    site_url: siteUrl,
+    ...site,
     username: "example-user",
     title: "A sample notification",
     body: "This is what the body text looks like.",
     link_url: siteUrl || "/",
-    link_button: renderLinkButton(siteUrl || "/"),
     reset_url: `${siteUrl}/reset-password?token=sample`,
     login_url: `${siteUrl}/auth/magic?token=sample`,
     code: "123456",
     new_email: "new-address@example.com",
     expiry_minutes: "15",
+    request_time: new Intl.DateTimeFormat("en", { dateStyle: "medium", timeStyle: "short" }).format(new Date()),
+    request_device: "Chrome 141 · macOS",
+    request_location: "Germany",
   };
 }
 
@@ -109,6 +114,28 @@ export const emailAdminService = {
   /** Render with sample data — used by the ACP preview. */
   async preview(key: EmailTemplateKey, locale: ServerLocale = "en") {
     return renderEmailTemplate(key, await sampleVars(), locale);
+  },
+
+  /** The design and whether the site has a logo a mail client can show (the "logo" header needs one). */
+  async getDesign() {
+    return { design: await getEmailDesign(), logoAvailable: !!(await siteVars()).site_logo_url };
+  },
+
+  async saveDesign(input: EmailDesign) {
+    const design = normalizeEmailDesign(input);
+    await prisma.setting.upsert({
+      where: { key: "email.design" },
+      update: { value: design as object },
+      create: { key: "email.design", value: design as object },
+    });
+    bustSettingsCache("email.design");
+    return { design };
+  },
+
+  /** A draft design on the password-reset mail as this site sends it — the ACP's live preview. */
+  async previewDesign(input: EmailDesign, locale: ServerLocale = "en") {
+    const tpl = await getEffectiveTemplate("password_reset", locale);
+    return { html: renderEmailBody(tpl.body, await sampleVars(), locale, normalizeEmailDesign(input)) };
   },
 
   async sendTest(to: string, key: EmailTemplateKey, locale: ServerLocale = "en") {

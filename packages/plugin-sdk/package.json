@@ -17,7 +17,8 @@
   },
   "dependencies": {
     "@xentium/contracts": "workspace:*",
-    "@xentium/plugin-kit": "workspace:*"
+    "@xentium/plugin-kit": "workspace:*",
+    "zod": "catalog:"
   },
   "description": "The authoring contract for Xentium CMS plugins.",
   "license": "MIT",
@@ -43,7 +44,15 @@
       ".": {
         "types": "./dist/index.d.ts",
         "default": "./dist/index.js"
+      },
+      "./web": {
+        "types": "./dist/web.d.ts",
+        "default": "./dist/web.js"
       }
     }
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./web": "./src/web.ts"
   }
 }

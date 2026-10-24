@@ -9,8 +9,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 let lastMail = "";
+let mailDown = false;
 vi.mock("../../infrastructure/email/email.service.js", () => ({
-  sendEmail: async (_to: string, _subject: string, html: string) => { lastMail = html; return true; },
+  sendEmail: async (_to: string, _subject: string, html: string) => {
+    if (mailDown) throw new Error("getaddrinfo ENOTFOUND smtp.example.test");
+    lastMail = html;
+    return true;
+  },
   isEmailConfigured: async () => true,
 }));
 
@@ -20,6 +25,7 @@ const { hashPassword } = await import("./auth.password.js");
 const { finishSignIn, completePinStep } = await import("./auth.signin.js");
 const { requestMagicLink, consumeMagicLink } = await import("./magicLink.service.js");
 const { rotateSession } = await import("./auth.tokens.js");
+const { requestPasswordReset } = await import("./auth.service.js");
 
 const EMAIL = "signin-probe@example.test";
 let userId: string;
@@ -36,7 +42,7 @@ async function makeUser(pin?: string) {
   userId = user.id;
 }
 
-beforeEach(() => { assertDisposableDatabase(); lastMail = ""; });
+beforeEach(() => { assertDisposableDatabase(); lastMail = ""; mailDown = false; });
 afterEach(async () => { await prisma.user.deleteMany({ where: { email: EMAIL } }); });
 
 describe("finishing a sign-in", () => {
@@ -87,6 +93,27 @@ describe("sign-in links", () => {
   it("sends nothing for an address with no account", async () => {
     await requestMagicLink("nobody-here@example.test", true);
     expect(lastMail).toBe("");
+  });
+});
+
+describe("when the mail server fails", () => {
+  // A 500 only for real accounts would tell anyone which addresses have one.
+  it("answers a reset and a sign-in link like an unknown address", async () => {
+    await makeUser();
+    mailDown = true;
+    await expect(requestPasswordReset(EMAIL)).resolves.toBeUndefined();
+    await expect(requestMagicLink(EMAIL, true)).resolves.toBeUndefined();
+  });
+});
+
+describe("the password reset mail", () => {
+  it("says which device asked, and has no details when an admin sent it", async () => {
+    await makeUser();
+    await requestPasswordReset(EMAIL, "en", { ip: "127.0.0.1", userAgent: "Mozilla/5.0 (X11; Linux x86_64; rv:130.0) Gecko/20100101 Firefox/130.0" });
+    expect(lastMail).toContain(">Firefox 130 · Linux</td>");
+    expect(lastMail).toContain(">Request details</td>");
+    await requestPasswordReset(EMAIL);
+    expect(lastMail).not.toContain("Request details");
   });
 });
 

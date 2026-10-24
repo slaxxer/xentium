@@ -69,6 +69,34 @@ export function checkVersion(detected: string, req: VersionRequirement): 'ok' | 
   return 'ok';
 }
 
+/**
+ * The oldest Node release on each line that carries the latest security fixes.
+ *
+ * Raised whenever Node ships a security release that matters to us. Last: the
+ * 2026-10-21 releases (CVE-2026-111497 "Node2Shell", Brotli decoder RCE, plus TLS and
+ * DNS fixes). Older lines get no fix at all, so anything below 22 is already refused
+ * by `SYSTEM_REQUIREMENTS.node.minimum`.
+ */
+export const NODE_SECURITY_FLOOR: Record<number, string> = {
+  22: '22.23.4',
+  24: '24.22.1',
+  26: '26.12.1',
+};
+
+/**
+ * The Node version to update to when `detected` misses security fixes, else null.
+ * A line we have no entry for (23, 25: short-lived odd releases) gets the next even
+ * line's floor, since those lines are out of support quickly.
+ */
+export function nodeSecurityUpdate(detected: string): string | null {
+  const major = Number.parseInt(detected.trim().replace(/^v/i, ''), 10);
+  const lines = Object.keys(NODE_SECURITY_FLOOR).map(Number).sort((a, b) => a - b);
+  const line = lines.find((l) => l >= major);
+  if (line === undefined) return null; // newer than anything we know of
+  const floor = NODE_SECURITY_FLOOR[line]!;
+  return line !== major || compareVersions(detected, floor) < 0 ? floor : null;
+}
+
 /** "22.12.0" → "22.12", "17.0" → "17": how we print a requirement to people. */
 export function displayVersion(v: string): string {
   return v.replace(/(\.0)+$/, '');

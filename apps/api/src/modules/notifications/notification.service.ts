@@ -1,11 +1,12 @@
 import { prisma } from "../../infrastructure/db.js";
 import { env } from "../../config/env.js";
 import { queues } from "../../infrastructure/queue.js";
-import { renderEmailTemplate, renderLinkButton, siteVars } from "../../infrastructure/email/email-templates.js";
+import { renderEmailTemplate, siteVars } from "../../infrastructure/email/email-templates.js";
 import { notificationRepository } from "./notification.repository.js";
 import type { DispatchOptions, NotificationPreferenceResolved } from "./notification.types.js";
 import { primaryGroupOrder } from "../../shared/utils/userRef.js";
 import { hasServerText, recipientLocale, serverText, type ServerLocale } from "../../shared/i18n/serverText.js";
+import { validate } from "../../core/events/events.js";
 
 type StoredPreference = {
   typePattern:  string;
@@ -56,6 +57,11 @@ export const notificationService = {
 
     const wantsInApp = opts.channels.includes("in_app") && resolved.inAppEnabled;
     const wantsEmail = opts.channels.includes("email")  && resolved.emailEnabled;
+    if (!wantsInApp && !wantsEmail) return;
+
+    // An add-on may hold a notification back (a quiet mode, a digest it sends itself).
+    // A refusal drops it silently: there is nobody to show an error to.
+    if (await validate("notification.validate", { userId: opts.userId, type: opts.type, title: opts.title, body: opts.body ?? null })) return;
 
     // Enrich meta with sender avatar/username for display in the notification bell
     let meta: Record<string, unknown> = opts.i18n ? { ...opts.meta, i18n: opts.i18n } : (opts.meta ?? {});
@@ -106,7 +112,7 @@ export const notificationService = {
           title:       text.title,
           body:        text.body,
           link_url:    opts.link,
-          link_button: renderLinkButton(opts.link, serverText(locale, "email", "buttons.view")),
+          link_label:  serverText(locale, "email", "buttons.view"),
         }, locale);
 
         await queues.emailNotification.add("email-notification", {

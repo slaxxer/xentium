@@ -868,6 +868,12 @@
         "cause": "DEMO_MODE=true no ambiente do servidor.",
         "fix": "Não há nada a corrigir numa demo. Na sua própria instalação, não defina DEMO_MODE."
       },
+      "XEC-API-4150": {
+        "msg": "Pedido comprimido recusado",
+        "desc": "O corpo do pedido foi enviado comprimido (gzip, deflate ou Brotli). A API só aceita corpos sem compressão, para que dados comprimidos nunca sejam descomprimidos.",
+        "cause": "Um cliente ou script definiu um cabeçalho Content-Encoding no pedido.",
+        "fix": "Envie o corpo sem compressão. Os navegadores e a CLI do Xentium já o fazem."
+      },
       "XEC-API-4004": {
         "msg": "Não encontrado",
         "desc": "O recurso solicitado não existe.",
@@ -1239,6 +1245,12 @@
         "desc": "Remover esta chave ou fornecedor deixaria a conta sem forma de iniciar sessão.",
         "cause": "A conta não tem palavra-passe nem outra chave ou fornecedor.",
         "fix": "Define primeiro uma palavra-passe (através de um link de reposição) ou adiciona outro método."
+      },
+      "XEC-PLUGIN-4220": {
+        "msg": "Recusado por um complemento",
+        "desc": "Um filtro de um plugin instalado parou esta ação.",
+        "cause": "Um plugin registou uma verificação (por exemplo no registo ou ao guardar conteúdo) que recusou esta entrada.",
+        "fix": "Leia a mensagem mostrada ao membro; vem do plugin. Para mudar a regra, veja as definições desse plugin ou desative-o."
       }
     },
     "memberPlaceholder": "Membro (opcional)",
@@ -1316,7 +1328,10 @@
     "scheduleSaved": "Agendamento guardado.",
     "saveFailed": "Não foi possível guardar o agendamento.",
     "queuedToRun": "«{{label}}» enfileirada para executar agora.",
-    "triggerFailed": "Não foi possível acionar a tarefa."
+    "triggerFailed": "Não foi possível acionar a tarefa.",
+    "fromAddons": "De complementos",
+    "fromAddonsHint": "Tarefas repetidas agendadas pelos seus complementos. Cada um gere o seu horário; altere-o nas definições dele.",
+    "everyMinutes": "A cada {{count}} min"
   },
   "tasks": {
     "title": "Tarefas personalizadas",
@@ -2626,7 +2641,9 @@
         "queued": "À espera que o atualizador do seu servidor a apanhe.",
         "running": "Não pare o servidor. O site fica offline durante o minuto do reinício.",
         "done": "Correu tudo bem. A versão anterior fica no servidor e pode voltar a ela no Histórico de migrações.",
-        "failed": "Algo falhou, por isso deixámos tudo como estava. O seu site corre {{from}}."
+        "failed": "Algo falhou, por isso deixámos tudo como estava. O seu site corre {{from}}.",
+        "confirmRollback": "O site volta à versão que usava antes desta atualização. Quando começar, pode fechar isto.",
+        "doneRollback": "Voltou para {{version}}. Recarregue o painel para carregar a versão do ACP correspondente. A versão mais recente fica no servidor."
       },
       "loading": "A carregar…",
       "close": "Fechar",
@@ -2734,7 +2751,16 @@
       "stalledNote": "O atualizador não reporta há algum tempo. Verifique-o no servidor: journalctl -u xentium-updater",
       "rollbackTo": "Voltar a {{version}}",
       "rollbackNote": "Volta a {{version}}. A base de dados fica como está.",
-      "rollbackConfirm": "Reverter"
+      "rollbackConfirm": "Reverter",
+      "rollbackPromise": {
+        "switch": "Voltamos atrás",
+        "switchDesc": "{{version}} continua no servidor e volta a funcionar.",
+        "database": "A sua base de dados fica como está",
+        "databaseDesc": "Nada é apagado. Para desfazer tudo, restaure à mão o backup da atualização.",
+        "restart": "Reiniciamos o site",
+        "restartDesc": "Fica offline por alguns segundos."
+      },
+      "reauthDescRollback": "Voltar atrás substitui o código que o seu site executa, por isso pedimos a sua senha outra vez."
     }
   },
   "license": {
@@ -4074,6 +4100,7 @@
         "out": "Para fora",
         "in": "Para dentro"
       },
+      "clippedOut": "O tema corta os cantos deste bloco, o que também esconde tudo o que fica de fora. Escolhe Para dentro para ver a borda.",
       "dirHint": {
         "bottom-out": "Pende abaixo do bloco, sobre o que vem depois.",
         "bottom-in": "Sobe da borda inferior, sobre o próprio bloco.",
@@ -4196,20 +4223,20 @@
       },
       "select": {
         "title": "Clique em algo na página",
-        "body": "A pré-visualização é a sua página real. Clique numa parte para a selecionar: um título, o feed, a navegação.",
+        "body": "A pré-visualização é a sua página real. Clique numa parte para a selecionar. Clique duas vezes num título para escrever por cima dele ali mesmo.",
         "task": "Clique em algo na pré-visualização para continuar."
       },
       "panel": {
-        "title": "As definições aparecem aqui",
-        "body": "Altere as definições, suba ou desça o bloco, ou use Mover para… para o pôr noutro sítio, como a barra lateral. Também pode arrastá-lo na página. Ctrl+Z anula tudo."
+        "title": "As definições estão à direita",
+        "body": "Altere as definições, escolha as colunas de uma secção ou quem vê um bloco. Sem nada selecionado, este lado mostra o seu tema. Ctrl+Z anula tudo."
       },
       "add": {
-        "title": "Adicione mais blocos",
-        "body": "Volte a Blocos para ver tudo o que pode adicionar. Arraste um bloco para a página, ou clique para o adicionar depois do bloco escolhido."
+        "title": "Construa com secções",
+        "body": "Uma página é uma pilha de secções. Arraste uma secção pronta para entre duas secções e depois arraste blocos para as suas colunas. Ao arrastar, uma linha mostra cada sítio possível."
       },
       "mode": {
-        "title": "Simples ou Avançado",
-        "body": "Simples mostra o essencial para começar. Avançado junta camadas, quem vê um bloco, estilos do tema e ícones."
+        "title": "Veja o que alterou",
+        "body": "Aqui conta-se o que a publicação alteraria. Clique para marcar na página cada bloco alterado e repor o que removeu."
       },
       "publish": {
         "title": "Nada fica online até publicar",
@@ -4219,6 +4246,52 @@
         "title": "É isto",
         "body": "Divirta-se a torná-lo seu. Pode rever esta visita a qualquer momento no botão ?."
       }
+    },
+    "sections": {
+      "title": "Secções",
+      "add": "Adicionar",
+      "outline": "Estrutura",
+      "columns": "Colunas",
+      "columnsHint": "Menos colunas não perdem nenhum bloco: passam para a última coluna.",
+      "columnsCustom": "Estas colunas têm larguras próprias. Escolha uma forma para as substituir.",
+      "layout": {
+        "one": "Uma coluna",
+        "half": "Duas colunas",
+        "twoOne": "Duas colunas, larga à esquerda",
+        "oneTwo": "Duas colunas, larga à direita",
+        "three": "Três colunas"
+      },
+      "preset": {
+        "hero": "Destaque",
+        "features": "Três vantagens",
+        "textBlock": "Texto",
+        "callToAction": "Chamada à ação",
+        "emptyOne": "Vazia, uma coluna",
+        "emptyTwo": "Vazia, duas colunas"
+      },
+      "words": {
+        "eyebrow": "Bem-vindo",
+        "title": "Um título para esta secção",
+        "body": "Escreva algo aqui. Clique duas vezes em qualquer texto da página para o alterar.",
+        "featureTitle": "Uma vantagem",
+        "featureBody": "Diga numa frase porque é importante.",
+        "ctaTitle": "Pronto para participar?",
+        "ctaBody": "Diga aos visitantes o que fazer a seguir."
+      },
+      "changedTag": "Alterado",
+      "dropHere": "Largue aqui",
+      "emptyHere": "Largue um bloco aqui",
+      "changes": "{{count}} alteração",
+      "changes_other": "{{count}} alterações",
+      "noChanges": "Sem alterações",
+      "hideChanges": "Ocultar alterações",
+      "removed": "Removido desde a publicação:",
+      "putBack": "Repor",
+      "settingsTitle": "Definições",
+      "themeTitle": "Tema",
+      "themeHint": "Aplica-se a todas as páginas. Clique em algo na página para alterar só isso.",
+      "fixedText": "Escreveu por cima do texto traduzido, por isso este texto é agora igual em todos os idiomas.",
+      "useTranslated": "Usar novamente o texto traduzido"
     }
   },
   "groups": {
@@ -4431,7 +4504,33 @@
     "testDesc": "Envia o modelo de teste SMTP para o endereço que escolher.",
     "legacy": "Este modelo foi guardado como HTML puro numa versão anterior e continua a ser enviado assim. Repõe o predefinido para o editares aqui.",
     "langDefault": "Sem alterações, este e-mail é enviado no idioma de cada membro. Assim que o editares, todos recebem a tua versão.",
-    "langCustom": "A tua versão é enviada a todos tal como está. Repõe-a para que cada membro receba a predefinida no seu idioma."
+    "langCustom": "A tua versão é enviada a todos tal como está. Repõe-a para que cada membro receba a predefinida no seu idioma.",
+    "design": {
+      "title": "Design",
+      "desc": "Como ficam todos os emails que este site envia: a cor, o cabeçalho e uma nota sob a mensagem. O cartão continua branco com texto escuro para ser legível em qualquer app de email, claro ou escuro.",
+      "defaults": "Usar padrões",
+      "accent": "Cor de destaque",
+      "accentDesc": "A faixa no topo, os botões e os links. Numa cor clara, o texto por cima fica escuro.",
+      "page": "Cor da página",
+      "pageDesc": "O fundo em volta da mensagem.",
+      "header": "Cabeçalho",
+      "headerDesc": "O que aparece no topo de cada email. As imagens vêm de Aparência → Marca; apps de email só mostram PNG, JPEG ou GIF.",
+      "logoMissing": "Não há logo enviado num formato que apps de email mostrem, por isso os emails mostram o ícone e o nome.",
+      "headers": {
+        "icon": "Ícone e nome",
+        "logo": "Logo",
+        "name": "Só o nome"
+      },
+      "support": "Ligação para contactar o suporte",
+      "supportDesc": "Para onde leva «contacta o suporte» no e-mail de reposição da palavra-passe: um endereço web ou um e-mail. Vazio mostra as palavras sem ligação.",
+      "supportPlaceholder": "https://example.com/suporte ou suporte@example.com",
+      "supportInvalid": "Escreve um endereço web (https://…) ou um e-mail.",
+      "footer": "Nota de rodapé",
+      "footerDesc": "Uma nota sob a mensagem, como o seu endereço. O nome e o endereço do site aparecem sempre a seguir.",
+      "footerPlaceholder": "Exemplo Lda · Rua Principal 1 · Lisboa",
+      "preview": "Pré-visualização",
+      "previewDesc": "O email de redefinição de senha com as suas alterações, tal como será enviado."
+    }
   },
   "themes": {
     "title": "Temas",
@@ -6102,5 +6201,11 @@
     "rename": "Mudar o nome",
     "renamed": "Categoria renomeada",
     "dragHint": "Arraste para reordenar (ou Alt + ↑/↓)"
+  },
+  "addonSettings": {
+    "eyebrow": "Complemento",
+    "subtitle": "As definições que este complemento oferece. As alterações aplicam-se ao guardar.",
+    "general": "Geral",
+    "unavailable": "Este complemento não tem definições aqui, ou está desligado."
   }
 }

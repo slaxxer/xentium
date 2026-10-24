@@ -490,7 +490,7 @@ registerBlock({
 registerBlock({
   type:   "profileRank",
   schema: blockPropSchemas.profileRank,
-  editorMeta: { label: "Rank progress", category: "data" },
+  editorMeta: { surface: true, label: "Rank progress", category: "data" },
   component: ({ props, context }: Ctx<{ showUnlocks: boolean }>) => {
     return <RankProgress data={useRankFor(context)} showUnlocks={props.showUnlocks} />;
   },
@@ -514,7 +514,7 @@ registerBlock({
 registerBlock({
   type:   "profileBadges",
   schema: blockPropSchemas.profileBadges,
-  editorMeta: { label: "Badges", category: "data", ...ON_PROFILE },
+  editorMeta: { surface: true, label: "Badges", category: "data", ...ON_PROFILE },
   component: ({ props, context }: Ctx<{ max: number; size: "sm" | "md" }>) => {
     const { t } = useTranslation("profiles");
     const { data: realEarned }    = useUserBadges(context.profile.id);
@@ -586,7 +586,7 @@ registerBlock({
 registerBlock({
   type:   "profileFollowers",
   schema: blockPropSchemas.profileFollowers,
-  editorMeta: { label: "Followers strip", category: "data", ...ON_PROFILE },
+  editorMeta: { surface: true, label: "Followers strip", category: "data", ...ON_PROFILE },
   component: ({ props, context }: Ctx<{ max: number }>) => {
     const { t } = useTranslation("profiles");
     const { profile, setTab } = context;
@@ -647,7 +647,7 @@ registerBlock({
 registerBlock({
   type:   "profileVisitors",
   schema: blockPropSchemas.profileVisitors,
-  editorMeta: { label: "Recent visitors", category: "data", ...ON_PROFILE },
+  editorMeta: { surface: true, label: "Recent visitors", category: "data", ...ON_PROFILE },
   component: ({ props, context }: Ctx<{ max: number }>) => {
     const { t } = useTranslation("profiles");
     const { data: real } = useProfileVisitors(context.profile.id, props.max ?? 5);

@@ -868,6 +868,12 @@
         "cause": "DEMO_MODE=true in the server's environment.",
         "fix": "Nothing to fix on a demo. On your own install, leave DEMO_MODE unset."
       },
+      "XEC-API-4150": {
+        "msg": "Compressed Request Refused",
+        "desc": "The request body was sent compressed (gzip, deflate or Brotli). The API only accepts plain request bodies, so compressed data never reaches the decompressor.",
+        "cause": "A client or script set a Content-Encoding header on its request.",
+        "fix": "Send the body uncompressed. Browsers and the Xentium CLI already do."
+      },
       "XEC-API-4004": {
         "msg": "Not Found",
         "desc": "The requested resource does not exist.",
@@ -1239,6 +1245,12 @@
         "desc": "Removing this passkey or provider would leave the account with no way to sign in.",
         "cause": "The account has no password and no other passkey or provider.",
         "fix": "Set a password (through a reset link) or add another method first."
+      },
+      "XEC-PLUGIN-4220": {
+        "msg": "Refused by an add-on",
+        "desc": "An installed plugin's filter stopped this action.",
+        "cause": "A plugin registered a check (for example on sign-up or on saving content) and it refused this input.",
+        "fix": "Read the message shown to the member; it comes from the plugin. To change the rule, see that plugin's settings, or disable it."
       }
     },
     "memberPlaceholder": "Member (optional)",
@@ -1316,7 +1328,10 @@
     "scheduleSaved": "Schedule saved.",
     "saveFailed": "Could not save schedule.",
     "queuedToRun": "\"{{label}}\" queued to run now.",
-    "triggerFailed": "Could not trigger the job."
+    "triggerFailed": "Could not trigger the job.",
+    "fromAddons": "From add-ons",
+    "fromAddonsHint": "Repeating jobs your add-ons scheduled. Each add-on owns its schedule; change it in that add-on's settings.",
+    "everyMinutes": "Every {{count}} min"
   },
   "tasks": {
     "title": "Custom tasks",
@@ -2626,7 +2641,9 @@
         "queued": "Waiting for the updater on your server to pick it up.",
         "running": "Don't stop the server. The site is offline for the minute it restarts.",
         "done": "Everything went through. The previous release stays on the server, so you can roll back from Migration History.",
-        "failed": "Something failed, so we put everything back the way it was. Your site runs {{from}}."
+        "failed": "Something failed, so we put everything back the way it was. Your site runs {{from}}.",
+        "confirmRollback": "The site goes back to the release it ran before this update. Once it runs you can close this.",
+        "doneRollback": "You're back on {{version}}. Reload the panel to load its version of the ACP. The newer release stays on the server."
       },
       "loading": "Loading…",
       "close": "Close",
@@ -2734,7 +2751,16 @@
       "stalledNote": "The updater hasn't reported for a while. Check it on the server: journalctl -u xentium-updater",
       "rollbackTo": "Roll back to {{version}}",
       "rollbackNote": "Switches back to {{version}}. The database stays as it is.",
-      "rollbackConfirm": "Roll back"
+      "rollbackConfirm": "Roll back",
+      "rollbackPromise": {
+        "switch": "We switch back",
+        "switchDesc": "{{version}} is still on the server and runs again.",
+        "database": "Your database stays as it is",
+        "databaseDesc": "Nothing is deleted. A full undo means restoring the update's backup by hand.",
+        "restart": "We restart the site",
+        "restartDesc": "It's offline for a few seconds."
+      },
+      "reauthDescRollback": "Rolling back replaces the code your site runs, so we ask for your password again."
     }
   },
   "license": {
@@ -4201,6 +4227,7 @@
         "out": "Outward",
         "in": "Inward"
       },
+      "clippedOut": "This block's corners are cut by the theme, which also hides anything outside it. Choose Inward to see the edge.",
       "dirHint": {
         "bottom-out": "Hangs below the block, over whatever comes next.",
         "bottom-in": "Rises from the bottom edge, over the block itself.",
@@ -4323,20 +4350,20 @@
       },
       "select": {
         "title": "Click anything on the page",
-        "body": "The preview is your real page. Click a part of it to select it: a heading, the feed, the navigation.",
+        "body": "The preview is your real page. Click a part of it to select it. Double-click a heading to type over it right there.",
         "task": "Click something in the preview to continue."
       },
       "panel": {
-        "title": "Its settings appear here",
-        "body": "Change the settings, move it up or down, or use Move to… to put it somewhere else, like the sidebar. You can also drag it on the page. Ctrl+Z undoes anything."
+        "title": "Its settings are on the right",
+        "body": "Change the settings, pick a section's columns, or say who sees a block. With nothing selected, this side shows your theme. Ctrl+Z undoes anything."
       },
       "add": {
-        "title": "Add more blocks",
-        "body": "Go back to Blocks to see everything you can add. Drag a block onto the page, or click it to add it after the selected block."
+        "title": "Build with sections",
+        "body": "A page is a stack of sections. Drag a ready-made section between two sections, then drag blocks into its columns. While you drag, every place it can go shows a line."
       },
       "mode": {
-        "title": "Simple or Advanced",
-        "body": "Simple shows what you need to start. Advanced adds layers, who can see a block, theme styles and icons."
+        "title": "See what you changed",
+        "body": "This counts what publishing would change. Press it to mark every changed block on the page, and to put back anything you removed."
       },
       "publish": {
         "title": "Nothing is live until you publish",
@@ -4346,6 +4373,52 @@
         "title": "That's it",
         "body": "Have fun making it yours. You can see this tour again any time from the ? button."
       }
+    },
+    "sections": {
+      "title": "Sections",
+      "add": "Add",
+      "outline": "Outline",
+      "columns": "Columns",
+      "columnsHint": "Fewer columns keep every block: they move into the last column.",
+      "columnsCustom": "These columns have custom widths. Pick a shape to replace them.",
+      "layout": {
+        "one": "One column",
+        "half": "Two columns",
+        "twoOne": "Two columns, wide left",
+        "oneTwo": "Two columns, wide right",
+        "three": "Three columns"
+      },
+      "preset": {
+        "hero": "Hero",
+        "features": "Three features",
+        "textBlock": "Text",
+        "callToAction": "Call to action",
+        "emptyOne": "Empty, one column",
+        "emptyTwo": "Empty, two columns"
+      },
+      "words": {
+        "eyebrow": "Welcome",
+        "title": "A title for this section",
+        "body": "Write something here. Double-click any text on the page to change it.",
+        "featureTitle": "A feature",
+        "featureBody": "Say in a sentence why it matters.",
+        "ctaTitle": "Ready to join?",
+        "ctaBody": "Tell visitors what to do next."
+      },
+      "changedTag": "Changed",
+      "dropHere": "Drop it here",
+      "emptyHere": "Drop a block here",
+      "changes": "{{count}} change",
+      "changes_other": "{{count}} changes",
+      "noChanges": "No changes",
+      "hideChanges": "Hide changes",
+      "removed": "Removed since it was published:",
+      "putBack": "Put back",
+      "settingsTitle": "Settings",
+      "themeTitle": "Theme",
+      "themeHint": "Applies to every page. Click something on the page to change just that.",
+      "fixedText": "You typed over the translated text, so this text is now the same in every language.",
+      "useTranslated": "Use the translated text again"
     }
   },
   "groups": {
@@ -4558,7 +4631,33 @@
     "testDesc": "Delivers the SMTP test template to an address of your choice.",
     "legacy": "This template was saved as raw HTML by an earlier version and is still sent exactly like that. Reset it to the default to edit it here.",
     "langDefault": "Unchanged, this email goes out in each member's language. Once you edit it, your version goes to everyone.",
-    "langCustom": "Your version goes to everyone as written. Reset it to send each member the default in their language."
+    "langCustom": "Your version goes to everyone as written. Reset it to send each member the default in their language.",
+    "design": {
+      "title": "Design",
+      "desc": "How every email this site sends looks: the colour, the header and a note under the message. The card stays white with dark text so it reads in every mail app, light or dark.",
+      "defaults": "Use defaults",
+      "accent": "Accent colour",
+      "accentDesc": "The band at the top, buttons and links. Text on it turns dark on a light colour.",
+      "page": "Page colour",
+      "pageDesc": "The background around the message.",
+      "header": "Header",
+      "headerDesc": "What sits at the top of each email. Images come from Appearance → Branding; mail apps show PNG, JPEG or GIF only.",
+      "logoMissing": "No logo in a format mail apps can show is uploaded, so emails show the icon and name instead.",
+      "headers": {
+        "icon": "Icon and name",
+        "logo": "Logo",
+        "name": "Name only"
+      },
+      "support": "Contact support link",
+      "supportDesc": "Where “contact support” in the password reset email points: a web address or an email address. Empty shows the words without a link.",
+      "supportPlaceholder": "https://example.com/support or support@example.com",
+      "supportInvalid": "Enter a web address (https://…) or an email address.",
+      "footer": "Footer note",
+      "footerDesc": "A note under the message, such as your address. The site name and address always follow.",
+      "footerPlaceholder": "Example Ltd · 1 Main Street · Springfield",
+      "preview": "Preview",
+      "previewDesc": "The password-reset email with your changes, as it will be sent."
+    }
   },
   "themes": {
     "title": "Themes",
@@ -6102,5 +6201,11 @@
     "rename": "Rename",
     "renamed": "Category renamed",
     "dragHint": "Drag to reorder (or Alt + ↑/↓)"
+  },
+  "addonSettings": {
+    "eyebrow": "Add-on",
+    "subtitle": "Settings this add-on offers. Changes apply once you save.",
+    "general": "General",
+    "unavailable": "This add-on has no settings here, or it is turned off."
   }
 }

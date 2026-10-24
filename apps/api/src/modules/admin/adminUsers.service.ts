@@ -27,6 +27,7 @@ import { primaryGroupOrder } from "../../shared/utils/userRef.js";
 import { permissionCache } from "../permissions/permission.cache.js";
 import { ONLINE_TTL_MS } from "../../shared/middleware/requireAuth.js";
 import { buildPaginationMeta } from "@xentium/contracts";
+import { emitGroupsChanged } from "../../core/events/events.js";
 
 /** Failed sign-ins in 24 hours that make an account worth a look. */
 export const FAILED_SIGNIN_FLAG = 5;
@@ -345,6 +346,7 @@ export const adminUsersService = {
     await permissionCache.invalidate(userId);
 
     const after = await prisma.userGroup.findMany({ where: { userId }, include: groupInclude, orderBy: primaryGroupOrder });
+    emitGroupsChanged(userId, user.groups.map((ug) => ug.group.id), after.map((ug) => ug.groupId));
     return { groups: after.map(toGroup) };
   },
 };

@@ -66,6 +66,15 @@ export interface EdgeInspectorProps {
   setExt: (next: Record<string, unknown> | undefined) => void;
   /** Replace the whole edge — for presets. `undefined` removes it. */
   write: (next: EdgeArt | undefined) => void;
+  /** Which side is being edited. Core 1.0.0-alpha.20+; absent before. */
+  side?: "top" | "bottom";
+  /**
+   * The block these edges are on (`profileCard`, `header`…) and the template being
+   * edited (`profile`, `chrome.header`…), so a setting that only works on some blocks is
+   * offered there only. Core 1.0.0-alpha.20+; absent before.
+   */
+  blockType?: string;
+  templateKey?: string;
 }
 
 export interface EdgeExtension {

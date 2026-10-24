@@ -43,6 +43,6 @@ describe("server texts", () => {
 
   it("writes the buttons in the recipient's language", () => {
     const html = renderEmailBody("<p>{{reset_button}}</p>", { reset_url: "https://a.test/r" }, "de");
-    expect(html).toContain("Passwort zurücksetzen →");
+    expect(html).toContain(">Neues Passwort festlegen</a>");
   });
 });

@@ -20,6 +20,14 @@ import { compareSemver } from "../../shared/utils/semver.js";
 import { acpPageRegistry } from "./acp-page-registry.js";
 import { authGuardRegistry } from "../auth-guard-registry/auth-guard-registry.js";
 import { pluginRouter } from "./plugin-router.js";
+import { deregisterEvents, emit } from "../events/events.js";
+import { deregisterJobs, dropPluginJobs, stopPluginSchedules } from "../plugin-platform/jobs.js";
+import { deregisterSettings } from "../plugin-platform/settings.js";
+import { deregisterResources } from "../plugin-platform/resources.js";
+import { deregisterNotificationTypes } from "../plugin-platform/notificationTypes.js";
+import { dropPluginFiles } from "../plugin-platform/files.js";
+import { dropPluginKeys } from "../plugin-platform/limits.js";
+import { bustSettingsCache } from "../../shared/utils/settings.js";
 
 const PLUGIN_STORE = path.join(env.UPLOAD_DIR, "plugins");
 
@@ -310,7 +318,11 @@ export async function enablePlugin(pluginId: string): Promise<void> {
     data:  { status: "enabled", enabledAt: new Date() },
   });
 
-  pluginRegistry.setStatus(pluginId, "enabled");
+  // REGISTER, not just set the status: this process may never have seen the plugin.
+  // With several API processes, the install can land on one and the enable on
+  // another — and a plugin missing from this registry has its routes refused by the
+  // guard and no manifest for what reads it (a resource's table prefix).
+  pluginRegistry.register(validateManifest(record.manifest) as PluginManifest, "enabled");
 
   // Re-activate plugin-owned nav items
   await prisma.navItem.updateMany({
@@ -331,20 +343,16 @@ export async function enablePlugin(pluginId: string): Promise<void> {
   const { layoutService } = await import("../../modules/layouts/layout.service.js");
   layoutService.bustCache();
 
+  emit("plugin.enabled", { pluginId });
   logger.info({ pluginId }, "Plugin enabled");
 }
 
-/** Disable an enabled plugin. */
-export async function disablePlugin(pluginId: string): Promise<void> {
-  const record = await prisma.installedPlugin.findUniqueOrThrow({ where: { id: pluginId } });
-  if (record.status === "disabled" || record.status === "installed") return;
-
-  await prisma.installedPlugin.update({
-    where: { id: pluginId },
-    data:  { status: "disabled", disabledAt: new Date() },
-  });
-
-  // Clean up plugin registrations
+/**
+ * Forget everything a plugin registered in THIS process: routes, registries, event
+ * listeners and filters, job handlers, templates. Disable runs it; so does reloading
+ * a plugin into the worker after an update. Touches no database row.
+ */
+async function deregisterInProcess(pluginId: string): Promise<void> {
   acpPageRegistry.deregister(pluginId);
   pluginRouter.deregister(pluginId);
 
@@ -407,6 +415,30 @@ export async function disablePlugin(pluginId: string): Promise<void> {
     logger.info({ pluginId, templates: droppedTemplates }, "Plugin layout templates deregistered");
   }
 
+  // Its listeners and filters stop at once: a disabled plugin must not keep
+  // refusing sign-ups or reacting to members.
+  deregisterEvents(pluginId);
+  deregisterJobs(pluginId);
+  deregisterSettings(pluginId);
+  deregisterResources(pluginId);
+  deregisterNotificationTypes(pluginId);
+  loadedVersions.delete(pluginId);
+}
+
+/** Disable an enabled plugin. */
+export async function disablePlugin(pluginId: string): Promise<void> {
+  const record = await prisma.installedPlugin.findUniqueOrThrow({ where: { id: pluginId } });
+  if (record.status === "disabled" || record.status === "installed") return;
+
+  await prisma.installedPlugin.update({
+    where: { id: pluginId },
+    data:  { status: "disabled", disabledAt: new Date() },
+  });
+
+  await deregisterInProcess(pluginId);
+  // Its repeating jobs stop; one-off jobs stay queued and wait for re-enable.
+  await stopPluginSchedules(pluginId).catch((err) => logger.warn({ pluginId, err }, "Could not stop the plugin's job schedules"));
+
   // Deactivate plugin-owned nav items
   await prisma.navItem.updateMany({
     where: { pluginId },
@@ -417,6 +449,7 @@ export async function disablePlugin(pluginId: string): Promise<void> {
   await callPluginHook(record, "onDisable");
 
   pluginRegistry.setStatus(pluginId, "disabled");
+  emit("plugin.disabled", { pluginId });
   logger.info({ pluginId }, "Plugin disabled");
 }
 
@@ -445,7 +478,17 @@ export async function uninstallPlugin(pluginId: string, removeData: boolean): Pr
     // Always purge residual migration tracking so a future reinstall starts clean
     // even if a down migration above failed mid-way.
     await prisma.xentiumPluginMigration.deleteMany({ where: { pluginId } });
+    // Its files: the rows in xcf_files and the bytes under uploads/addons/<id>.
+    await dropPluginFiles(pluginId).catch((err) => logger.warn({ pluginId, err }, "Could not remove the plugin's files"));
+    // Its cache and rate-limit counters in Redis.
+    await dropPluginKeys(pluginId).catch((err) => logger.warn({ pluginId, err }, "Could not remove the plugin's cache"));
+    // Its settings (ctx.registerSettings keeps them in one row).
+    await prisma.setting.deleteMany({ where: { key: `plugin.${pluginId}` } });
+    bustSettingsCache(`plugin.${pluginId}`);
   }
+
+  // Its background work goes with it, data kept or not: no handler will ever run it again.
+  await dropPluginJobs(pluginId).catch((err) => logger.warn({ pluginId, err }, "Could not remove the plugin's jobs"));
 
   // Delete package file + extracted dir
   await fs.unlink(record.packagePath).catch(() => null);
@@ -489,7 +532,10 @@ async function callPluginHook(
       await def.onDisable(ctx);
     }
     // onEnable completed cleanly → clear any prior load failure.
-    if (hook === "onEnable") pluginRegistry.clearLoadError(record.id);
+    if (hook === "onEnable") {
+      pluginRegistry.clearLoadError(record.id);
+      loadedVersions.set(record.id, manifest.version);
+    }
   } catch (err) {
     logger.warn({ pluginId: record.id, hook, err }, "Plugin hook failed");
     // Surface enable failures: the DB still says "enabled" but nothing registered.
@@ -503,6 +549,34 @@ async function callPluginHook(
       });
     }
   }
+}
+
+/** The version of each plugin whose onEnable ran in this process. */
+const loadedVersions = new Map<string, string>();
+const loading = new Map<string, Promise<"enabled" | "off" | "gone">>();
+
+/**
+ * Is the plugin enabled, and loaded in THIS process at its installed version? Loads
+ * (or reloads) it when not. The worker reads plugins once at boot and hears of no
+ * enable, disable or update made through an API process afterwards; a plugin's job
+ * asks this first, so it runs the right code or waits.
+ */
+export function ensurePluginLoaded(pluginId: string): Promise<"enabled" | "off" | "gone"> {
+  const pending = loading.get(pluginId);
+  if (pending) return pending;
+  const run = (async () => {
+    const record = await prisma.installedPlugin.findUnique({ where: { id: pluginId } });
+    if (!record) return "gone" as const;
+    if (record.status !== "enabled") return "off" as const;
+    const manifest = validateManifest(record.manifest) as PluginManifest;
+    if (loadedVersions.get(pluginId) === manifest.version) return "enabled" as const;
+    if (loadedVersions.has(pluginId)) await deregisterInProcess(pluginId);
+    pluginRegistry.register(manifest, "enabled");
+    await callPluginHook(record, "onEnable");
+    return loadedVersions.get(pluginId) === manifest.version ? "enabled" as const : "off" as const;
+  })().finally(() => loading.delete(pluginId));
+  loading.set(pluginId, run);
+  return run;
 }
 
 /** Called once at server startup — re-registers all enabled plugins in the registry. */

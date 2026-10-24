@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SYSTEM_REQUIREMENTS, checkVersion, compareVersions, displayVersion } from './system.js';
+import { SYSTEM_REQUIREMENTS, checkVersion, compareVersions, displayVersion, nodeSecurityUpdate } from './system.js';
 
 describe('compareVersions', () => {
   it('compares numerically, not as strings', () => {
@@ -44,5 +44,23 @@ describe('displayVersion', () => {
     expect(displayVersion('22.12.0')).toBe('22.12');
     expect(displayVersion('17.0')).toBe('17');
     expect(displayVersion('6.0')).toBe('6');
+  });
+});
+
+describe('nodeSecurityUpdate', () => {
+  it('names the patched release on the same line', () => {
+    expect(nodeSecurityUpdate('22.22.1')).toBe('22.23.4');
+    expect(nodeSecurityUpdate('v24.22.0')).toBe('24.22.1');
+    expect(nodeSecurityUpdate('26.0.0')).toBe('26.12.1');
+  });
+
+  it('is quiet for a patched or newer release', () => {
+    expect(nodeSecurityUpdate('22.23.4')).toBeNull();
+    expect(nodeSecurityUpdate('24.30.0')).toBeNull();
+    expect(nodeSecurityUpdate('28.1.0')).toBeNull();
+  });
+
+  it('sends an odd line to the next even line', () => {
+    expect(nodeSecurityUpdate('23.11.0')).toBe('24.22.1');
   });
 });

@@ -1,4 +1,4 @@
-import { SYSTEM_REQUIREMENTS, checkVersion, displayVersion } from "@xentium/contracts";
+import { SYSTEM_REQUIREMENTS, checkVersion, displayVersion, nodeSecurityUpdate } from "@xentium/contracts";
 
 /**
  * Environment rows built from SYSTEM_REQUIREMENTS, shared by the wizard's full
@@ -37,7 +37,12 @@ function versionRow(
 }
 
 export function nodeRow(version = process.versions.node): RequirementRow {
-  return versionRow("node", "Node.js", version, SYSTEM_REQUIREMENTS.node);
+  const row = versionRow("node", "Node.js", version, SYSTEM_REQUIREMENTS.node);
+  const update = row.ok ? nodeSecurityUpdate(version) : null;
+  // Runs, but misses Node's own security fixes: say so, and name the version.
+  return update
+    ? { ...row, warn: true, detail: `${row.detail} · Missing security fixes: update to ${update} or newer` }
+    : row;
 }
 
 export function postgresRow(version: string): RequirementRow {

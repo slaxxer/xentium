@@ -45,20 +45,21 @@ import {
 const ON_HOME: { allowedTemplates: string[] } = { allowedTemplates: ["home"] };
 
 /**
- * Registers one propless home card.
+ * Registers one propless home card. A card paints its own surface, so it takes edge
+ * art (`surface`); the feed is the page's middle, not a card.
  *
  * The schema still comes from `blockPropSchemas`, so a card that later gains a prop
  * gets it from the contract rather than from a shape duplicated here. Indexing that
  * object widens to a union of every core schema, hence the narrowing cast — all nine
  * of these are `z.object({})`.
  */
-const simple = (type: string, label: string, Component: () => ReactNode, wide = false) =>
+const simple = (type: string, label: string, Component: () => ReactNode, wide = false, surface = true) =>
   registerBlock({
     type,
     schema: blockPropSchemas[type as keyof typeof blockPropSchemas] as ZodType<
       Record<string, never>
     >,
-    editorMeta: { label, category: "data", ...ON_HOME, ...(wide ? { wide: true } : {}) },
+    editorMeta: { label, category: "data", ...ON_HOME, ...(wide ? { wide: true } : {}), ...(surface ? { surface: true } : {}) },
     component: () => <Component />,
   });
 
@@ -73,7 +74,7 @@ simple("homeSpaces",     "Spaces",      SpacesCard);
 // Centre.
 // The one home card that is a page-width layout rather than a rail card — the
 // picker says so when it is offered for the rail.
-simple("homeFeed", "Feed", Feed, true);
+simple("homeFeed", "Feed", Feed, true, false);
 
 // Right rail.
 /**
@@ -84,7 +85,7 @@ simple("homeFeed", "Feed", Feed, true);
 registerBlock({
   type:   "homeProgression",
   schema: blockPropSchemas.homeProgression,
-  editorMeta: { label: "Rank progress", category: "data" },
+  editorMeta: { surface: true, label: "Rank progress", category: "data" },
   component: ({ context }) => <RankProgress data={useRankFor(context)} />,
 });
 simple("homeHotThreads",      "Hot threads",      HotThreads);

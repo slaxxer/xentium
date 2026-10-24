@@ -40,3 +40,17 @@ export function isEditorPreview(): boolean {
   return typeof window !== "undefined" &&
     (window.location.pathname === "/__theme-preview" || isLayoutPreview());
 }
+
+/**
+ * Marks a piece of a block's markup as text the admin may type over on the page
+ * (ADR-0012): `<h2 {...inlineText("text")}>`. Spread it on the element that shows
+ * exactly one prop's text and nothing else.
+ *
+ * Nothing on the live site, so its markup stays as it was. `raw` is the text as the
+ * block received it: text with a placeholder in it (`{site}`) is shown filled in,
+ * and typing over the filled-in version would replace the placeholder for good.
+ */
+export function inlineText(prop: string, raw?: string): { "data-xt-inline"?: string } {
+  if (!isEditorPreview() || raw?.includes("{")) return {};
+  return { "data-xt-inline": prop };
+}

@@ -2,6 +2,7 @@ import { prisma } from "../../infrastructure/db.js";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
 import { permissionCache } from "../permissions/permission.cache.js";
 import { storage } from "../../infrastructure/storage/LocalStorageProvider.js";
+import { emitGroupsChanged } from "../../core/events/events.js";
 
 // Badge appearance (colour + label + configurable username glow) is edited on the
 // group itself (ACP → Groups), so the group list/detail expose the full set.
@@ -83,7 +84,12 @@ export const groupsService = {
         });
       }
     }
+    const leaving = await prisma.userGroup.findMany({ where: { groupId: id }, select: { userId: true } });
     await prisma.group.delete({ where: { id } });
+    // Every member of a deleted group left it (and may have landed in Member).
+    for (const { userId } of leaving) {
+      emitGroupsChanged(userId, [id], memberGroup ? [memberGroup.id] : []);
+    }
   },
 
   /**

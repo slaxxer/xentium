@@ -70,7 +70,7 @@ export function useEditingThemeRow() {
 }
 
 /** Admin draft over what the theme ships — the global bucket the site would wear. */
-function effectiveGlobal(draft: AdminTokens | undefined): TokenMap {
+export function effectiveGlobal(draft: AdminTokens | undefined): TokenMap {
   return { ...(draft?.theme?.global ?? {}), ...(draft?.tokens?.global ?? {}) };
 }
 
@@ -95,9 +95,26 @@ export function themeDraftCss(draft: AdminTokens | undefined): string {
 
 const isColour = (v: string) => /^(#|rgb|hsl|oklch|color-mix)/i.test(v.trim());
 
+/**
+ * Stage global tokens in the editing theme's draft (`null` clears one). Shared by the
+ * Theme style tab and add-on block panels, so both write the same cache entry.
+ */
+export function useThemeTokenPatch() {
+  const qc = useQueryClient();
+  const { key } = useEditingTheme();
+  return useMutation({
+    mutationFn: (tokens: Record<string, string | null>) =>
+      api.patch<ScopedTokenSet>(withTheme("/appearance/tokens/scope/global", key), { tokens }),
+    onSuccess: (next) => {
+      qc.setQueryData(["acp-tokens", key], (prev: AdminTokens | undefined) => ({ ...prev, tokens: next }));
+      qc.invalidateQueries({ queryKey: ["acp-draft-status"] });
+    },
+    onError: (e) => toast.error(apiErrorMessage(e)),
+  });
+}
+
 export function ThemeStyleFields({ children }: { children?: ReactNode }) {
   const { t } = useTranslation("acp");
-  const qc = useQueryClient();
   const { key } = useEditingTheme();
   const { theme, isCore, loaded } = useEditingThemeRow();
   const { data: draft } = useThemeTokens();
@@ -110,15 +127,7 @@ export function ThemeStyleFields({ children }: { children?: ReactNode }) {
   const glow = wears(GLOW_PRESETS.on, effective);
   const activeCw = colourways.find((c) => wears(c.tokens, effective))?.id ?? null;
 
-  const apply = useMutation({
-    mutationFn: (tokens: Record<string, string | null>) =>
-      api.patch<ScopedTokenSet>(withTheme("/appearance/tokens/scope/global", key), { tokens }),
-    onSuccess: (next) => {
-      qc.setQueryData(["acp-tokens", key], (prev: AdminTokens | undefined) => ({ ...prev, tokens: next }));
-      qc.invalidateQueries({ queryKey: ["acp-draft-status"] });
-    },
-    onError: (e) => toast.error(apiErrorMessage(e)),
-  });
+  const apply = useThemeTokenPatch();
 
   const set = (tokens: TokenMap) => apply.mutate(patchFor(tokens, shipped));
 

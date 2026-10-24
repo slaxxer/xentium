@@ -15,7 +15,8 @@ import { startGeoipRefreshWorker }            from './jobs/geoipRefresh.js';
 import { startScheduledTaskWorker, reconcileScheduledTasks } from './jobs/scheduledTask.js';
 import { attachFailureHandler }               from './jobs/jobFailure.js';
 import { SCHEDULED_JOBS, getJobConfig, applyJobSchedule, removeRetiredSchedulers } from './jobs/scheduledJobs.js';
-import { initializeEnabledPlugins }           from './core/plugin-engine/plugin-engine.js';
+import { initializeEnabledPlugins, ensurePluginLoaded } from './core/plugin-engine/plugin-engine.js';
+import { startPluginJobWorker }               from './core/plugin-platform/jobs.js';
 
 // Each worker gets failure logging + dead-letter (error_log) + admin-notify
 // reliability handlers (§55). Retry/backoff come from defaultJobOptions.
@@ -40,6 +41,9 @@ function startWorkers() {
     attachFailureHandler(startLogRetentionWorker(),           'log-retention'),
     attachFailureHandler(startGeoipRefreshWorker(),           'geoip-refresh'),
     attachFailureHandler(startScheduledTaskWorker(),          'scheduled-task'),
+    // Plugins' background work (ADR-0011). A job whose plugin was enabled after
+    // this process started loads that plugin here first.
+    attachFailureHandler(startPluginJobWorker(ensurePluginLoaded), 'plugin-jobs'),
   );
 }
 

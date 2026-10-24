@@ -27,6 +27,7 @@ import { hasPermission } from "../../shared/middleware/requirePermission.js";
 import { articleService } from "../articles/article.service.js";
 import { articleCategoryService } from "../article-categories/article-category.service.js";
 import { ARTICLE_SORT, adminArticleWhere, type ArticleBulkInput, type ArticleListQuery } from "./adminArticles.js";
+import { assertAllowed, emit, emitGroupsChanged } from "../../core/events/events.js";
 
 /**
  * Settings whose value is write-only: stored encrypted, returned to the client
@@ -338,6 +339,7 @@ export const adminService = {
     ]);
     if (byEmail) throw new XentiumError({ code: "XEC-AUTH-2001", httpStatus: 409, message: "Email is already registered" });
     if (byName) throw new XentiumError({ code: "XEC-AUTH-2002", httpStatus: 409, message: "Username is already taken" });
+    await assertAllowed("registration.validate", { email, username, method: "admin" });
 
     const group = input.groupId
       ? await prisma.group.findUnique({ where: { id: input.groupId }, select: { id: true } })
@@ -345,7 +347,7 @@ export const adminService = {
     if (input.groupId && !group) throw XentiumError.notFound("Group not found");
 
     const passwordHash = await hashPassword(input.password);
-    return prisma.$transaction(async (tx) => {
+    const created = await prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
         data: {
           email, username, passwordHash,
@@ -358,11 +360,14 @@ export const adminService = {
       if (group) await tx.userGroup.create({ data: { userId: user.id, groupId: group.id } });
       return user;
     });
+    emit("user.registered", { userId: created.id, method: "admin" });
+    return created;
   },
 
   async setUserGroups(userId: string, groupIds: string[]) {
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw XentiumError.notFound("User not found");
+    const before = (await prisma.userGroup.findMany({ where: { userId }, select: { groupId: true } })).map((g) => g.groupId);
     await prisma.$transaction(async (tx) => {
       await tx.userGroup.deleteMany({ where: { userId } });
       if (groupIds.length > 0) {
@@ -373,6 +378,7 @@ export const adminService = {
     });
     // Effective permissions changed — invalidate the user's cache
     await permissionCache.invalidate(userId);
+    emitGroupsChanged(userId, before, groupIds);
   },
 
   async setUserActive(userId: string, isActive: boolean, requestingUserId?: string) {
@@ -794,6 +800,7 @@ export const adminService = {
     if (key.startsWith("appearance.")) {
       await appearanceService.bumpStyleVersion();
     }
+    emit("setting.changed", { key });
     return row;
   },
 
@@ -966,6 +973,7 @@ export const adminService = {
     const article = await prisma.article.findUnique({ where: { id } });
     if (!article || article.deletedAt) throw XentiumError.notFound("Article not found");
     await prisma.article.update({ where: { id }, data: { deletedAt: new Date(), deletedById: actorId } });
+    emit("article.deleted", { articleId: id, authorId: article.authorId });
   },
 
   // ── Moderation ────────────────────────────────────────────────────────────

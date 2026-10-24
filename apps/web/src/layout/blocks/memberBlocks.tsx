@@ -102,7 +102,7 @@ registerBlock({
 registerBlock({
   type:   "membersList",
   schema: blockPropSchemas.membersList,
-  editorMeta: { label: "Member list", category: "data", ...ON_MEMBERS, wide: true },
+  editorMeta: { surface: true, label: "Member list", category: "data", ...ON_MEMBERS, wide: true },
   component: ({ props, context }: Ctx<{ showCount: boolean }>) => {
     const { t } = useTranslation("members");
     const { members, meta, facets, listLoading, q } = context;
@@ -199,7 +199,7 @@ registerBlock({
 registerBlock({
   type:   "membersPodium",
   schema: blockPropSchemas.membersPodium,
-  editorMeta: { label: "Podium", category: "data", ...ON_MEMBERS, wide: true },
+  editorMeta: { surface: true, label: "Podium", category: "data", ...ON_MEMBERS, wide: true },
   component: ({ context }: Ctx) => {
     const { t } = useTranslation("members");
     if (!context.show.hof) return null;
@@ -230,7 +230,7 @@ registerBlock({
 registerBlock({
   type:   "membersHowTo",
   schema: blockPropSchemas.membersHowTo,
-  editorMeta: { label: "How to climb", category: "data", ...ON_MEMBERS },
+  editorMeta: { surface: true, label: "How to climb", category: "data", ...ON_MEMBERS },
   component: ({ context }: Ctx) => {
     const { t } = useTranslation("members");
     if (!context.show.hof) return null;

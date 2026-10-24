@@ -25,9 +25,11 @@ const BRANCH = "main";
 
 /** Whole files: source (repo-relative) → page slug. */
 const FILES = {
+  "docs/plugin-platform.md":      "plugins/platform",
   "docs/plugin-blocks.md":        "plugins/blocks",
+  "docs/plugin-edge-art.md":      "plugins/edge-art",
   "docs/plugin-registries.md":    "plugins/extension-points",
-  "docs/plugin-acp-autosave.md":  "plugins/acp-surfaces",
+  "docs/plugin-acp-pages.md":  "plugins/acp-surfaces",
   "docs/plugin-i18n.md":          "plugins/i18n",
   "docs/plugin-embeds.md":        "plugins/embeds",
   "docs/consent.md":              "plugins/consent",
@@ -36,6 +38,7 @@ const FILES = {
   "docs/theme-packages.md":       "themes/packages",
   "docs/API.md":                  "reference/api",
   "docs/marketplace-protocol.md": "reference/marketplace-protocol",
+  "docs/versioning.md":           "reference/versioning",
   "CONTRIBUTING.md":              "contributing",
 };
 
@@ -70,10 +73,10 @@ const README_PAGES = [
 
 /** Sidebar order inside a group for whole files (lower first). */
 const ORDER = {
-  "plugins/blocks": 2, "plugins/extension-points": 3, "plugins/acp-surfaces": 4,
-  "plugins/i18n": 5, "plugins/icons": 6, "plugins/embeds": 7, "plugins/consent": 8,
+  "plugins/platform": 2, "plugins/blocks": 3, "plugins/edge-art": 4, "plugins/extension-points": 5,
+  "plugins/acp-surfaces": 6, "plugins/i18n": 7, "plugins/icons": 8, "plugins/embeds": 9, "plugins/consent": 10,
   "themes/style-system": 1, "themes/packages": 2,
-  "reference/api": 1, "reference/marketplace-protocol": 2,
+  "reference/api": 1, "reference/marketplace-protocol": 2, "reference/versioning": 3,
 };
 
 // ── helpers ──────────────────────────────────────────────────────────────────

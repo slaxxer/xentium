@@ -9,6 +9,7 @@ import { XEC } from "../../shared/errors/xec.js";
 import { authGuardRegistry } from "../../core/auth-guard-registry/auth-guard-registry.js";
 import { finishSignIn, type SignInContext, type SignInResult } from "./auth.signin.js";
 import { assertKeepsASignInMethod } from "./signInMethods.service.js";
+import { assertAllowed, emit } from "../../core/events/events.js";
 
 /**
  * Sign in with Google, GitHub or Discord (OAuth 2 authorization code + PKCE).
@@ -287,7 +288,14 @@ export async function handleCallback(
     if (mode !== "open") return fail(mode === "invite" ? XEC.AUTH_INVITE_REQUIRED : XEC.AUTH_REGISTRATION_CLOSED);
   }
 
-  const userId = await createMember(p, profile, ctx);
+  let userId: string;
+  try {
+    userId = await createMember(p, profile, ctx);
+  } catch (err) {
+    // An add-on refused the sign-up: back to the form with its code, like any refusal here.
+    if (err instanceof XentiumError && err.code === XEC.PLUGIN_REFUSED) return fail(err.code);
+    throw err;
+  }
   const result = await finishSignIn(userId, ctx, { method: "oauth", persistent: pending.persistent });
   return { kind: "signin", result, returnTo: pending.returnTo };
 }
@@ -307,6 +315,7 @@ export async function deriveUsername(profile: ProviderProfile): Promise<string> 
 
 async function createMember(p: OAuthProvider, profile: ProviderProfile, ctx: SignInContext): Promise<string> {
   const username = await deriveUsername(profile);
+  await assertAllowed("registration.validate", { email: profile.email!, username, method: "oauth" });
   const defaultGroupKey = await getSetting("auth.default_group", "member");
   const group = await prisma.group.findFirst({ where: { key: String(defaultGroupKey) } });
   const user = await prisma.$transaction(async (tx) => {
@@ -329,6 +338,7 @@ async function createMember(p: OAuthProvider, profile: ProviderProfile, ctx: Sig
   await prisma.loginEvent.create({
     data: { userId: user.id, emailAttempted: user.email, success: true, eventType: "register", ip: ctx.ip, userAgent: ctx.userAgent, deviceCookieId: ctx.deviceCookieId },
   }).catch(() => null);
+  emit("user.registered", { userId: user.id, method: "oauth" });
   return user.id;
 }
 

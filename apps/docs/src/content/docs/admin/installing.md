@@ -18,7 +18,9 @@ in your browser.
 
 ## Before you start
 
-You need Node 22.12 or newer (24 is what we recommend) and npm 10 or newer. For the database
+You need Node 22.12 or newer (24 is what we recommend) and npm 10 or newer. Keep Node on its
+latest security release: at least 22.23.4 or 24.22.1, which fix a remote code execution bug
+(CVE-2026-111497). The installer and `xentium doctor` warn when yours is older. For the database
 you need either Docker, which is the default and the least work, or a PostgreSQL 14+ and a
 Redis 6+ you already run.
 

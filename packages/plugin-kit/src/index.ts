@@ -130,18 +130,17 @@ export interface PluginHost {
     /**
      * Encrypt / decrypt a secret a plugin must store (an API key, a client secret)
      * with the host's secret box, so it never sits in the database in clear text.
-     * Optional: cores before 1.0.0-rc have none.
      */
-    encryptSecret?: (value: string) => string;
-    decryptSecret?: (value: string) => string;
+    encryptSecret: (value: string) => string;
+    decryptSecret: (value: string) => string;
   };
   /**
    * Put a member into a group, or take them out, with their permissions applied at
    * once (the host clears its permission cache). For grants such as a paid
    * membership. Refuses any group that holds `admin.access`: a plugin never makes
-   * someone an administrator. Optional: cores before 1.0.0-rc have none.
+   * someone an administrator.
    */
-  groups?: {
+  groups: {
     add: (userId: string, groupId: string) => Promise<void>;
     remove: (userId: string, groupId: string) => Promise<void>;
   };

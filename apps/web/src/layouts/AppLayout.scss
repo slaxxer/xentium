@@ -668,15 +668,24 @@
     }
   }
 
-  /* Floating: header, page and footer are three cards. The HEADER card sticks,
-     not the navbar inside it — a sticky element inside a box only travels that box. */
+  /* Floating: header, page and footer are three cards.
+
+     ⚠ The header card is NOT a box that sticks. It was, and a header holding more
+     than the navbar (a masthead, a banner) then stuck whole and covered the page
+     while scrolling. Like every other layout, `.pub-head` and its region stay
+     dissolved (`display: contents`), so the NAVBAR is what sticks and a banner
+     scrolls away under it. The card look moves onto the header's blocks: the first
+     takes the top corners, the last the bottom ones, each its shadow.
+
+     Because the header's blocks are now items of `.app-frame` themselves, the
+     space between cards cannot be the flex `gap` (it would open between the navbar
+     and its banner): each card after the header takes it as a top margin. */
   &.app-layout--frame-floating {
     padding: var(--frame-gap);
 
     > .app-frame {
       display: flex;
       flex-direction: column;
-      gap: var(--frame-card-gap);
       flex: 1;
       width: 100%;
       max-width: var(--frame-max);
@@ -686,40 +695,36 @@
     .app-main,
     .app-frame__foot {
       @include frame-card;
+      margin-top: var(--frame-card-gap);
     }
 
     /* The site bar (SiteBars.tsx) is a card of its own between header and page. */
     .xt-siteBar {
       border-radius: var(--frame-radius);
       box-shadow: var(--frame-shadow);
+      margin-top: var(--frame-card-gap);
     }
 
-    /* ⚠ The header card is NOT clipped: the account menu and the notification
-       dropdown are drawn inline and hang below it, and `overflow: clip` would cut
-       them off at the card's edge. Its first and last painted blocks take the
-       corners instead — reached through the `display: contents` block wrappers. */
-    .pub-head {
-      display: block;
-      position: sticky;
-      top: var(--frame-sticky-top);
-      z-index: 100;
-      border-radius: var(--frame-radius);
+    /* Not clipped: the account menu and the notification dropdown hang below the
+       navbar, and `overflow: clip` would cut them off. */
+    .pub-head > .xt-region--header > * > * {
       box-shadow: var(--frame-shadow);
+    }
+    .pub-head > .xt-region--header > :first-child > * {
+      border-start-start-radius: var(--frame-radius);
+      border-start-end-radius: var(--frame-radius);
+    }
+    .pub-head > .xt-region--header > :last-child > * {
+      border-end-start-radius: var(--frame-radius);
+      border-end-end-radius: var(--frame-radius);
+    }
 
-      > .xt-region--header > :first-child > * {
-        border-start-start-radius: var(--frame-radius);
-        border-start-end-radius: var(--frame-radius);
-      }
-      > .xt-region--header > :last-child > * {
-        border-end-start-radius: var(--frame-radius);
-        border-end-end-radius: var(--frame-radius);
-      }
+    /* The navbar sticks a little below the window's edge, as the card did. */
+    .pub-nav:not(.pub-nav--static) {
+      top: var(--frame-sticky-top);
     }
   }
-  /* The navbar block's own `sticky: false` un-sticks the card that holds it. */
-  &.app-layout--frame-floating .pub-head:has(.pub-nav--static) {
-    position: relative;
-  }
+
 }
 
 /* `keep` frames every width; `edge` drops the frame below 640px, where a box with a

@@ -20,6 +20,7 @@ import { hasPermission } from "../../shared/middleware/requirePermission.js";
 import { CorePermissions } from "@xentium/contracts";
 import { contentRegistry } from "../../core/content-registry/content-registry.js";
 import { embedRegistry } from "../../core/embed-registry/embed-registry.js";
+import { assertAllowed, emit } from "../../core/events/events.js";
 
 const WORDS_PER_MINUTE = 200;
 
@@ -162,6 +163,7 @@ export const articleService = {
     // Enforce progression content limits (§38, Phase 7)
     await enforceDailyArticleLimit(authorId);
     await enforceArticleLength(authorId, bodyPlain);
+    await assertAllowed("article.validate", { userId: authorId, articleId: null, title: input.title, body: bodyPlain, publish: false });
 
     const slug = await uniqueSlug(input.title, (s) => articleRepository.slugExists(s));
 
@@ -197,6 +199,7 @@ export const articleService = {
     });
 
     await syncArticleEmbeds(created);
+    emit("article.created", { articleId: created.id, authorId });
     return shapeDetail(created);
   },
 
@@ -229,6 +232,12 @@ export const articleService = {
     // Enforce article-length limit when body is being edited (§38)
     if (willChangeBody && input.body) {
       await enforceArticleLength(viewerId, tiptapToPlain(input.body));
+    }
+    if (willChangeBody || input.title !== undefined) {
+      await assertAllowed("article.validate", {
+        userId: viewerId, articleId: id, title: input.title ?? existing.title,
+        body: input.body ? tiptapToPlain(input.body) : existing.bodyPlain ?? "", publish: false,
+      });
     }
 
     const updated = await prisma.$transaction(async (tx) => {
@@ -296,6 +305,7 @@ export const articleService = {
       await queues.articleRevisionCleanup.add("cleanup", { articleId: id });
     }
 
+    emit("article.updated", { articleId: id, authorId: existing.authorId });
     return shapeDetail(updated.fresh);
   },
 
@@ -319,6 +329,11 @@ export const articleService = {
     }
 
     const wasPublished = existing.status === "published";
+    if (!wasPublished) {
+      await assertAllowed("article.validate", {
+        userId: viewerId, articleId: id, title: existing.title, body: existing.bodyPlain ?? "", publish: true,
+      });
+    }
 
     const updated = await prisma.$transaction(async (tx) => {
       const result = await tx.article.update({
@@ -360,6 +375,7 @@ export const articleService = {
 
     await queues.articleRevisionCleanup.add("cleanup", { articleId: id });
 
+    if (!wasPublished) emit("article.published", { articleId: id, authorId: existing.authorId });
     return shapeDetail(updated);
   },
 
@@ -407,6 +423,7 @@ export const articleService = {
       where: { id },
       data: { deletedAt: new Date(), deletedById: viewerId },
     });
+    emit("article.deleted", { articleId: id, authorId: existing.authorId });
   },
 
   async getBySlug(

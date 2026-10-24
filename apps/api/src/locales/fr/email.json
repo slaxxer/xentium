@@ -6,7 +6,7 @@
     },
     "password_reset": {
       "subject": "Réinitialisez votre mot de passe {{site_name}}",
-      "body": "<h2>Réinitialisez votre mot de passe</h2><p>Nous avons reçu une demande de réinitialisation de votre mot de passe. Cliquez sur le bouton ci-dessous pour en choisir un nouveau. Ce lien expire dans {{expiry_minutes}} minutes et ne peut être utilisé qu'une seule fois.</p><p>{{reset_button}}</p><p>Si vous n'êtes pas à l'origine de cette demande, ignorez cet e-mail : votre mot de passe restera inchangé.</p>"
+      "body": "<h1>Reprenons l'accès à votre compte.</h1><p>Quelqu'un a demandé à réinitialiser le mot de passe de votre compte. Si c'était vous, choisissez-en un nouveau ci-dessous.</p><p>{{reset_button}}</p><p>{{request_box}}</p><hr><p>Ce n'était pas vous ? Ignorez cet e-mail et votre mot de passe ne changera pas. Si cela se reproduit, {{support_link}}.</p>"
     },
     "magic_link": {
       "subject": "Votre lien de connexion à {{site_name}}",
@@ -27,7 +27,16 @@
   },
   "buttons": {
     "view": "Voir →",
-    "reset": "Réinitialiser le mot de passe →",
-    "signIn": "Se connecter →"
-  }
+    "reset": "Choisir un nouveau mot de passe",
+    "signIn": "Se connecter →",
+    "resetNote": "Le lien expire dans {{minutes}} minutes et ne fonctionne qu'une fois."
+  },
+  "request": {
+    "title": "Détails de la demande",
+    "time": "Heure",
+    "device": "Appareil",
+    "location": "Lieu"
+  },
+  "supportLink": "contactez le support",
+  "sentBy": "Envoyé par {{site}}"
 }

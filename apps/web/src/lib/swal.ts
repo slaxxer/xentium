@@ -28,6 +28,11 @@ export function apiErrorMessage(
     (detail?.message as string) ??
     (e as Error)?.message;
 
+  // An add-on refused the action: its own message, in its own namespace.
+  const refusal = errObj?.details as { key?: string; params?: Record<string, unknown> } | undefined;
+  if (code === "XEC-PLUGIN-4220" && refusal?.key && i18n.exists(refusal.key)) {
+    return i18n.t(refusal.key, refusal.params ?? {});
+  }
   if (code && i18n.exists(code, { ns: "errors" })) {
     return i18n.t(code, { ns: "errors" });
   }

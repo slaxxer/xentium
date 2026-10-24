@@ -437,7 +437,7 @@ export function LayoutRegion({
    * click. Every empty region had the same gap; the band just made it obvious.
    *
    * The placeholder carries `data-xt-region`, so it is already a legal drop target
-   * (`DROP_PARENT`), and clicking it asks the editor to open the add-block picker
+   * (`collectDropSpots`), and clicking it asks the editor to open the add-block picker
    * for this region.
    */
   if (nodes.length === 0) {

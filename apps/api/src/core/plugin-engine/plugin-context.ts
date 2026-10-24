@@ -1,5 +1,5 @@
 import type { Router } from "express";
-import type { PluginContext, PluginHost, PermissionDeclaration, NavItemDeclaration, AcpPageDeclaration, SearchSource, HomeFeedSource, ReportTargetHandler, EmbedHandler, ContentKindHandler, StatSource, ProgressionCriteria, NotifyOptions, PluginRouter, XecCodeDeclaration, LayoutTemplateDeclaration, BadgeCriteria
+import type { NotificationTypeDeclaration, PluginContext, PluginHost, PluginJobDeclaration, PluginResourceDeclaration, PluginSettings, PluginSettingsDeclaration, PermissionDeclaration, NavItemDeclaration, AcpPageDeclaration, SearchSource, HomeFeedSource, ReportTargetHandler, EmbedHandler, ContentKindHandler, StatSource, ProgressionCriteria, NotifyOptions, PluginRouter, XecCodeDeclaration, LayoutTemplateDeclaration, BadgeCriteria
 } from "@xentium/plugin-sdk";
 import { CorePermissions, registerTemplate } from "@xentium/contracts";
 import { progressionCriteriaRegistry } from "../progression-registry/progression-criteria-registry.js";
@@ -33,9 +33,20 @@ import { encryptSecret, decryptSecret } from "../../shared/utils/secretBox.js";
 import { countryOf, geoipAvailable } from "../../infrastructure/geoip.js";
 import { permissionCache } from "../../modules/permissions/permission.cache.js";
 import { sanitizeRichText } from "../../shared/sanitize/richText.js";
-import { renderEmailTemplate, renderLinkButton, siteVars } from "../../infrastructure/email/email-templates.js";
+import { renderEmailTemplate, siteVars } from "../../infrastructure/email/email-templates.js";
 import { recipientLocale, serverText, toServerLocale } from "../../shared/i18n/serverText.js";
 import { resolveCronPattern, previewRuns } from "../../jobs/scheduledJobs.js";
+import { addFilter, addListener, emitAny, emitGroupsChanged } from "../events/events.js";
+import { jobsFor, registerJob } from "../plugin-platform/jobs.js";
+import { registerSettings, settingsFor } from "../plugin-platform/settings.js";
+import { z } from "zod";
+import { pluginUsers } from "../plugin-platform/people.js";
+import { pluginTime } from "../plugin-platform/time.js";
+import { registerResource } from "../plugin-platform/resources.js";
+import { pluginRegistry } from "./plugin-registry.js";
+import { filesFor } from "../plugin-platform/files.js";
+import { registerNotificationTypes } from "../plugin-platform/notificationTypes.js";
+import { cacheFor, limitsFor } from "../plugin-platform/limits.js";
 
 /**
  * A plugin putting a member into a group (a paid membership, an earned role). The
@@ -50,20 +61,26 @@ export async function addToGroup(userId: string, groupId: string): Promise<void>
   if (admin) {
     throw new XentiumError({ code: XEC.API_FORBIDDEN, httpStatus: 403, message: "A plugin cannot add members to a group with admin access" });
   }
+  const had = await prisma.userGroup.findUnique({ where: { userId_groupId: { userId, groupId } }, select: { userId: true } });
   await prisma.userGroup.upsert({
     where: { userId_groupId: { userId, groupId } }, update: {}, create: { userId, groupId },
   });
   await permissionCache.invalidate(userId);
+  if (!had) emitGroupsChanged(userId, [], [groupId]);
 }
 
 export async function removeFromGroup(userId: string, groupId: string): Promise<void> {
-  await prisma.userGroup.deleteMany({ where: { userId, groupId } });
+  const { count } = await prisma.userGroup.deleteMany({ where: { userId, groupId } });
   await permissionCache.invalidate(userId);
+  if (count) emitGroupsChanged(userId, [groupId], []);
 }
 
-/** Host services injected into every plugin's onEnable/onDisable context. */
-const host: PluginHost = {
+/** Host services shared by every plugin; the plugin's own (`jobs`) are added per context. */
+const host: Omit<PluginHost, "jobs" | "settings" | "files" | "limits" | "cache"> = {
   prisma,
+  zod: z,
+  users: pluginUsers,
+  time: pluginTime,
   queues,
   env,
   logger,
@@ -102,7 +119,7 @@ const host: PluginHost = {
         ...(await siteVars()),
         title, body,
         link_url:    link,
-        link_button: renderLinkButton(link, buttonLabel ?? serverText(lang, "email", "buttons.view")),
+        link_label:  buttonLabel ?? serverText(lang, "email", "buttons.view"),
       }, lang);
       await queues.emailNotification.add("email-notification", { to, subject, html });
     },
@@ -129,9 +146,29 @@ const host: PluginHost = {
 };
 
 export class PluginContextImpl implements PluginContext {
-  readonly host: PluginHost = host;
+  readonly host: PluginHost;
 
-  constructor(public readonly pluginId: string) {}
+  constructor(public readonly pluginId: string) {
+    this.host = {
+      ...host,
+      jobs: jobsFor(pluginId), settings: settingsFor(pluginId), files: filesFor(pluginId),
+      limits: limitsFor(pluginId), cache: cacheFor(pluginId),
+    };
+  }
+
+  async registerResource(decl: PluginResourceDeclaration): Promise<void> {
+    const manifest = pluginRegistry.get(this.pluginId)?.manifest as { tablePrefix?: string } | undefined;
+    await registerResource(this.pluginId, manifest?.tablePrefix, decl);
+  }
+
+  registerSettings<S extends { _output: unknown }>(decl: PluginSettingsDeclaration<S>): PluginSettings<S["_output"]> {
+    registerSettings(this.pluginId, decl as PluginSettingsDeclaration);
+    return settingsFor(this.pluginId) as PluginSettings<S["_output"]>;
+  }
+
+  registerJob<T = unknown>(job: PluginJobDeclaration<T>): void {
+    registerJob(this.pluginId, job as PluginJobDeclaration);
+  }
 
   registerRoutes(router: Router | PluginRouter): void {
     pluginRouter.register(this.pluginId, router as Router);
@@ -200,9 +237,8 @@ export class PluginContextImpl implements PluginContext {
     acpPageRegistry.register(this.pluginId, page);
   }
 
-  registerNotificationTypes(types: string[]): void {
-    // Stored for future preference UI — no-op for now
-    logger.debug({ pluginId: this.pluginId, types }, "Plugin notification types registered");
+  registerNotificationTypes(types: Array<string | NotificationTypeDeclaration>): void {
+    registerNotificationTypes(this.pluginId, types);
   }
 
   registerSearchSource(source: SearchSource): void {
@@ -302,6 +338,22 @@ export class PluginContextImpl implements PluginContext {
   claimSecurityPatterns(patterns: string[]): void {
     securityScanRegistry.claimPatterns(this.pluginId, patterns);
     logger.info({ pluginId: this.pluginId, patterns }, "Plugin claimed core security patterns");
+  }
+
+  on(event: string, listener: (payload: never, meta: never) => void | Promise<void>): void {
+    addListener(this.pluginId, event, listener);
+  }
+
+  filter(name: string, handler: (input: never) => unknown): void {
+    addFilter(this.pluginId, name as "profile.extra", handler as never);
+  }
+
+  /** A plugin announces only under its own id, so it can never pose as core or another plugin. */
+  emit(event: string, payload: unknown): void {
+    if (!event.startsWith(`${this.pluginId}.`)) {
+      throw new Error(`Plugin "${this.pluginId}" can only emit events named "${this.pluginId}.…", not "${event}".`);
+    }
+    emitAny(event, payload);
   }
 
   async notify(opts: NotifyOptions): Promise<void> {

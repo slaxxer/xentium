@@ -26,6 +26,7 @@ import {
   checkVersion,
   compareVersions,
   displayVersion,
+  nodeSecurityUpdate,
   type VersionRequirement,
 } from "../../contracts/src/system.js";
 
@@ -125,8 +126,11 @@ const gb = (n: number) => `${(n / 1024 ** 3).toFixed(1)} GB`;
 // ── Always ───────────────────────────────────────────────────────────────────
 
 export function checkNode(version = process.versions.node): Check {
-  return versionCheck("node", "Node.js", version, SYSTEM_REQUIREMENTS.node,
+  const check = versionCheck("node", "Node.js", version, SYSTEM_REQUIREMENTS.node,
     "Install Node 24 from https://nodejs.org or with nvm, then run this again.");
+  const update = check.status === "fail" ? null : nodeSecurityUpdate(version);
+  // It runs, but Node itself has a security fix this server is missing.
+  return update ? warn("node", "Node.js", `${version} misses Node security fixes: update to ${update} or newer`) : check;
 }
 
 export async function checkNpm(): Promise<Check> {
@@ -163,6 +167,22 @@ export async function checkNativeBuild(): Promise<Check> {
   if (missing.length === 0) return ok("native", "Password hashing", `no prebuilt binary for ${tuple}, but it can be compiled`);
   return fail("native", "Password hashing", `no prebuilt binary for ${tuple}, and ${missing.join(", ")} ${missing.length === 1 ? "is" : "are"} missing`,
     await installHint({ apt: ["python3", "make", "g++"], dnf: ["python3", "make", "gcc-c++"], pacman: ["python", "base-devel"], apk: ["python3", "make", "g++"], default: ["python3", "make", "g++"] }));
+}
+
+/** Platforms `sharp` (image processing) ships prebuilt binaries for. */
+const SHARP_PREBUILDS = new Set([
+  "linux-x64", "linux-arm64", "linux-arm", "darwin-x64", "darwin-arm64", "win32-x64", "win32-arm64", "win32-ia32",
+]);
+
+/**
+ * sharp re-encodes every uploaded image (it strips camera data and GPS) and makes
+ * add-ons' image sizes. It has no fallback and does not compile from source in a
+ * normal install, so a platform without its binary cannot run Xentium's uploads.
+ */
+export function checkImageProcessing(tuple = `${process.platform}-${process.arch}`): Check {
+  if (SHARP_PREBUILDS.has(tuple)) return ok("images", "Image processing", `prebuilt binary for ${tuple}`);
+  return fail("images", "Image processing", `no prebuilt image library for ${tuple}`,
+    "Run Xentium on Linux (x64 or arm64), macOS or Windows.");
 }
 
 export function checkMemory(total = os.totalmem()): Check {
@@ -431,6 +451,7 @@ export async function runChecks(options: CheckOptions = {}): Promise<Check[]> {
     checkNpm(),
     Promise.resolve(checkPlatform()),
     checkNativeBuild(),
+    Promise.resolve(checkImageProcessing()),
     Promise.resolve(checkMemory()),
   ];
   if (options.target) tasks.push(checkTarget(options.target, options.expectEmpty ?? false));

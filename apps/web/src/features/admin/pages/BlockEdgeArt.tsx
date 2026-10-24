@@ -34,9 +34,17 @@ type Side = "top" | "bottom";
 interface Props {
   value: BlockEdges | undefined;
   onChange: (next: BlockEdges | undefined) => void;
+  /** The block the edges are on and its template, for extensions that offer per block. */
+  blockType?: string;
+  templateKey?: string;
+  /**
+   * The block clips what is drawn outside it (a theme's cut card corners): an outward
+   * edge would not show. New edges start inward, and an outward one says why it is hidden.
+   */
+  clipsOutside?: boolean;
 }
 
-export function BlockEdgeArtFields({ value, onChange, bare }: Props & { bare?: boolean }) {
+export function BlockEdgeArtFields({ value, onChange, bare, blockType, templateKey, clipsOutside }: Props & { bare?: boolean }) {
   const { t } = useTranslation("acp");
   const [side, setSide] = useState<Side>(value?.bottom || !value?.top ? "bottom" : "top");
   const [uploading, setUploading] = useState(false);
@@ -64,7 +72,7 @@ export function BlockEdgeArtFields({ value, onChange, bare }: Props & { bare?: b
     // A plugin shape carries its stand-in, so a site without the plugin degrades on
     // purpose; a core shape needs none.
     const fallback = edgeShape(shape)?.fallback;
-    if (!edge) return write(edgeArtSchema.parse({ shape, ...(fallback ? { fallback } : {}) }));
+    if (!edge) return write(edgeArtSchema.parse({ shape, ...(fallback ? { fallback } : {}), ...(clipsOutside ? { direction: "in" } : {}) }));
     // Switching shape keeps the colours, height and every plugin's settings.
     // The unit count is per shape (24 teeth are not 24 waves).
     const { count: _count, fallback: _fallback, ...kept } = edge;
@@ -74,6 +82,9 @@ export function BlockEdgeArtFields({ value, onChange, bare }: Props & { bare?: b
   /** What an extension's inspector section is handed: its own slice of `ext`. */
   const extProps = (namespace: string): EdgeInspectorProps => ({
     edge,
+    side,
+    blockType,
+    templateKey,
     ext: edge?.ext?.[namespace],
     write,
     setExt: (next) => {
@@ -176,6 +187,9 @@ export function BlockEdgeArtFields({ value, onChange, bare }: Props & { bare?: b
             </div>
           </div>
           <p className="acp-hint">{t(`layoutEditor.edge.dirHint.${side}-${edge.direction}`)}</p>
+          {clipsOutside && edge.direction === "out" && edge.shape !== "blank" && (
+            <p className="acp-hint lay-edge__warn">{t("layoutEditor.edge.clippedOut")}</p>
+          )}
 
           {edge.shape === "image" ? (
             <>

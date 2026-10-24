@@ -11,6 +11,7 @@ import { errorMiddleware } from '../shared/errors/errorMiddleware.js';
 import { XentiumError } from '../shared/errors/XentiumError.js';
 import { authRouter } from '../modules/auth/auth.routes.js';
 import { installGuard } from "../shared/middleware/installGuard.js";
+import { rejectEncodedBodies } from "../shared/middleware/rejectEncodedBodies.js";
 import { usersRouter } from '../modules/users/users.routes.js';
 import { accountRouter } from '../modules/account/account.routes.js';
 import { installerRouter } from "../modules/installer/installer.routes.js";
@@ -47,6 +48,7 @@ import { globalApiLimiter } from "../shared/middleware/rateLimit.js";
 import { mountWebApp } from "./serveWeb.js";
 import { registerCoreSources } from "../modules/seo/seo.core-sources.js";
 import { robots as seoRobots, sitemap as seoSitemap } from "../modules/seo/seo.service.js";
+import { addonsAdminRouter, addonsPublicRouter } from "../modules/addons/addons.routes.js";
 
 const ALLOWED_UPLOAD_DIRS = ['avatars', 'covers', 'articles', 'pages', 'groups', 'forum-attachments', 'themes', 'layouts', 'emojis'];
 
@@ -82,7 +84,9 @@ export function createApp(): Express {
     credentials: true,
   }));
 
-  app.use(express.json({ limit: '4mb' }));
+  // Before every parser, core's and any plugin's: no compressed bodies (CVE-2026-111497).
+  app.use(rejectEncodedBodies);
+  app.use(express.json({ limit: '4mb', inflate: false }));
   app.use(cookieParser(env.COOKIE_SECRET));
   app.use(pinoHttp({ transport: isProd ? undefined : { target: 'pino-pretty' } }));
 
@@ -95,9 +99,11 @@ export function createApp(): Express {
   app.use('/uploads', (req, res, next) => {
     const rel = path.normalize(req.path).replace(/^[/\\]+/, '');
     if (rel.includes('..')) return next(XentiumError.notFound());
+    const posix = rel.split(path.sep).join('/');
     const ok = ALLOWED_UPLOAD_DIRS.some(
       (d) => rel === d || rel.startsWith(d + '/') || rel.startsWith(d + path.sep),
-    );
+      // An add-on's PUBLIC files only; its private ones leave through its own route.
+    ) || /^addons\/[^/]+\/public\/[^/]+\/[^/]+$/.test(posix);
     if (!ok) return next(XentiumError.notFound());
     next();
   });
@@ -109,6 +115,15 @@ export function createApp(): Express {
       // rendered inline as active content. Force download + block sniffing so a
       // .html/.svg attachment can't execute as same-origin HTML (stored XSS).
       const rel = filePath.split(path.sep).join('/');
+      // Add-on files: type checked by their bytes, but uploaded by members; never
+      // sniffed, and anything that is not an image downloads instead of rendering.
+      if (rel.includes('/addons/')) {
+        res.setHeader('X-Content-Type-Options', 'nosniff');
+        if (!/\.(jpe?g|png|webp|gif|avif)$/i.test(rel)) {
+          res.setHeader('Content-Disposition', 'attachment');
+          res.setHeader('Content-Security-Policy', "default-src 'none'; sandbox");
+        }
+      }
       if (rel.includes('/forum-attachments/')) {
         res.setHeader('Content-Disposition', 'attachment');
         res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -235,6 +250,7 @@ export function createApp(): Express {
   app.use("/api/admin/legal", legalAdminRouter);
   app.use("/api/admin/emojis", emojiAdminRouter);
   app.use("/api/admin/badges", badgesAdminRouter);
+  app.use("/api/admin/addons", addonsAdminRouter);
   app.use("/api/notifications", notificationRouter);
   app.use("/api/online",        onlineRouter);
   app.use("/api/activity",      activityRouter);
@@ -245,6 +261,7 @@ export function createApp(): Express {
   // Unauthenticated — an award is on show, and every card drawing it is public.
   app.use("/api/user-badges",   badgesPublicRouter);
   app.use("/api/site",          siteRouter);
+  app.use("/api/addons",        addonsPublicRouter);
   app.use("/api/members",       membersRouter);
   app.use("/api/home",          homeRouter);
   app.use("/api/search", optionalAuth, searchRouter);

@@ -49,6 +49,19 @@ export interface AccountSectionSlot {
   component: ComponentType;
 }
 
+// ── Sign-up field ─────────────────────────────────────────────────────────────
+/**
+ * An add-on's own field on the sign-up form (core 1.0.0). Its value is sent as
+ * `addons["<pluginId>"]`; the add-on checks it in its `registration.validate`
+ * filter and stores it in its `user.registered` listener. Core keeps none of it.
+ */
+export interface RegistrationFieldSlot {
+  id: string;
+  /** Lower sorts first; default 100. */
+  order?: number;
+  component: ComponentType<{ value: unknown; onChange: (value: unknown) => void }>;
+}
+
 // ── Privacy settings section ──────────────────────────────────────────────────
 export interface PrivacySectionSlot {
   id: string;
@@ -393,6 +406,7 @@ class SlotRegistry {
   private groupConfigPanels: GroupConfigPanelSlot[]   = [];
   private embeds:            EmbedSlot[]              = [];
   private composerTools:     ComposerToolSlot[]       = [];
+  private registrationFields: RegistrationFieldSlot[]  = [];
 
   // Core notification prefixes that always show the system (gear) icon
   /**
@@ -421,6 +435,7 @@ class SlotRegistry {
   registerPluginMeta(meta: PluginMeta)                      { this._activePlugin = meta.pluginId; this.pluginMetas.push(meta); }
   registerProfileTab(slot: ProfileTabSlot)                  { this._own(slot.id);     this.profileTabs.push(slot); }
   registerAccountSection(slot: AccountSectionSlot)          { this._own(slot.id);     this.accountSections.push(slot); }
+  registerRegistrationField(slot: RegistrationFieldSlot)    { this._own(slot.id);     this.registrationFields.push(slot); }
   registerPrivacySection(slot: PrivacySectionSlot)          { this._own(slot.id);     this.privacySections.push(slot); }
   registerSettingsSection(slot: SettingsSectionSlot)         { this._own(slot.id);     this.settingsSections.push(slot); }
   registerEditorPanel(slot: EditorPanelSlot)                 { this._own(slot.id);     this.editorPanels.push(slot); }
@@ -451,6 +466,12 @@ class SlotRegistry {
 
   getProfileTabs()       { return [...this.profileTabs]; }
   getAccountSections()   { return [...this.accountSections]; }
+  /** Sign-up fields, each with the add-on id its value is sent under. */
+  getRegistrationFields() {
+    return [...this.registrationFields]
+      .sort((a, b) => (a.order ?? 100) - (b.order ?? 100))
+      .map((slot) => ({ slot, pluginId: this._owners.get(slot.id) ?? slot.id.split(/[.:/]/)[0]! }));
+  }
   getPrivacySections()   { return [...this.privacySections]; }
   /** Outermost first. */
   getRootGates()         { return [...this.rootGates].sort((a, b) => (a.order ?? 100) - (b.order ?? 100)); }
@@ -513,6 +534,7 @@ class SlotRegistry {
     this.profileTabs       = this.profileTabs.filter((s) => !this._ownedBy(s.id, pluginId));
     this.editorPanels      = this.editorPanels.filter((s) => !this._ownedBy(s.id, pluginId));
     this.accountSections   = this.accountSections.filter((s) => !this._ownedBy(s.id, pluginId));
+    this.registrationFields = this.registrationFields.filter((s) => !this._ownedBy(s.id, pluginId));
     this.privacySections   = this.privacySections.filter((s) => !this._ownedBy(s.id, pluginId));
     this.routes            = this.routes.filter((r) => !this._ownedBy(r.path, pluginId));
     this.pluginMetas       = this.pluginMetas.filter((m) => m.pluginId !== pluginId);

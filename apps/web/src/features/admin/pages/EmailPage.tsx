@@ -11,6 +11,7 @@ import { SaveChip } from "../../../components/SaveChip";
 import { Toggle, TextField, NumberStepper, Button } from "../../../components/AcpControls";
 import { AcpIcon } from "./acpIcons";
 import { Composer, type ComposerHandle } from "../../../components/composer/Composer";
+import { EmailDesignCard, footerText, isHex, isSupportAddress, type EmailDesign } from "./EmailDesign";
 import "./acpSystem.scss";
 import "./EmailPage.scss";
 
@@ -201,6 +202,43 @@ export function EmailPage() {
     [settings],
   );
 
+  // ── design ─────────────────────────────────────────────────────────────────
+  const { data: designData } = useQuery<{ design: EmailDesign; logoAvailable: boolean }>({
+    queryKey: ["acp-email-design"],
+    queryFn: () => api.get("/admin/email/design"),
+  });
+  const [designDraft, setDesignDraft] = useState<EmailDesign | null>(null);
+  const designSaved = designData?.design;
+  // Seeds once; a later refetch must not overwrite what the admin is editing.
+  useEffect(() => {
+    if (designSaved && !designDraft) setDesignDraft(designSaved);
+  }, [designSaved, designDraft]);
+  const designSavedRef = useRef(designSaved);
+  designSavedRef.current = designSaved;
+
+  const designMut = useMutation({
+    mutationFn: (d: EmailDesign) => api.put("/admin/email/design", d),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["acp-email-design"] }),
+  });
+
+  useAutosave({
+    value: designDraft ?? undefined,
+    savedValue: designSaved,
+    // A half-typed colour is not saved; the field shows it is invalid.
+    onSave: (d) => (d && isHex(d.accent) && isHex(d.page) && isSupportAddress(d.support) ? designMut.mutateAsync(d) : undefined),
+    onDiscard: () => { if (designSavedRef.current) setDesignDraft(designSavedRef.current); },
+    describe: (value, saved) => (["accent", "page", "header", "support", "footer"] as const)
+      .filter((k) => value && saved && value[k] !== saved[k])
+      .map((k) => ({
+        key: `design.${k}`,
+        label: t(`email.design.${k}`),
+        section: t("email.design.title"),
+        from: k === "header" ? t(`email.design.headers.${saved![k]}`) : k === "footer" ? footerText(saved![k]) : String(saved![k]),
+        to: k === "header" ? t(`email.design.headers.${value![k]}`) : k === "footer" ? footerText(value![k]) : String(value![k]),
+        revert: () => setDesignDraft((p) => (p && designSavedRef.current ? { ...p, [k]: designSavedRef.current[k] } : p)),
+      })),
+  });
+
   // ── templates ──────────────────────────────────────────────────────────────
   const active = useMemo(
     () => templates.find(x => x.key === section) ?? null,
@@ -324,6 +362,11 @@ export function EmailPage() {
             <AcpIcon name="cog" size={17} />
             <span>{t("email.server.title")}</span>
           </button>
+          <button type="button" className={section === "design" ? "is-active" : ""}
+                  onClick={() => setSection("design")}>
+            <AcpIcon name="palette" size={17} />
+            <span>{t("email.design.title")}</span>
+          </button>
           {templates.map(tpl => (
             <button key={tpl.key} type="button"
                     className={section === tpl.key ? "is-active" : ""}
@@ -380,6 +423,11 @@ export function EmailPage() {
                 </div>
               </div>
             </section>
+          )}
+
+          {section === "design" && designDraft && (
+            <EmailDesignCard draft={designDraft} onChange={setDesignDraft}
+                             logoAvailable={!!designData?.logoAvailable} />
           )}
 
           {active && draft && (
