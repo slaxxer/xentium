@@ -34,9 +34,12 @@ type Side = "top" | "bottom";
 interface Props {
   value: BlockEdges | undefined;
   onChange: (next: BlockEdges | undefined) => void;
+  /** The block the edges are on and its template, for extensions that offer per block. */
+  blockType?: string;
+  templateKey?: string;
 }
 
-export function BlockEdgeArtFields({ value, onChange, bare }: Props & { bare?: boolean }) {
+export function BlockEdgeArtFields({ value, onChange, bare, blockType, templateKey }: Props & { bare?: boolean }) {
   const { t } = useTranslation("acp");
   const [side, setSide] = useState<Side>(value?.bottom || !value?.top ? "bottom" : "top");
   const [uploading, setUploading] = useState(false);
@@ -75,6 +78,8 @@ export function BlockEdgeArtFields({ value, onChange, bare }: Props & { bare?: b
   const extProps = (namespace: string): EdgeInspectorProps => ({
     edge,
     side,
+    blockType,
+    templateKey,
     ext: edge?.ext?.[namespace],
     write,
     setExt: (next) => {

@@ -86,6 +86,8 @@ import * as webUseLayout from "@web/layout/useLayout";
 // registry is a Map nothing reads.
 import * as webEdgeRegistry from "@web/layout/edgeRegistry";
 import * as webEdgeArt from "@web/layout/edgeArt";
+// Settings an add-on puts on the blocks they belong to (core 1.0.0-alpha.20+).
+import * as webBlockPanels from "@web/layout/blockPanelRegistry";
 import { hostEvents } from "./hostEvents";
 import { usePublicPluginSettings } from "./pluginSettings";
 import { Uploader } from "../components/Uploader";
@@ -141,6 +143,7 @@ const HOST = {
   webUseLayout,
   webEdgeRegistry,
   webEdgeArt,
+  webBlockPanels,
   // Drag-and-drop uploads with progress, to an add-on's own route (core 1.0.0).
   webUploader: { Uploader },
   // An add-on's public settings in its own pages (core 1.0.0): `webPluginSettings.usePublic(id)`.
