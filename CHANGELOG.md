@@ -26,6 +26,11 @@ fixes a security problem, so please update, and update Node too (see Security).
 - **Dragging shows every place a block can go**, and the nearest one is marked, so you can
   see where it will land before you let go.
 - **Type on the page.** Double-click a heading or the hero text and type over it.
+- **Edge art on cards.** The home page cards (your card, spaces, hot threads, popular tags,
+  suggested people, rank progress), the profile panels (rank, badges, followers, visitors)
+  and the members page cards take edge art now, like sections and the header. On a card
+  whose corners the theme cuts, a new edge starts inward, since the cut hides anything
+  outside the card.
 - **See what you changed.** The changes button counts what publishing would change and marks
   every new, edited or moved block on the page. A block you removed can be put back.
 - **A new look for every email.** Your name and the message's heading sit on a band in your
