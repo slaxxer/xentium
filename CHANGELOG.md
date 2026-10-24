@@ -25,7 +25,8 @@ fixes a security problem, so please update, and update Node too (see Security).
 - **See what you changed.** The changes button counts what publishing would change and marks
   every new, edited or moved block on the page. A block you removed can be put back.
 - **Design your emails** in ACP → Email → Design: the accent colour, the page colour, a
-  header with your icon or logo, and a footer note, with a live preview.
+  header with your icon or logo, and a footer note you write with the editor (bold, links,
+  lists), with a live preview.
 - **Members can switch off notifications from each add-on**, in the app and by email.
 - **For add-ons:** they can react to what happens on your site and refuse sign-ups,
   articles, comments and notifications; run background work once, at a time or on a
