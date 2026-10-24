@@ -69,6 +69,8 @@ fixes a security problem, so please update, and update Node too (see Security).
   in the update window, step by step.
 - **The update dialog could miss its Update now button.** It now waits for the updater, and
   says why when updating from the ACP isn't set up.
+- **Colour pickers lagged** while you dragged in them, most in Theme Studio. The colour
+  now follows your drag at once, and the page catches up a few times a second.
 - **Undo and redo in Theme Studio** couldn't be clicked: the page picker beside them
   reached over them. They work again.
 - **In the Floating page layout** a banner in the header stuck to the top with the navbar.
