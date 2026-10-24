@@ -6,7 +6,7 @@
     },
     "password_reset": {
       "subject": "Setze dein Passwort für {{site_name}} zurück",
-      "body": "<h2>Passwort zurücksetzen</h2><p>Wir haben eine Anfrage erhalten, dein Passwort zurückzusetzen. Klicke auf den Button unten, um ein neues zu wählen. Der Link ist {{expiry_minutes}} Minuten gültig und kann nur einmal verwendet werden.</p><p>{{reset_button}}</p><p>Wenn du das nicht angefordert hast, kannst du diese E-Mail einfach ignorieren – dein Passwort bleibt unverändert.</p>"
+      "body": "<h1>Wir bringen dich wieder rein.</h1><p>Jemand möchte das Passwort deines Kontos zurücksetzen. Wenn du das warst, lege unten ein neues fest.</p><p>{{reset_button}}</p><p>{{request_box}}</p><hr><p>Das warst nicht du? Ignoriere diese E-Mail, dann bleibt dein Passwort, wie es ist. Wenn das öfter passiert, {{support_link}}.</p>"
     },
     "magic_link": {
       "subject": "Dein Anmeldelink für {{site_name}}",
@@ -27,7 +27,16 @@
   },
   "buttons": {
     "view": "Ansehen →",
-    "reset": "Passwort zurücksetzen →",
-    "signIn": "Anmelden →"
-  }
+    "reset": "Neues Passwort festlegen",
+    "signIn": "Anmelden →",
+    "resetNote": "Der Link ist {{minutes}} Minuten gültig und funktioniert einmal."
+  },
+  "request": {
+    "title": "Details der Anfrage",
+    "time": "Zeit",
+    "device": "Gerät",
+    "location": "Ort"
+  },
+  "supportLink": "wende dich an den Support",
+  "sentBy": "Gesendet von {{site}}"
 }

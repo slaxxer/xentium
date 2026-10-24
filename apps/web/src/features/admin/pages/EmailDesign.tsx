@@ -9,10 +9,14 @@ import { Composer } from "../../../components/composer/Composer";
 export { isHex };
 
 export type EmailHeader = "icon" | "logo" | "name";
-export interface EmailDesign { accent: string; page: string; header: EmailHeader; footer: string }
+export interface EmailDesign { accent: string; page: string; header: EmailHeader; footer: string; support: string }
 
 /** Mirrors EMAIL_DESIGN_DEFAULTS on the server; "Use defaults" puts these back. */
-export const EMAIL_DESIGN_DEFAULTS: EmailDesign = { accent: "#0d7c72", page: "#f1f1f6", header: "icon", footer: "" };
+export const EMAIL_DESIGN_DEFAULTS: EmailDesign = { accent: "#14796b", page: "#eef1ef", header: "icon", footer: "", support: "" };
+
+/** Mirrors `supportHref` on the server: a web address, an email address, or nothing. */
+export const isSupportAddress = (v: string) =>
+  !v.trim() || /^https?:\/\/[^\s<>"]+$/i.test(v.trim()) || /^[^\s@<>"]+@[^\s@<>"]+\.[^\s@<>"]+$/.test(v.trim());
 const HEADERS: EmailHeader[] = ["icon", "logo", "name"];
 
 /** A note saved before the editor is plain text: open it as paragraphs, line breaks kept. */
@@ -79,7 +83,7 @@ export function EmailDesignCard({ draft, onChange, logoAvailable }: {
   };
 
   // A half-typed hex keeps the last good preview rather than flashing an error.
-  const valid = isHex(draft.accent) && isHex(draft.page);
+  const valid = isHex(draft.accent) && isHex(draft.page) && isSupportAddress(draft.support);
   useEffect(() => {
     if (!valid) return;
     let gone = false;
@@ -89,7 +93,7 @@ export function EmailDesignCard({ draft, onChange, logoAvailable }: {
         .catch(() => {});
     }, 250);
     return () => { gone = true; clearTimeout(id); };
-  }, [draft.accent, draft.page, draft.header, draft.footer, valid]);
+  }, [draft.accent, draft.page, draft.header, draft.footer, draft.support, valid]);
 
   return (
     <section className="set-card">
@@ -144,6 +148,21 @@ export function EmailDesignCard({ draft, onChange, logoAvailable }: {
                 </button>
               ))}
             </div>
+          </div>
+        </div>
+
+        <div className="set-row">
+          <div>
+            <div className="set-row__label">{t("email.design.support")}</div>
+            <div className="set-row__desc">
+              {t("email.design.supportDesc")}
+              {!isSupportAddress(draft.support) && <span className="em-invalid"> {t("email.design.supportInvalid")}</span>}
+            </div>
+          </div>
+          <div className="set-row__control">
+            <input className="inp em-support" type="text" inputMode="url" maxLength={300} value={draft.support}
+                   placeholder={t("email.design.supportPlaceholder")} aria-invalid={!isSupportAddress(draft.support)}
+                   aria-label={t("email.design.support")} onChange={(e) => set("support", e.target.value)} />
           </div>
         </div>
 

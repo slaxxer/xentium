@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { EMAIL_FOOTER_MAX, EMAIL_HEADERS, EMAIL_TEMPLATE_KEYS } from "../../infrastructure/email/email-templates.js";
+import { EMAIL_FOOTER_MAX, EMAIL_HEADERS, EMAIL_SUPPORT_MAX, EMAIL_TEMPLATE_KEYS, supportHref } from "../../infrastructure/email/email-templates.js";
 
 export const templateKeyParamSchema = z.object({
   key: z.enum(EMAIL_TEMPLATE_KEYS),
@@ -24,4 +24,8 @@ export const emailDesignSchema = z.object({
   page: hex,
   header: z.enum(EMAIL_HEADERS),
   footer: z.string().max(EMAIL_FOOTER_MAX),
+  // A web address or an email address; empty = no link. Absent from an older ACP = empty.
+  support: z.string().max(EMAIL_SUPPORT_MAX)
+    .refine((v) => !v.trim() || !!supportHref(v), "A web address (https://…) or an email address")
+    .default(""),
 });

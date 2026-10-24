@@ -117,3 +117,8 @@
     background: var(--c-bg);
   }
 }
+
+// Design: the contact support address.
+.inp.em-support { width: 320px; max-width: 100%; }
+.inp.em-support[aria-invalid="true"] { border-color: var(--c-danger); }
+.em-invalid { color: var(--c-danger); }
