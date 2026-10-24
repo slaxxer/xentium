@@ -825,7 +825,7 @@ draft; use Set/Remove) and destructive actions. Plugins built for the old autosa
 (`useAutosave`) join the bar without a rebuild.
 
 The full recipe, the ways it goes wrong, and the `groupConfigPanel` + progression
-path are in [`docs/plugin-acp-autosave.md`](docs/plugin-acp-autosave.md).
+path are in [`docs/plugin-acp-pages.md`](docs/plugin-acp-pages.md).
 
 ### Start here: the plugin platform
 

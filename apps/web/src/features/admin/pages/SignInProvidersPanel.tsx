@@ -13,7 +13,7 @@ import { api } from "../../../lib/api";
 // The toggle and client id autosave, reporting into the page's one indicator.
 // The secret does NOT: a half-typed secret must never be saved, so it has an
 // explicit Set / Remove, and the server never sends it back — only whether one
-// is set (docs/plugin-acp-autosave.md, the secrets exception).
+// is set (docs/plugin-acp-pages.md, the secrets exception).
 
 type Provider = "google" | "github" | "discord";
 interface ProviderRow { provider: Provider; enabled: boolean; clientId: string; secretSet: boolean; callbackUrl: string }

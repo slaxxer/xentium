@@ -23,7 +23,7 @@ it in minor releases. Nothing is renamed or removed before 2.0.
 
 Related guides: [blocks](./plugin-blocks.md), [edge art](./plugin-edge-art.md),
 [embeds](./plugin-embeds.md), [translations](./plugin-i18n.md),
-[ACP pages and the save bar](./plugin-acp-autosave.md), [registries](./plugin-registries.md).
+[ACP pages and the save bar](./plugin-acp-pages.md), [registries](./plugin-registries.md).
 
 ## Start a plugin
 

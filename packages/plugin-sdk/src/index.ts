@@ -20,7 +20,7 @@ import type { HeadTags, PageInfo, PageSource, SeoProvider } from "@xentium/contr
  *
  * Companion docs for the parts that live on the WEB side (this package is the
  * server contract only):
- *  - `docs/plugin-acp-autosave.md` — ACP admin surfaces. Config pages and
+ *  - `docs/plugin-acp-pages.md` — ACP admin surfaces. Config pages and
  *    per-group panels AUTOSAVE (no Save button) via the host's `useAutosave` +
  *    `AutosaveStatus`; entity modals, secrets and destructive actions keep an
  *    explicit action. Read before building any plugin admin UI.
@@ -951,7 +951,7 @@ export interface PluginContext extends BasePluginContext<PluginHost> {
   /** Register progression promotion criteria (§38). A disabled plugin's criteria
    *  stop counting. The admin UI for its thresholds belongs in the core Group
    *  settings dialog via the web-side `groupConfigPanel` slot, and autosaves —
-   *  see `docs/plugin-acp-autosave.md`. */
+   *  see `docs/plugin-acp-pages.md`. */
   registerProgressionCriteria(criteria: ProgressionCriteria): void;
   /**
    * Something a BADGE can be earned for — e.g. the forum's posts and threads.

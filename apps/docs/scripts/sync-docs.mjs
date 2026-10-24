@@ -29,7 +29,7 @@ const FILES = {
   "docs/plugin-blocks.md":        "plugins/blocks",
   "docs/plugin-edge-art.md":      "plugins/edge-art",
   "docs/plugin-registries.md":    "plugins/extension-points",
-  "docs/plugin-acp-autosave.md":  "plugins/acp-surfaces",
+  "docs/plugin-acp-pages.md":  "plugins/acp-surfaces",
   "docs/plugin-i18n.md":          "plugins/i18n",
   "docs/plugin-embeds.md":        "plugins/embeds",
   "docs/consent.md":              "plugins/consent",

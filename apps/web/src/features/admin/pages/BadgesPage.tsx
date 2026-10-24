@@ -16,7 +16,7 @@
  * arriving here is doing one of them, not browsing a list.
  *
  * ⚠ NOT autosaved. Creating and editing a badge happens in a modal with an explicit
- * Save, which is the documented exception (`docs/plugin-acp-autosave.md`): a
+ * Save, which is the documented exception (`docs/plugin-acp-pages.md`): a
  * half-typed key is not a state worth persisting, and granting an award is a
  * deliberate act, not a preference.
  */

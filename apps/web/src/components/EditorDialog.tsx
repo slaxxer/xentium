@@ -9,7 +9,7 @@ import "./EditorDialog.scss";
  * A rail on the left says what is being made (a live preview of its mark, its name
  * and key) and which part of it the pane shows (tabs); the pane edits that part with
  * core's setting rows, and its footer holds the explicit Cancel / Create buttons
- * (create and edit dialogs are not drafts, see docs/plugin-acp-autosave.md).
+ * (create and edit dialogs are not drafts, see docs/plugin-acp-pages.md).
  *
  * First drawn for badges; plugins get it through the `webEditorDialog` host global,
  * so a plugin's dialog is the same dialog, not a look-alike.
