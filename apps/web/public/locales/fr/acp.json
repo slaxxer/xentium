@@ -4100,6 +4100,7 @@
         "out": "Vers l'extérieur",
         "in": "Vers l'intérieur"
       },
+      "clippedOut": "Le thème coupe les coins de ce bloc, ce qui masque aussi tout ce qui dépasse. Choisissez Vers l'intérieur pour voir le bord.",
       "dirHint": {
         "bottom-out": "Pend sous le bloc, par-dessus ce qui suit.",
         "bottom-in": "Monte depuis le bord inférieur, sur le bloc lui-même.",

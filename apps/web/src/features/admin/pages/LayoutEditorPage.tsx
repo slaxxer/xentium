@@ -272,6 +272,20 @@ interface InstalledTheme {
  * one. Keyed by it, so switching themes starts fresh: undo history, selection and the
  * open document all belong to the theme they were made in.
  */
+/**
+ * Whether the block clips what is drawn outside its box, measured in the preview: a
+ * theme's cut card corners are a clip-path on the card, which hides an outward edge.
+ * Read when the panel renders; the preview is same-origin.
+ */
+function clipsOutside(frame: HTMLIFrameElement | null, id: string): boolean {
+  try {
+    const el = frame?.contentDocument?.querySelector(`[data-xt-block="${CSS.escape(id)}"]`)?.firstElementChild;
+    return !!el && getComputedStyle(el).clipPath !== "none";
+  } catch {
+    return false;
+  }
+}
+
 export function LayoutEditorPage() {
   // Only Theme Studio renders it: the Studio owns the page header and the one Publish
   // for layouts and styles together.
@@ -2677,6 +2691,7 @@ function LayoutEditorInner({ themeKey }: { themeKey: string | null }) {
                   <InspectorFold key={`edge:${selected.node.id}`} title={t("layoutEditor.edge.title")}
                     active={!!(selected.node.edges?.top || selected.node.edges?.bottom)}>
                     <BlockEdgeArtFields bare
+                      clipsOutside={clipsOutside(previewRef.current, selected.node.id)}
                       blockType={selected.node.type}
                       templateKey={templateKey}
                       value={selected.node.edges}

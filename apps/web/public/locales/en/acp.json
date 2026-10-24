@@ -4227,6 +4227,7 @@
         "out": "Outward",
         "in": "Inward"
       },
+      "clippedOut": "This block's corners are cut by the theme, which also hides anything outside it. Choose Inward to see the edge.",
       "dirHint": {
         "bottom-out": "Hangs below the block, over whatever comes next.",
         "bottom-in": "Rises from the bottom edge, over the block itself.",

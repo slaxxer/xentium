@@ -4100,6 +4100,7 @@
         "out": "Para fora",
         "in": "Para dentro"
       },
+      "clippedOut": "O tema corta os cantos deste bloco, o que também esconde tudo o que fica de fora. Escolhe Para dentro para ver a borda.",
       "dirHint": {
         "bottom-out": "Pende abaixo do bloco, sobre o que vem depois.",
         "bottom-in": "Sobe da borda inferior, sobre o próprio bloco.",
