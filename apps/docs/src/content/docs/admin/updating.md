@@ -149,6 +149,31 @@ npx xentium update --force       # past a plugin that says it doesn't support th
 Without `--skip-backup`, an update refuses to start when `pg_dump` is missing, because there
 would be nothing to roll back to. Installing the PostgreSQL client tools is the better fix.
 
+## Keeping Node up to date
+
+Xentium runs on Node.js, and Node's own security fixes matter as much as ours. `xentium update`
+doesn't update Node: your system's package manager does. Run Node 22.23.4 or 24.22.1 or newer;
+older releases have a bug that can run code on your server (CVE-2026-111497). `npx xentium doctor`
+warns when yours is older and names the version to update to.
+
+How depends on where your Node came from. From NodeSource's packages on Debian or Ubuntu:
+
+```bash
+sudo apt-get update
+sudo apt-get install --only-upgrade nodejs
+node -v
+```
+
+With nvm, `nvm install 24` gets the newest Node 24. A distribution's own `nodejs` package often
+lags behind; if it has no fixed version yet, switch to NodeSource or nvm.
+
+Then restart your site's services so they run on the new Node. With the services `xentium update`
+set up:
+
+```bash
+sudo systemctl restart xentium-api xentium-worker
+```
+
 ## Going back
 
 ```bash

@@ -1,7 +1,8 @@
 # Xentium
 
 An open-source community platform and CMS, written in TypeScript from the database
-to the browser. MIT licensed, currently in alpha.
+to the browser. MIT licensed, currently in its last alpha (1.0.0-alpha.20). The first
+release candidate for 1.0.0 comes next.
 
 Developer docs: [doc.xentium.org](https://doc.xentium.org)
 
@@ -94,8 +95,10 @@ these packages, so you can use them in your own Express app without taking the C
 
 ### Where it's at
 
-Alpha. It runs fine, and nothing merges without the full typecheck, lint, test and build
-passing. Still, APIs can change between alphas and you'll hit rough edges. From 1.0.0 on,
+Alpha, and the last one: 1.0.0-alpha.20 closes the alpha series, and the next release is
+the first release candidate for 1.0.0, with only fixes between candidates. It runs fine,
+and nothing merges without the full typecheck, lint, test and build passing. Still, you'll
+hit rough edges. From 1.0.0 on,
 versions follow semver: [what each version promises](docs/versioning.md). Please don't
 move your 20,000-member forum onto it yet. If you want to try it with real data, there are
 importers for WordPress, phpBB, XenForo, vBulletin and WoltLab, and users keep their
@@ -127,7 +130,10 @@ questions on GitHub are always welcome.
 
 ## Prerequisites
 
-- **Node.js 24** (there's an `.nvmrc`, so `nvm use` works)
+- **Node.js 24** (there's an `.nvmrc`, so `nvm use` works). Node 22 works too. On a
+  real site, run Node 22.23.4 or 24.22.1 or newer: older releases have a bug that can run
+  code on the server (CVE-2026-111497). The installer and `xentium doctor` warn when
+  yours is older.
 - **pnpm 10** (`corepack enable` gets you the version pinned in `package.json`)
 - **Docker** with Compose for PostgreSQL and Redis, or your own Postgres 17 and Redis 7
 
@@ -441,11 +447,11 @@ Plugin (onEnable)  ──registers──▶  core registry  ──core iterates�
 
 ## Layout system
 
-You'll find it at ACP → Appearance → Themes, under Layouts on the theme you want to
-edit (each theme, and the built-in Core theme, has its own). A page's structure is a stored
-document, not compiled markup: for each template, an ordered list of blocks in
-each region. Theme Studio edits both halves of a theme: how things look (Colours &
-type) and what goes where (Layout).
+You'll find it in ACP → Appearance → Theme Studio. Pick the theme you want to edit at the
+top (each theme, and the built-in Core theme, has its own). A page's structure is a stored
+document, not compiled markup: for each template, an ordered list of blocks in each region.
+Theme Studio edits both halves of a theme: how things look (Colours & type) and what goes
+where (Layout).
 
 ### Templates
 
@@ -468,12 +474,20 @@ rearrange the screen you'd need to fix a broken arrangement.
 
 ### Editing
 
-- You see edits right away. The preview is the real page in an iframe, and the editor pushes the document into it before anything is saved.
-- The draft autosaves about 700 ms after you stop. There's no save button.
-- Publishing is explicit and covers the whole site. It promotes every pending draft. Open tabs pick up the change within seconds over the style-version SSE stream, without reloading.
+A page is a stack of **sections**; a section has **columns**; a column holds **blocks**.
+That's the whole model the editor teaches, and it's stored as the same `section` ›
+`columns` › `column` blocks as before, so themes and older layouts need no conversion.
+
+- **Add** (left) offers ready-made sections (a hero, three features, text, a call to action, empty columns) and the block library. Drag a section between sections, or click it to add it after the one you selected. A section's **Columns** picker changes its shape (1, 1:1, 2:1, 1:2, 1:1:1) and never removes a block: what doesn't fit stacks into the last column.
+- **Outline** (left) shows every section, column and block, also the ones a page doesn't draw for the audience you're viewing as.
+- **Dragging** shows every place the block can go as a faint line, and the nearest one solid, so you see where it lands before you let go.
+- **Double-click** a heading or the hero text to type over it on the page. Typing over translated text turns it into fixed text in one language; the settings panel says so and offers the translated default back.
+- **Changes** counts what publishing would change and marks every new, edited or moved block on the page. A block you removed can be put back from there.
+- **Settings** (right) are generated from each block's Zod schema, so nobody hand-writes forms. With nothing selected, the right pane shows the theme's style settings. Add-ons can put their own settings on the blocks they belong to.
+- **Edge art** is offered on blocks that paint a surface: sections, the header, navbar and footer, and the cards (home, profile panels, the members page). On a card whose corners the theme cuts, a new edge starts inward, because the cut hides anything outside the card.
+- You see edits right away. The preview is the real page in an iframe, and the editor pushes the document into it before anything is saved. The draft autosaves about 700 ms after you stop; there's no save button.
+- Publishing is explicit and covers the whole site. It promotes every pending draft, layouts and styles together. Open tabs pick up the change within seconds over the style-version SSE stream, without reloading.
 - Reset puts the template back to its built-in default. You can't undo it.
-- Drag wherever you like: in the structure tree or straight in the preview, and between regions. The `↑`/`↓` buttons are there for the keyboard. Hover a block to see its outline and type; click it to select it and open its settings.
-- Block settings are generated from each block's Zod schema, so nobody hand-writes forms.
 - Required blocks (`logo` and `userMenu` in the navbar) can be moved but not deleted. Both the editor and the API enforce that.
 
 ### When something goes wrong
@@ -817,7 +831,9 @@ path are in [`docs/plugin-acp-autosave.md`](docs/plugin-acp-autosave.md).
 
 Core does the common work for you: events and filters, resources (core serves your table's
 endpoints), settings with a page drawn from your schema, background jobs, files and images,
-members and the site's time zone, and an upload component. The guide is
+members and the site's time zone, notifications members can switch off, rate limits and a
+cache, a field on the sign-up form, settings on blocks in Theme Studio, and an upload
+component. The guide is
 [`docs/plugin-platform.md`](docs/plugin-platform.md). `pnpm plugin:new <id>` starts a working
 plugin in `plugins/local/<id>/` that uses most of it.
 

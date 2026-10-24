@@ -15,7 +15,8 @@ You get:
 - **People and time**: members named the way core names them, birthdays as members allow,
   and the site's time zone.
 - **Notifications members control**, **rate limits** and a **cache**.
-- **The browser side**: pages, slots, an upload component and typed host members.
+- **The browser side**: pages, slots, a field on the sign-up form, settings on blocks in
+  Theme Studio, an upload component and typed host members.
 
 Everything here is part of the 1.x promise in [versioning](./versioning.md): we only add to
 it in minor releases. Nothing is renamed or removed before 2.0.
@@ -442,6 +443,11 @@ import { Uploader } from "@web/components/Uploader";
 <Uploader url="/p/my-gallery/photos/upload" accept={["image"]} maxBytes={20 * 1024 * 1024}
           multiple extra={{ albumId }} onUploaded={() => refetch()} />
 ```
+
+**Settings on a block in Theme Studio.** A block panel puts your settings on the block
+types you name, and only there: an avatar effect on the avatar block, not on every block.
+What it sets is part of the theme's style and reaches every page once the admin publishes.
+See [blocks: settings on someone else's block](./plugin-blocks.md#settings-on-someone-elses-block).
 
 **Your public settings.** `usePublicPluginSettings("my-gallery")` from
 `@web/plugins/pluginSettings` gives your page the settings you marked `public: true`.
