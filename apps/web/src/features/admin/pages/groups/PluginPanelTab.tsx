@@ -8,7 +8,7 @@ import type { Group } from "./groupModel";
 
 // A plugin's groupConfigPanel, as a tab of the group page. Core draws the frame
 // and says where the panel came from; the plugin draws everything inside it
-// and saves on its own (docs/plugin-acp-autosave.md), reporting into the
+// and saves on its own (docs/plugin-acp-pages.md), reporting into the
 // page's indicator through useReportSaving.
 
 export function PluginPanelTab({ panel, group, onLadder, onOpenProgression }: {

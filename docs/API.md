@@ -511,7 +511,7 @@ pages save through the ACP's **save bar**: one write when the admin presses Save
 Ctrl/⌘ + S), covering everything they changed. Make them idempotent writes of the whole
 object, check `admin.access` yourself (the `/api/p/` prefix doesn't do that for you), and
 never put secrets in a draft: give a write-only field its own Set/Remove route. The web side is described in
-[Plugin pages in the ACP](plugin-acp-autosave.md).
+[Plugin pages in the ACP](plugin-acp-pages.md).
 
 ---
 
