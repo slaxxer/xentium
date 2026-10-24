@@ -4648,7 +4648,7 @@
         "name": "Name only"
       },
       "footer": "Footer note",
-      "footerDesc": "Plain text under the message, such as your address. The site name and address always follow.",
+      "footerDesc": "A note under the message, such as your address. The site name and address always follow.",
       "footerPlaceholder": "Example Ltd · 1 Main Street · Springfield",
       "preview": "Preview",
       "previewDesc": "The password-reset email with your changes, as it will be sent."

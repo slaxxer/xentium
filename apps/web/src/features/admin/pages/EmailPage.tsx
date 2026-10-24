@@ -11,7 +11,7 @@ import { SaveChip } from "../../../components/SaveChip";
 import { Toggle, TextField, NumberStepper, Button } from "../../../components/AcpControls";
 import { AcpIcon } from "./acpIcons";
 import { Composer, type ComposerHandle } from "../../../components/composer/Composer";
-import { EmailDesignCard, isHex, type EmailDesign } from "./EmailDesign";
+import { EmailDesignCard, footerText, isHex, type EmailDesign } from "./EmailDesign";
 import "./acpSystem.scss";
 import "./EmailPage.scss";
 
@@ -233,8 +233,8 @@ export function EmailPage() {
         key: `design.${k}`,
         label: t(`email.design.${k}`),
         section: t("email.design.title"),
-        from: k === "header" ? t(`email.design.headers.${saved![k]}`) : String(saved![k]),
-        to: k === "header" ? t(`email.design.headers.${value![k]}`) : String(value![k]),
+        from: k === "header" ? t(`email.design.headers.${saved![k]}`) : k === "footer" ? footerText(saved![k]) : String(saved![k]),
+        to: k === "header" ? t(`email.design.headers.${value![k]}`) : k === "footer" ? footerText(value![k]) : String(value![k]),
         revert: () => setDesignDraft((p) => (p && designSavedRef.current ? { ...p, [k]: designSavedRef.current[k] } : p)),
       })),
   });

@@ -1,6 +1,7 @@
 import { prisma } from "../db.js";
 import { getSetting } from "../../shared/utils/settings.js";
 import { serverText, type ServerLocale } from "../../shared/i18n/serverText.js";
+import { sanitizeRichText } from "../../shared/sanitize/richText.js";
 
 /**
  * Outbound mail templates.
@@ -69,11 +70,14 @@ export interface EmailDesign {
   page: string;
   /** icon = the site icon beside its name; logo = the uploaded logo alone; name = text only. */
   header: EmailHeader;
-  /** A plain-text note under the card (an address, a sign-off). */
+  /**
+   * A note under the card (an address, a sign-off), written with our editor: HTML.
+   * A note saved before the editor is plain text and still shows as written.
+   */
   footer: string;
 }
 export const EMAIL_DESIGN_DEFAULTS: EmailDesign = { accent: "#0d7c72", page: "#f1f1f6", header: "icon", footer: "" };
-export const EMAIL_FOOTER_MAX = 300;
+export const EMAIL_FOOTER_MAX = 4000;
 const HEX = /^#[0-9a-f]{6}$/i;
 
 export function normalizeEmailDesign(raw: unknown): EmailDesign {
@@ -128,12 +132,40 @@ function frameClose(vars: Record<string, string | undefined>, design: EmailDesig
   const site = url
     ? `{{site_name}} · <a href="{{site_url}}" style="color:#6b6b88;text-decoration:underline">${escapeHtml(url.replace(/^https?:\/\//i, ""))}</a>`
     : "{{site_name}}";
-  const note = design.footer.trim()
-    ? `<div style="margin:0 0 6px">${escapeHtml(design.footer.trim()).replace(/\r?\n/g, "<br>")}</div>`
-    : "";
+  const footer = footerNote(design.footer, design.accent);
+  const note = footer ? `<div style="margin:0 0 6px">${footer}</div>` : "";
   return `</td></tr></table>` +
     `<div style="max-width:520px;margin:0 auto;padding:16px 8px 0;font-size:12px;line-height:1.5;color:#6b6b88;text-align:center">${note}${site}</div>` +
     `</td></tr></table>`;
+}
+
+/** The footer's own scale: small grey type, so headings and paragraphs stay a note. */
+const FOOTER_STYLES: Record<string, string> = {
+  h1: "font-size:14px;font-weight:700;margin:0 0 4px",
+  h2: "font-size:13px;font-weight:700;margin:0 0 4px",
+  h3: "font-size:12px;font-weight:700;margin:0 0 4px",
+  p: "margin:0 0 4px",
+  ul: "margin:0 0 4px;padding-left:18px;text-align:left",
+  ol: "margin:0 0 4px;padding-left:18px;text-align:left",
+  li: "margin:0",
+  blockquote: "margin:0 0 4px;padding:2px 10px;border-left:2px solid #e7e7f1",
+  hr: "border:none;border-top:1px solid #e7e7f1;margin:8px 0",
+  code: "font-family:ui-monospace,monospace",
+};
+
+/**
+ * The admin's footer note as email HTML, or "" when it says nothing. Editor HTML is
+ * cleaned with the rich-text allowlist (the row can come from a backup or a
+ * hand-edited database, like the colours); plain text from before the editor is
+ * escaped with its line breaks kept.
+ */
+export function footerNote(raw: string, accent = EMAIL_DESIGN_DEFAULTS.accent): string {
+  const text = raw.trim();
+  if (!text) return "";
+  if (!text.startsWith("<")) return escapeHtml(text).replace(/\r?\n/g, "<br>");
+  const clean = sanitizeRichText(text);
+  if (!clean.replace(/<[^>]*>|&nbsp;/g, "").trim()) return "";
+  return styleContent(clean, accent, FOOTER_STYLES);
 }
 
 /** What each template can use; the texts themselves live in `locales/<lng>/email.json`. */
@@ -184,10 +216,10 @@ const CONTENT_STYLES: Record<string, string> = {
 };
 
 /** Give each known tag its email style, ahead of any style it already carries (alignment). */
-export function styleContent(html: string, accent = EMAIL_DESIGN_DEFAULTS.accent): string {
+export function styleContent(html: string, accent = EMAIL_DESIGN_DEFAULTS.accent, styles = CONTENT_STYLES): string {
   return html.replace(/<(h1|h2|h3|p|ul|ol|li|blockquote|hr|a|code)(\s[^>]*)?>/gi, (whole, tag: string, attrs = "") => {
     const t = tag.toLowerCase();
-    const base = t === "a" ? `color:${accent}` : CONTENT_STYLES[t];
+    const base = t === "a" ? `color:${accent}` : styles[t];
     if (!base) return whole;
     if (/\sstyle\s*=\s*"/i.test(attrs)) {
       return `<${tag}${attrs.replace(/\sstyle\s*=\s*"/i, ` style="${base};`)}>`;

@@ -4,6 +4,7 @@ import { api } from "../../../lib/api";
 import { Button } from "../../../components/AcpControls";
 import { AcpIcon } from "./acpIcons";
 import { ColorField, isHex } from "../../../components/ColorField";
+import { Composer } from "../../../components/composer/Composer";
 
 export { isHex };
 
@@ -13,7 +14,51 @@ export interface EmailDesign { accent: string; page: string; header: EmailHeader
 /** Mirrors EMAIL_DESIGN_DEFAULTS on the server; "Use defaults" puts these back. */
 export const EMAIL_DESIGN_DEFAULTS: EmailDesign = { accent: "#0d7c72", page: "#f1f1f6", header: "icon", footer: "" };
 const HEADERS: EmailHeader[] = ["icon", "logo", "name"];
-const FOOTER_MAX = 300;
+
+/** A note saved before the editor is plain text: open it as paragraphs, line breaks kept. */
+function footerHtml(raw: string): string {
+  if (!raw.trim() || raw.trim().startsWith("<")) return raw;
+  const esc = (v: string) => v.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return `<p>${esc(raw.trim()).replace(/\r?\n/g, "<br>")}</p>`;
+}
+
+/** An editor with nothing typed in it is no note at all. */
+const isEmptyHtml = (html: string) => !html.replace(/<[^>]*>|&nbsp;/g, "").trim();
+
+/** The note's words, for the save bar's list of changes. */
+export const footerText = (raw: string) => raw.replace(/<\/(p|h\d|li)>|<br\s*\/?>/gi, " ").replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
+
+/**
+ * The footer note in our editor. It opens on the draft once and then owns it; a
+ * change from outside (Use defaults, discard, a revert in the save bar) remounts it.
+ * Loading emits the editor's own HTML for what it opened; that is not an edit.
+ */
+function FooterNoteEditor({ value, onChange, placeholder }: {
+  value: string; onChange: (next: string) => void; placeholder: string;
+}) {
+  const own = useRef(value);
+  const [epoch, setEpoch] = useState(0);
+  useEffect(() => {
+    if (value !== own.current) { own.current = value; setEpoch((n) => n + 1); }
+  }, [value]);
+  return <FooterNoteComposer key={epoch} start={value} placeholder={placeholder}
+                             onChange={(html) => { own.current = html; onChange(html); }} />;
+}
+
+function FooterNoteComposer({ start, onChange, placeholder }: {
+  start: string; onChange: (next: string) => void; placeholder: string;
+}) {
+  const [initial] = useState(() => footerHtml(start));
+  const loading = useRef(!!initial);
+  return (
+    <Composer variant="panel" toolbarPosition="top" minHeight={96} mentions={false} attachments={false}
+              submitInBar={false} initialHtml={initial} placeholder={placeholder}
+              onChange={(html) => {
+                if (loading.current) { loading.current = false; return; }
+                onChange(isEmptyHtml(html) ? "" : html);
+              }} />
+  );
+}
 /**
  * ACP → Email → Design: the frame every email is sent in. The draft lives in
  * EmailPage (switching section is not leaving the page); this card renders it and
@@ -108,9 +153,8 @@ export function EmailDesignCard({ draft, onChange, logoAvailable }: {
             <div className="set-row__desc">{t("email.design.footerDesc")}</div>
           </div>
           <div className="set-row__control em-full">
-            <textarea className="inp em-footer" rows={2} maxLength={FOOTER_MAX} value={draft.footer}
-                      placeholder={t("email.design.footerPlaceholder")}
-                      onChange={(e) => set("footer", e.target.value)} />
+            <FooterNoteEditor value={draft.footer} placeholder={t("email.design.footerPlaceholder")}
+                              onChange={(v) => set("footer", v)} />
           </div>
         </div>
       </div>

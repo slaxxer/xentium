@@ -211,7 +211,7 @@ describe("email design", () => {
     const bad = normalizeEmailDesign({ accent: "red;background:url(x)", page: "#FFF", header: "banner", footer: 5 });
     expect(bad).toEqual(EMAIL_DESIGN_DEFAULTS);
     expect(normalizeEmailDesign({ accent: "#AA0000" }).accent).toBe("#aa0000");
-    expect(normalizeEmailDesign({ footer: "x".repeat(900) }).footer).toHaveLength(300);
+    expect(normalizeEmailDesign({ footer: "x".repeat(5000) }).footer).toHaveLength(4000);
   });
 
   it("paints the accent on the top line, buttons and links, and the page colour around the card", () => {
@@ -239,6 +239,21 @@ describe("email design", () => {
     expect(noLogo).toContain("icon-192.png");
     const name = renderEmailBody("<p>x</p>", vars, "en", design({ header: "name" }));
     expect(name).not.toContain("<img");
+  });
+
+  it("shows a footer note from the editor, cleaned and in the footer's small scale", () => {
+    const html = renderEmailBody("<p>x</p>", vars, "en", design({
+      footer: `<p style="text-align: center">Acme <strong>Ltd</strong></p><h1>Hi</h1><p><a href="https://acme.test/x">Visit</a><script>alert(1)</script></p><img src=x onerror=alert(1)>`,
+    }));
+    expect(html).toContain(`<p style="margin:0 0 4px;text-align:center">Acme <strong>Ltd</strong></p>`);
+    expect(html).toContain(`<h1 style="font-size:14px;font-weight:700;margin:0 0 4px">Hi</h1>`);
+    expect(html).toContain(`<a href="https://acme.test/x" rel="noopener noreferrer nofollow" style="color:#0d7c72">Visit</a>`);
+    expect(html).not.toMatch(/script|onerror/);
+  });
+
+  it("leaves no footer note for an empty editor", () => {
+    const html = renderEmailBody("<p>x</p>", vars, "en", design({ footer: "<p></p>" }));
+    expect(html).not.toContain(`<div style="margin:0 0 6px">`);
   });
 
   it("shows the footer note as escaped text, line breaks kept", () => {

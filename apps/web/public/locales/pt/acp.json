@@ -4521,7 +4521,7 @@
         "name": "Só o nome"
       },
       "footer": "Nota de rodapé",
-      "footerDesc": "Texto simples sob a mensagem, como o seu endereço. O nome e o endereço do site aparecem sempre a seguir.",
+      "footerDesc": "Uma nota sob a mensagem, como o seu endereço. O nome e o endereço do site aparecem sempre a seguir.",
       "footerPlaceholder": "Exemplo Lda · Rua Principal 1 · Lisboa",
       "preview": "Pré-visualização",
       "previewDesc": "O email de redefinição de senha com as suas alterações, tal como será enviado."
