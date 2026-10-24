@@ -212,7 +212,7 @@ registerBlock({
 registerBlock({
   type:   "guestPresence",
   schema: blockPropSchemas.guestPresence,
-  editorMeta: { label: "Happening right now", category: "data", ...ON_HOME },
+  editorMeta: { surface: true, label: "Happening right now", category: "data", ...ON_HOME },
   component: function GuestPresence({ props }: BlockProps<{ rows: number }>) {
     const { t } = useTranslation("common", { keyPrefix: "guestHome.presence" });
     const recent = useQuery({

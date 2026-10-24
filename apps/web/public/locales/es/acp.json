@@ -4100,6 +4100,7 @@
         "out": "Hacia fuera",
         "in": "Hacia dentro"
       },
+      "clippedOut": "El tema recorta las esquinas de este bloque, y eso oculta también todo lo que queda fuera. Elige Hacia dentro para ver el borde.",
       "dirHint": {
         "bottom-out": "Cuelga bajo el bloque, sobre lo que viene después.",
         "bottom-in": "Sube desde el borde inferior, sobre el propio bloque.",

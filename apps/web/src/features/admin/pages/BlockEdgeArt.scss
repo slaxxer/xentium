@@ -167,3 +167,6 @@
   font-size: var(--fs-2xs);
   color: var(--c-warn);
 }
+
+// An outward edge on a block that clips what is outside it (cut card corners).
+.lay-edge__warn { color: var(--c-warn); }

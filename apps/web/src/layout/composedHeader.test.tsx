@@ -15,6 +15,8 @@ import { placeBetween, updateBlockEdges, findNode, type Regions } from "./blockT
 import { hasSurface } from "./blockRegistry";
 import "./blocks/guestBlocks";
 import "./blocks/profileBlocks";
+import "./blocks/homeBlocks";
+import "./blocks/memberBlocks";
 import "./blocks/coreBlocks";
 import "./blocks/chromeBlocks";
 
@@ -303,6 +305,21 @@ describe("where edge art is offered", () => {
   it("on blocks that paint a surface", () => {
     for (const t of ["section", "header", "navbar", "footer", "guestSurface", "guestHero", "guestRail", "profileCard", "profileCover"]) {
       expect(hasSurface(t), t).toBe(true);
+    }
+  });
+
+  // Each of these draws its own card as its root element, measured on the live pages.
+  it("on the cards: home rails, profile panels, the members page", () => {
+    for (const t of [
+      "homeMeCard", "homeSectionNav", "homeSpaces", "homeHotThreads", "homePopularTags", "homeSuggestedPeople",
+      "homeSetup", "homeProgression", "profileRank", "profileBadges", "profileFollowers", "profileVisitors",
+      "membersList", "membersPodium", "membersHowTo", "guestPresence",
+    ]) expect(hasSurface(t), t).toBe(true);
+  });
+
+  it("not on what draws no card of its own", () => {
+    for (const t of ["homeFeed", "membersTeam", "membersHofStats", "membersTabs", "profileStats", "profileBio"]) {
+      expect(hasSurface(t), t).toBe(false);
     }
   });
 

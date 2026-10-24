@@ -4100,6 +4100,7 @@
         "out": "Nach außen",
         "in": "Nach innen"
       },
+      "clippedOut": "Das Theme schneidet die Ecken dieses Blocks ab und verbirgt damit auch alles außerhalb. Wähle Nach innen, um die Kante zu sehen.",
       "dirHint": {
         "bottom-out": "Hängt unter dem Block, über dem, was folgt.",
         "bottom-in": "Steigt von der Unterkante auf, über dem Block selbst.",
