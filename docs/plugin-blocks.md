@@ -338,6 +338,50 @@ What that means for you:
   though the wrapper has no box. Use descendant selectors. We shipped this bug in core
   once, and it broke the mobile layout of every styled column.
 
+## Settings on someone else's block
+
+Sometimes your plugin has an effect that belongs to a block it didn't make: a ring
+around avatars belongs to the avatar block, not to every block on the page. A **block
+panel** puts your settings on the blocks you name, and only there, in Theme Studio's
+settings pane (core 1.0.0-alpha.20 and newer).
+
+```ts
+// vite.config.ts externals: "@web/layout/blockPanelRegistry": `${H}.webBlockPanels`
+const panels = window.__XENTIUM_HOST__?.webBlockPanels;
+if (panels) {
+  panels.registerBlockPanel({
+    id: "myplugin.glow",              // "<namespace>.<name>"
+    pluginId: "my-plugin",
+    blockTypes: ["profileAvatar"],     // the blocks it shows on
+    title: () => i18n.t("myplugin:glow.title"),
+    active: (tokens) => tokens["--myplugin-glow"] === "on",  // the dot beside the title
+    Panel: GlowPanel,
+  });
+}
+```
+
+Your panel gets the selected `block` (`id`, `type`, `props`), the `templateKey` being
+edited, and the theme's site-wide tokens:
+
+| Prop | |
+|---|---|
+| `themeTokens` | The theme's site-wide tokens as the draft has them |
+| `setThemeTokens(tokens)` | Stage tokens in the theme's draft; `null` clears one |
+
+What you stage is part of the theme's style. It shows in the editor's preview at once,
+goes live when the admin publishes, belongs to that theme only, and reaches **every
+page**, because it is served in the site's stylesheet. So a panel is the right tool for
+an effect that should follow the theme everywhere, set from the block it is about. Name
+your tokens with your own prefix (`--myplugin-…`), and read them in your CSS, or in your
+script with `getComputedStyle(document.documentElement)` when CSS alone can't switch
+the effect on.
+
+A panel never changes the block's own props. If your setting only matters on the page
+the block is on, it belongs in your own block's props instead.
+
+When your plugin is off, its panels are gone and what they staged stays in the theme,
+unused, until the plugin is back.
+
 ## Data: core blocks vs plugin blocks
 
 Core blocks **never fetch**. They get their data as props from a host container that

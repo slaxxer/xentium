@@ -42,8 +42,8 @@ fixes a security problem, so please update, and update Node too (see Security).
   articles, comments and notifications; run background work once, at a time or on a
   schedule (listed in Scheduled Tasks); declare settings that Xentium stores, checks and
   draws an ACP page for; describe a table and get its endpoints; store files and images in
-  the sizes they need; add fields to the sign-up form; and use a shared cache and rate
-  limits. `pnpm plugin:new` starts a working plugin, and the new plugin platform guide
+  the sizes they need; add fields to the sign-up form; put their settings on the blocks
+  they belong to in Theme Studio; and use a shared cache and rate limits. `pnpm plugin:new` starts a working plugin, and the new plugin platform guide
   covers all of it.
 
 ### Changed
