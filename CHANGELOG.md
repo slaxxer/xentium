@@ -1,76 +1,64 @@
 # Changelog
 
-## 1.0.0-alpha.19
+## 1.0.0-alpha.20
 
-This release fixes two security problems. Please update.
+This is the last alpha. The next release is the first release candidate for 1.0.0. It also
+fixes a security problem, so please update, and update Node too (see Security).
 
 ### Security
 
-- **A member could publish another member's draft.** Anyone allowed to publish their own
-  articles could publish someone else's unfinished draft by its id. Publishing is now limited
-  to the article's author, or staff who may edit any article.
-- **Privacy settings are now enforced by the server.** Several choices in Account → Privacy
-  were only reflected in the page and not checked on the server: a members-only profile,
-  who may follow you, who may post on your wall, allowing wall posts at all, and who may see
-  your post history. Each is now refused on the server, and a block keeps both of you from
-  following each other or posting on each other's wall. The profile page now hides what
-  you're not allowed to do instead of showing a button that fails.
-- **A Permissions-Policy header** switches off browser features a community site never asks
-  for (camera, microphone, location, USB).
+- **Compressed request bodies are refused.** Xentium no longer accepts request bodies sent
+  compressed, which shields your site from a Node.js bug that could run code on the server
+  (CVE-2026-111497). Please also update Node to 22.23.4 or 24.22.1 or newer. The installer
+  and `xentium doctor` now warn when your Node is older.
+- **Uploaded images lose their camera data.** Images are now re-encoded on upload, without
+  the camera details and GPS location a photo can carry.
 
 ### Added
 
-- **Real page titles and preview tags.** Every page, from the home page to articles,
-  profiles, the member list and your legal pages, now has its own title, description and
-  canonical address in the page itself, plus the tags social networks use for link previews.
-  They are written as a guest would see the page, and they follow you as you move around the
-  site. `robots.txt` is served at the site's root.
-- **For add-ons:** they can describe their own pages to search engines and the sitemap, take
-  over search appearance as a whole, add panels to the editor next to Details, send email to
-  people without an account (a support request, say), offer edge art for part of the year,
-  colour things in a member's rank colour on their profile, and build block settings with
-  the site's own schema library instead of shipping their own. The developer guides cover
-  each of these.
+- **Build pages from sections in Theme Studio.** Pick a ready-made section (a hero, three
+  features, text, a call to action, or empty columns), drag it onto the page, and change its
+  columns with one click. Changing the columns never removes a block.
+- **Dragging shows every place a block can go**, and the nearest one is marked, so you can
+  see where it will land before you let go.
+- **Type on the page.** Double-click a heading or the hero text and type over it.
+- **See what you changed.** The changes button counts what publishing would change and marks
+  every new, edited or moved block on the page. A block you removed can be put back.
+- **Design your emails** in ACP → Email → Design: the accent colour, the page colour, a
+  header with your icon or logo, and a footer note, with a live preview.
+- **Members can switch off notifications from each add-on**, in the app and by email.
+- **For add-ons:** they can react to what happens on your site and refuse sign-ups,
+  articles, comments and notifications; run background work once, at a time or on a
+  schedule (listed in Scheduled Tasks); declare settings that Xentium stores, checks and
+  draws an ACP page for; describe a table and get its endpoints; store files and images in
+  the sizes they need; add fields to the sign-up form; and use a shared cache and rate
+  limits. `pnpm plugin:new` starts a working plugin, and the new plugin platform guide
+  covers all of it.
 
 ### Changed
 
-- **One moderation feed, newest first.** The shield in the navbar used to list reports,
-  security cases and add-on queues in separate groups, each with the oldest first. It now
-  shows them together, newest on top, and every row says what it is.
-- **ACP section icons** have one outline style with clearer shapes. The section you're in
-  shows filled, in the rail, the top bar and the panel.
-- **Dialog icons breathe.** The icon on update, announcement and alert dialogs pulses softly
-  in its own colour, like the online status. Not if you prefer reduced motion.
-- **Edge art shows all year.** Showing edge art only between two dates is now up to add-ons
-  that offer seasonal art. Dates you set before are kept for them. Without such an add-on,
-  that edge art now shows all year; remove it in Theme Studio if you only wanted it for a
-  season.
-- **Keeping your site safe** is now part of our security policy: why to update, how backups
-  and rollback work, and what an installed plugin can do on your site.
-- **What each version promises.** From 1.0.0 on, Xentium follows semantic versioning: fixes
-  (security fixes included) in patch releases, new features in minor releases, and breaking
-  changes only in a major release, after a deprecation. The new versioning guide says what
-  the promise covers, for sites, themes and plugins.
-- **The article editor's own search fields are gone.** How an article appears in search
-  results is now up to an add-on that handles search appearance.
+- **Theme Studio settings have their own pane** on the right. With nothing selected it shows
+  the theme's colours and fonts. The desktop preview always shows the desktop layout, and
+  Theme Studio folds the ACP menu to its icons to give the page more room.
+- **Email buttons and the top line are teal** by default instead of purple.
+- **After an update, Migration History shows one line** with the way back, instead of every
+  step.
+- **The edge art editor tells add-ons which side** you're editing.
 
 ### Fixed
 
-- **The article editor's byline** named whoever was editing. It now names the article's
-  author, also when a moderator edits someone else's article.
-- **An add-on's pages open straight away** after you enable it, instead of after a few
-  minutes.
-- **More than one API process:** after the install finished, the other processes kept
-  showing "not installed" until they were restarted. They now open as soon as it finishes.
-- **The install wizard's first check** could report "Could not read disk" on a new server
-  and keep Continue disabled, because the data folder didn't exist yet. It now checks the
-  disk the folder will be made on.
-- **The member directory stays fast on a big site.** It no longer counts every member on
-  every page.
+- **Emails were hard to read in dark-mode mail apps** (iCloud, Gmail, Outlook). They now
+  bring their own background, and show your site's icon beside its name.
+- **Rolling back an update from the ACP** showed an error and needed a reload. It now runs
+  in the update window, step by step.
+- **The update dialog could miss its Update now button.** It now waits for the updater, and
+  says why when updating from the ACP isn't set up.
+- **In the Floating page layout** a banner in the header stuck to the top with the navbar.
+  Now only the navbar sticks.
 
 ## Upgrading
 
-- One database migration: three indexes for the member directory. On a site with a very
-  large member list it takes a moment while the update runs.
-- On the first start, Xentium moves the dates of seasonal edge art to where add-ons read
-  them. Nothing to do on your side.
+- Update Node to 22.23.4 or 24.22.1 or newer, before or after updating Xentium.
+- One database migration: a table for files that add-ons store. It runs with the update.
+- Xentium now uses `sharp` for images. It installs with the update; on most servers there
+  is nothing to do.
