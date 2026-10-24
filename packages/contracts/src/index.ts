@@ -26,3 +26,4 @@ export type ThemeMode = 'light' | 'dark';
 // here and described nothing ever written to disk — its only consumer was a
 // never-used ThemeRegistry, now deleted.
 export * from './theme.js';
+export * from './userAgent.js';
