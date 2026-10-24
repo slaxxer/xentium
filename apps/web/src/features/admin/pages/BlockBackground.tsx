@@ -38,6 +38,7 @@ import { toast } from "../../../lib/toast";
 import { apiErrorMessage } from "../../../lib/swal";
 import { resolveImageSource, sectionBackground } from "../../../layout/blocks/coreBlocks";
 import { Button } from "../../../components/AcpControls";
+import { ColorInput } from "../../../components/ColorInput";
 
 /** The props this panel owns. `SchemaFields` is given the same list to skip. */
 export const BACKGROUND_PROPS = ["backgroundImage", "backgroundGradient", "backgroundAngle"] as const;
@@ -182,12 +183,11 @@ export function BlockBackgroundFields({ image, gradient, angle, onChange, inheri
 
         {stops.map((stop, i) => (
           <div className="lay-bg__stop" key={i}>
-            <input
-              type="color"
+            <ColorInput
               // A token stop shows the colour the theme gives it (swatchFor); picking
               // a colour here replaces the token with that colour.
               value={swatchFor(stop)}
-              onChange={(e) => setStop(i, e.target.value)}
+              onChange={(v) => setStop(i, v)}
               aria-label={t("layoutEditor.bgStop", { n: i + 1 })}
             />
             <input

@@ -35,6 +35,7 @@ import { withTheme } from "../../../lib/editingTheme";
 import { Toggle, Button } from "../../../components/AcpControls";
 import { resolveImageSource } from "../../../layout/blocks/coreBlocks";
 import "./SiteFramePopover.scss";
+import { ColorInput } from "../../../components/ColorInput";
 
 export const FRAME_QUERY_KEY = ["acp-layout-frame"] as const;
 
@@ -506,7 +507,7 @@ export function ColorRow({
   };
   return (
     <div className="lay-frame__color">
-      <input type="color" value={isHex(value) ? value : "#000000"} onChange={(e) => commit(e.target.value)} />
+      <ColorInput value={isHex(value) ? value : "#000000"} onChange={(v) => commit(v)} />
       <input className="acp-input" value={text} onChange={(e) => commit(e.target.value)} />
       {onRemove && (
         <button type="button" className="lay-frame__x" title={removeLabel} aria-label={removeLabel} onClick={onRemove}>

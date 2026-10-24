@@ -14,6 +14,7 @@ import { toast } from "../../../../lib/toast";
 import { BADGE_SWATCHES, DEFAULT_BADGE_COLOR, glowShadow, isHexColor, type Group, type ProgressionData } from "./groupModel";
 import "../../../../components/RankBadge.scss";
 import type { GroupForm } from "./GroupDetailPage";
+import { ColorInput } from "../../../../components/ColorInput";
 
 /** ACP → Settings → Rank display, as the site applies it: anything but "image" is badges. */
 function useRankDisplay(): "badge" | "image" | undefined {
@@ -171,7 +172,7 @@ function ColorRow({ value, fallback, onChange, compact, reset, resetLabel }: {
       ))}
       <label className="gp-swatch gp-swatch--picker" title={t("groups.identity.pickColor")}>
         <FontAwesomeIcon icon={faEyeDropper} />
-        <input type="color" value={picker} onChange={(e) => onChange(e.target.value)} aria-label={t("groups.identity.pickColor")} />
+        <ColorInput value={picker} onChange={(v) => onChange(v)} aria-label={t("groups.identity.pickColor")} />
       </label>
       <input className={`inp is-mono gp-hex${value && !isHexColor(value) ? " is-invalid" : ""}`} value={value} maxLength={7}
         placeholder={fallback} onChange={(e) => onChange(e.target.value.trim())} />
