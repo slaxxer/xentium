@@ -89,6 +89,29 @@ export interface UploaderProps {
   disabled?: boolean;
 }
 
+/** What a block panel gets: the selected block, and the theme's site-wide tokens. */
+export interface BlockPanelProps {
+  block: { id: string; type: string; props: Record<string, unknown> };
+  templateKey: string;
+  /** The theme's site-wide tokens as the draft has them. */
+  themeTokens: Record<string, string>;
+  /** Stage tokens in the theme's draft; `null` clears one. Live with Publish. */
+  setThemeTokens(tokens: Record<string, string | null>): void;
+}
+
+export interface BlockPanel {
+  /** `<namespace>.<name>`. */
+  id: string;
+  pluginId: string;
+  /** The block types it shows on. */
+  blockTypes: readonly string[];
+  /** The fold's title, in the admin's language. */
+  title(): string;
+  /** Marks the fold as in use. */
+  active?(themeTokens: Record<string, string>): boolean;
+  Panel: HostComponent<BlockPanelProps>;
+}
+
 export interface XentiumWebHost {
   /** The page's own React, router and query client: use these, never bundle your own. */
   React: unknown;
@@ -104,6 +127,15 @@ export interface XentiumWebHost {
   webPluginSettings: { usePublic<T = Record<string, unknown>>(pluginId: string): { data?: T; isLoading: boolean; error: unknown } };
   /** Drag-and-drop upload with progress, to your own route. */
   webUploader: { Uploader: HostComponent<UploaderProps> };
+  /**
+   * Settings on the blocks they belong to, in Theme Studio (core 1.0.0-alpha.20+).
+   * A panel stages site-wide theme tokens; see docs/plugin-blocks.md, "Settings on
+   * someone else's block".
+   */
+  webBlockPanels?: {
+    registerBlockPanel(panel: BlockPanel): void;
+    deregisterBlockPanelsFor(pluginId: string): void;
+  };
   /** Small messages in the corner. */
   webToast: { toast: { success(message: string): void; info(message: string): void; warning(message: string): void; error(message: string): void } };
   /** A confirm or alert dialog; resolves true when confirmed. */

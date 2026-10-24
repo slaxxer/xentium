@@ -103,7 +103,8 @@ import { BlockBackgroundFields, BACKGROUND_PROPS } from "./BlockBackground";
 import { BlockEdgeArtFields } from "./BlockEdgeArt";
 import { edgeExtensions } from "../../../layout/edgeRegistry";
 import { CHROME_SETTINGS } from "./ChromeSettings";
-import { ThemeStyleFields, themeDraftCss, useThemeTokens } from "./ThemeStyle";
+import { ThemeStyleFields, effectiveGlobal, themeDraftCss, useThemeTokenPatch, useThemeTokens } from "./ThemeStyle";
+import { blockPanelsFor } from "../../../layout/blockPanelRegistry";
 import { InspectorFold } from "./InspectorFold";
 import { SectionColumnsPicker, SectionPresets } from "./SectionPresets";
 import {
@@ -858,6 +859,8 @@ function LayoutEditorInner({ themeKey }: { themeKey: string | null }) {
    * after switching back to Block.
    */
   const { data: themeDraft } = useThemeTokens();
+  const themeTokens = useMemo(() => effectiveGlobal(themeDraft), [themeDraft]);
+  const patchThemeTokens = useThemeTokenPatch();
   const styleCss = useMemo(
     () => [themeDraftCss(themeDraft), variantCss].filter(Boolean).join("\n"),
     [themeDraft, variantCss],
@@ -2674,11 +2677,27 @@ function LayoutEditorInner({ themeKey }: { themeKey: string | null }) {
                   <InspectorFold key={`edge:${selected.node.id}`} title={t("layoutEditor.edge.title")}
                     active={!!(selected.node.edges?.top || selected.node.edges?.bottom)}>
                     <BlockEdgeArtFields bare
+                      blockType={selected.node.type}
+                      templateKey={templateKey}
                       value={selected.node.edges}
                       onChange={(next) => applyTree((r) => updateBlockEdges(r, selected.node.id, next))}
                     />
                   </InspectorFold>
                 )}
+
+                {/* Add-ons' settings for this kind of block (an avatar effect on the avatar
+                    block). They stage site-wide theme tokens, so they show on every page. */}
+                {blockPanelsFor(selected.node.type).map(({ id, title, active, Panel }) => (
+                  <InspectorFold key={`panel:${id}:${selected.node.id}`} title={title()}
+                    active={active?.(themeTokens) ?? false}>
+                    <Panel
+                      block={{ id: selected.node.id, type: selected.node.type, props: selected.node.props ?? {} }}
+                      templateKey={templateKey}
+                      themeTokens={themeTokens}
+                      setThemeTokens={(tokens) => patchThemeTokens.mutate(tokens)}
+                    />
+                  </InspectorFold>
+                ))}
 
                 {/* One icon, picked in the preview. Shown only while an icon of THIS block
                     is picked — the override lives on the block. */}
