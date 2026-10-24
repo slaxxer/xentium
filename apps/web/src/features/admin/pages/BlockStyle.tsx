@@ -51,6 +51,7 @@ import {
 import { api } from "../../../lib/api";
 import { apiErrorMessage } from "../../../lib/swal";
 import { toast } from "../../../lib/toast";
+import { ColorInput } from "../../../components/ColorInput";
 
 /** Pending edits for one variant scope. `null` = clear the override. */
 type Patch = Record<string, string | null>;
@@ -333,10 +334,9 @@ export function BlockStyleFields({
                       )}
                     </div>
                     <div className="lay__style-token-controls">
-                      <input
-                        type="color"
+                      <ColorInput
                         value={toHex(value)}
-                        onChange={(e) => edit(row.cssVar, e.target.value)}
+                        onChange={(v) => edit(row.cssVar, v)}
                         aria-label={t(row.label)}
                       />
                       {/* The text field is the escape hatch: `rgba()` and

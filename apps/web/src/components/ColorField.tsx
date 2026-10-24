@@ -1,4 +1,5 @@
 import "./ColorField.scss";
+import { ColorInput } from "./ColorInput";
 
 export const isHex = (v: string) => /^#[0-9a-f]{6}$/i.test(v);
 
@@ -10,7 +11,7 @@ export function ColorField({ value, fallback, onChange, label }: {
   return (
     <div className="color-field">
       <label className="color-field__swatch" style={{ background: shown }}>
-        <input type="color" value={shown} aria-label={label} onChange={(e) => onChange(e.target.value)} />
+        <ColorInput value={shown} aria-label={label} onChange={(v) => onChange(v)} />
       </label>
       <input className={`inp is-mono color-field__hex${isHex(value) ? "" : " is-invalid"}`} value={value} maxLength={7}
              placeholder={fallback} aria-label={label} onChange={(e) => onChange(e.target.value.trim())} />

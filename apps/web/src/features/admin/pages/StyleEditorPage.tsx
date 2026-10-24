@@ -54,6 +54,7 @@ import { ICON_STYLE_DEFS, iconStyleDef, type IconStyleGroup } from "@xentium/con
 import { XentiumMark } from "../../../components/XentiumMark";
 import { uiLocale } from "../../../lib/i18n";
 import { Button } from "../../../components/AcpControls";
+import { ColorInput } from "../../../components/ColorInput";
 
 const CUSTOM_CSS_PREVIEW_ID = "xentium-custom-css-preview";
 
@@ -1130,8 +1131,8 @@ function TokenRow({ label, cssVar, value, origin, inheritsFrom, control, min, ma
                 `var(--primitive-…)` or `color-mix(…)` is still a colour the admin
                 should see and start from. The text field keeps the exact value, alpha
                 included; picking a colour writes a plain hex. */}
-            <input type="color" className="se-row__color" value={resolveColor(value) ?? safeHex(value, "#888888")}
-              onChange={(e) => onChange(e.target.value)} aria-label={label} />
+            <ColorInput className="se-row__color" value={resolveColor(value) ?? safeHex(value, "#888888")}
+              onChange={(v) => onChange(v)} aria-label={label} />
             <input className="se-row__text" value={value} onChange={(e) => onChange(e.target.value)} placeholder="#rrggbb" />
           </>
         )}
@@ -1269,9 +1270,9 @@ function ShadowControl({ value, onChange }: {
 
           <div className="se-sh__field">
             <span className="se-sh__lab">{t("styleEditor.shColour")}</span>
-            <input type="color" className="se-row__color" value={seed.color}
+            <ColorInput className="se-row__color" value={seed.color}
               aria-label={t("styleEditor.shColour")}
-              onChange={(e) => set({ color: e.target.value })} />
+              onChange={(v) => set({ color: v })} />
             <input type="range" className="se-row__range" min={0} max={100} value={Math.round(seed.alpha * 100)}
               aria-label={t("styleEditor.shOpacity")}
               onChange={(e) => set({ alpha: Number(e.target.value) / 100 })} />
