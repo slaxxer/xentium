@@ -23,6 +23,11 @@ const testSendLimiter = makeRateLimiter("email-test", 60 * 60_000, isDev ? 1000 
 adminEmailRouter.get("/status", guard, emailController.smtpStatus);
 adminEmailRouter.post("/test", guard, testSendLimiter, emailController.sendTest);
 
+// The frame every template is sent in: accent, page colour, header, footer note.
+adminEmailRouter.get("/design", guard, emailController.getDesign);
+adminEmailRouter.put("/design", guard, emailController.saveDesign);
+adminEmailRouter.post("/design/preview", guard, emailController.previewDesign);
+
 adminEmailRouter.get("/templates", guard, emailController.listTemplates);
 adminEmailRouter.get("/templates/:key", guard, emailController.getTemplate);
 adminEmailRouter.put("/templates/:key", guard, emailController.saveTemplate);

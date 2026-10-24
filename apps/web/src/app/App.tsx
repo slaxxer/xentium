@@ -45,6 +45,8 @@ import { FatalErrorOverlay }     from "../components/FatalErrorOverlay";
 import { HeadManager }           from "../components/HeadManager";
 import { RouteErrorPage }        from "../features/errors/RouteErrorPage";
 import { ErrorBoundary }         from "../features/errors/ErrorBoundary";
+import { useRouteEvents } from "../plugins/hostEvents";
+import { AddonSettingsPage } from "../features/admin/pages/AddonSettingsPage";
 
 // ── Loaded on demand ─────────────────────────────────────────────────────────
 // The ACP, the article editor and the installer are most of the app's code and
@@ -181,6 +183,7 @@ function AppGuard() {
   useActivityLogger();
   useCustomTokens(!!(data?.installed || (error as any)?.status === 410));
   usePreviewBridge();
+  useRouteEvents();
 
   // Pathless layout routes in React Router render for EVERY URL.
   // When on the install wizard, let InstallRoute own the page — return null
@@ -338,6 +341,8 @@ function buildRouter() {
           { path: "updates",          element: <UpdatesPage /> },
           { path: "upload",           element: <UploadPage /> },
           { path: "license",          element: <LicensePage /> },
+          // An add-on's generated settings page (ADR-0011): drawn from its schema.
+          { path: "addons/:pluginId/settings", element: <AddonSettingsPage /> },
           // Plugin ACP routes (registered by plugins via slotRegistry)
           ...slotRegistry.getRoutes("acp").map((r) => ({
             path: r.path,

@@ -32,9 +32,14 @@ const EMAIL_ITEMS = [
 type InAppId = typeof IN_APP_ITEMS[number]["id"];
 type EmailId = typeof EMAIL_ITEMS[number]["id"];
 
+/** An add-on's notification type, as the server lists it for this member. */
+interface AddonType { type: string; label: string; description: string | null; emailOffered: boolean; inApp: boolean; email: boolean }
+
 export interface NotifPrefs {
   inApp: Record<InAppId, boolean>;
   email: Record<EmailId, boolean>;
+  /** Add-ons' own types, grouped by add-on (only enabled ones, only what this member may get). */
+  addons?: Array<{ pluginId: string; name: string; types: AddonType[] }>;
 }
 
 /** Exported for the rail's "N on" badge, which reads the same cache. */
@@ -46,7 +51,9 @@ export const NOTIF_DEFAULTS: NotifPrefs = {
 const EMAIL_IDS = new Set<string>(EMAIL_ITEMS.map((x) => x.id));
 
 export function NotificationsTab() {
-  const { t } = useTranslation("account");
+  const { t, i18n } = useTranslation("account");
+  // An add-on's label may be a key in its own namespace; otherwise it is shown as written.
+  const addonText = (s: string | null) => (s && s.includes(":") && i18n.exists(s) ? String(i18n.t(s)) : s ?? "");
   const qc = useQueryClient();
 
   const { data, isLoading } = useQuery<NotifPrefs>({
@@ -56,7 +63,11 @@ export function NotificationsTab() {
   });
 
   const mutation = useMutation({
-    mutationFn: (prefs: NotifPrefs) => api.patch<NotifPrefs>("/account/notifications", prefs),
+    mutationFn: (prefs: NotifPrefs) => api.patch<NotifPrefs>("/account/notifications", {
+      inApp: prefs.inApp,
+      email: prefs.email,
+      addons: Object.fromEntries((prefs.addons ?? []).flatMap((g) => g.types.map((x) => [x.type, { inApp: x.inApp, email: x.email }]))),
+    }),
     onSuccess: (updated) => qc.setQueryData(["account-notif-prefs"], updated),
     onError: () => {
       // Put the switch back: the row must not show a state the server refused.
@@ -70,6 +81,17 @@ export function NotificationsTab() {
   const flip = (channel: "inApp" | "email", id: string, on: boolean) => {
     const next = { ...prefs, [channel]: { ...prefs[channel], [id]: on } } as NotifPrefs;
     // Optimistic: a switch that waits for a round-trip feels broken.
+    qc.setQueryData(["account-notif-prefs"], next);
+    mutation.mutate(next);
+  };
+
+  const flipAddon = (type: string, channel: "inApp" | "email") => {
+    const next: NotifPrefs = {
+      ...prefs,
+      addons: (prefs.addons ?? []).map((g) => ({
+        ...g, types: g.types.map((x) => (x.type === type ? { ...x, [channel]: !x[channel] } : x)),
+      })),
+    };
     qc.setQueryData(["account-notif-prefs"], next);
     mutation.mutate(next);
   };
@@ -113,6 +135,28 @@ export function NotificationsTab() {
               </div>
             );
           })}
+
+          {(prefs.addons ?? []).map((g) => (
+            <div key={g.pluginId} className="acct-matrix__group">
+              <div className="acct-matrix__groupHead">{g.name}</div>
+              {g.types.map((x) => (
+                <div key={x.type} className="acct-matrix__row">
+                  <span className="acct-matrix__event">
+                    <span className="acct-row__label">{addonText(x.label)}</span>
+                    {x.description && <span className="acct-row__desc">{addonText(x.description)}</span>}
+                  </span>
+                  <span className="acct-matrix__cell">
+                    <AccountSwitch on={x.inApp} label={t("notifications.colInApp")} onToggle={() => flipAddon(x.type, "inApp")} />
+                  </span>
+                  <span className="acct-matrix__cell">
+                    {x.emailOffered
+                      ? <AccountSwitch on={x.email} label={t("notifications.colEmail")} onToggle={() => flipAddon(x.type, "email")} />
+                      : <span className="acct-matrix__none" aria-label={t("notifications.noEmailChannel")}>—</span>}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ))}
         </div>
       </AccountCard>
 

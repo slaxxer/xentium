@@ -46,6 +46,7 @@ const META: Record<string, { sev: XecEntry["sev"]; domain: string }> = {
   "XEC-API-4003": { sev:"Warning", domain:"API" },
   "XEC-API-4004": { sev:"Info", domain:"API" },
   "XEC-API-4009": { sev:"Warning", domain:"API" },
+  "XEC-API-4150": { sev:"Warning", domain:"API" },
   "XEC-API-4290": { sev:"Warning", domain:"API" },
   "XEC-API-5000": { sev:"Error", domain:"API" },
   // Auth

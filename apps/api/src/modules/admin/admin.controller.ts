@@ -20,6 +20,8 @@ import {
   SCHEDULED_JOBS, getJobDef, getJobConfig, saveJobConfig,
   applyJobSchedule, resolveCron, previewRuns,
 } from "../../jobs/scheduledJobs.js";
+import { listPluginSchedules } from "../../core/plugin-platform/jobs.js";
+import { prisma } from "../../infrastructure/db.js";
 
 const jobConfigSchema = z.object({
   enabled:     z.boolean(),
@@ -763,6 +765,15 @@ export const adminController = {
   // Scheduled tasks (cron jobs)
   listJobs: (async (_req, res) => {
     res.json(await Promise.all(SCHEDULED_JOBS.map(jobView)));
+  }) as RequestHandler,
+
+  /** Repeating jobs plugins scheduled (read-only: the plugin owns them). */
+  listPluginJobs: (async (_req, res) => {
+    const rows = await listPluginSchedules();
+    const names = new Map((await prisma.installedPlugin.findMany({
+      where: { id: { in: [...new Set(rows.map((r) => r.pluginId))] } }, select: { id: true, name: true },
+    })).map((p) => [p.id, p.name]));
+    res.json(rows.map((r) => ({ ...r, pluginName: names.get(r.pluginId) ?? r.pluginId })));
   }) as RequestHandler,
 
   updateJob: (async (req, res) => {

@@ -10,6 +10,7 @@ import {
   ACTIVE_THEME_SETTING, CORE_PARAM, CORE_THEME, activeThemeKey, bustThemeBaseline, themeBaseline, themed,
   type ThemeKey,
 } from "../themes/themeKey.js";
+import { emit } from "../../core/events/events.js";
 
 /**
  * @deprecated There is one look. Kept only so `scopeCss` keeps its published
@@ -775,6 +776,8 @@ export const appearanceService = {
 
   /** Make a theme live — `null` makes Core live. */
   async setInstalledTheme(manifest: Record<string, unknown> | null): Promise<void> {
+    const before = await readSetting<Record<string, unknown> | null>(ACTIVE_THEME_SETTING, null);
+    const keyOf = (m: Record<string, unknown> | null) => (m && typeof m.id === "string" ? m.id : "");
     if (manifest === null) {
       await prisma.setting.deleteMany({ where: { key: ACTIVE_THEME_SETTING } });
     } else {
@@ -786,6 +789,8 @@ export const appearanceService = {
       });
     }
     bustSettingsCache(ACTIVE_THEME_SETTING);
+    // An update to the worn theme rewrites this row too; only a different theme is a switch.
+    if (keyOf(before) !== keyOf(manifest)) emit("theme.switched", { themeKey: keyOf(manifest) });
   },
 
   async saveThemeRollback(value: ThemeRollback): Promise<void> {

@@ -7,6 +7,7 @@ export const XEC = {
   API_VALIDATION: "XEC-API-4001",
   API_FORBIDDEN: "XEC-API-4003",
   API_DEMO_LOCKED: "XEC-API-4031",
+  API_ENCODED_BODY: "XEC-API-4150",
   API_NOT_FOUND: "XEC-API-4004",
   API_CONFLICT: "XEC-API-4009",
   API_RATE_LIMIT: "XEC-API-4290",
@@ -90,6 +91,7 @@ export const XEC = {
   PLUGIN_TABLE_NAMING: "XEC-PLUGIN-2013",      // migration object touches a reserved (xcf_/xentium_) name or violates the plugin's declared tablePrefix
   PLUGIN_DISABLED: "XEC-PLUGIN-2020",
   PLUGIN_INCOMPATIBLE: "XEC-PLUGIN-2030",
+  PLUGIN_REFUSED: "XEC-PLUGIN-4220",           // an add-on's filter refused the action; details carry its message key
 
   // Forum plugin (XEC-FORUM-6xxx)
   FORUM_NODE_NOT_FOUND:    "XEC-FORUM-6001",

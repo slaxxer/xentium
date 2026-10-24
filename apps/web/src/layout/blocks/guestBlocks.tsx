@@ -35,6 +35,7 @@ import { articleCategoriesApi, articlesApi } from "../../lib/articlesApi";
 import { Avatar } from "../../components/Avatar";
 import { registerBlock, type BlockProps } from "../blockRegistry";
 import { resolveImageSource } from "./coreBlocks";
+import { inlineText } from "../previewMode";
 import { Username } from "../../components/Username";
 import {
   ArticleFeed,
@@ -163,9 +164,11 @@ function GuestHeroText({ props }: BlockProps<{
   // stays the translator's (or the admin's) choice.
   const fill = (text: string) =>
     text.replaceAll("{site}", siteName).replaceAll("{members}", String(stats?.members ?? 0));
+  const rawTitle = useText(props.title);
+  const rawSubtitle = useText(props.subtitle);
   const badge = fill(useText(props.badge));
-  const title = fill(useText(props.title));
-  const subtitle = fill(useText(props.subtitle));
+  const title = fill(rawTitle);
+  const subtitle = fill(rawSubtitle);
   const ctaPrimary = useText(props.ctaPrimary);
   const ctaSecondary = useText(props.ctaSecondary);
 
@@ -177,15 +180,15 @@ function GuestHeroText({ props }: BlockProps<{
   return (
     <div className="ghero__lead">
       {onlineNow > 0 && badge && <span className="ghero__badge"><i />{onlineNow} {badge}</span>}
-      <h1 className="ghero__title">{title}</h1>
-      <p className="ghero__sub">{subtitle}</p>
+      <h1 className="ghero__title" {...inlineText("title", rawTitle)}>{title}</h1>
+      <p className="ghero__sub" {...inlineText("subtitle", rawSubtitle)}>{subtitle}</p>
       <div className="ghero__cta">
         <button className="btn btn--primary btn--lg" onClick={() => navigate("/register")}>
-          {ctaPrimary} <Icon name="arrowRight" size={17} />
+          <span {...inlineText("ctaPrimary")}>{ctaPrimary}</span> <Icon name="arrowRight" size={17} />
         </button>
         <button className="btn btn--outline btn--lg"
           onClick={() => document.querySelector(".gbody")?.scrollIntoView({ block: "start", behavior: "smooth" })}>
-          {ctaSecondary}
+          <span {...inlineText("ctaSecondary")}>{ctaSecondary}</span>
         </button>
       </div>
       {props.showStats && hasContent && (
@@ -209,7 +212,7 @@ registerBlock({
 registerBlock({
   type:   "guestPresence",
   schema: blockPropSchemas.guestPresence,
-  editorMeta: { label: "Happening right now", category: "data", ...ON_HOME },
+  editorMeta: { surface: true, label: "Happening right now", category: "data", ...ON_HOME },
   component: function GuestPresence({ props }: BlockProps<{ rows: number }>) {
     const { t } = useTranslation("common", { keyPrefix: "guestHome.presence" });
     const recent = useQuery({

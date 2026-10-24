@@ -6,7 +6,7 @@
     },
     "password_reset": {
       "subject": "Reset your {{site_name}} password",
-      "body": "<h2>Reset your password</h2><p>We received a request to reset your password. Click the button below to choose a new one. This link expires in {{expiry_minutes}} minutes and can only be used once.</p><p>{{reset_button}}</p><p>If you didn't request this, you can safely ignore this email — your password will stay the same.</p>"
+      "body": "<h1>Let's get you back in.</h1><p>Someone asked to reset the password on your account. If that was you, set a new one below.</p><p>{{reset_button}}</p><p>{{request_box}}</p><hr><p>Not you? Ignore this email and your password won't change. If it keeps happening, {{support_link}}.</p>"
     },
     "magic_link": {
       "subject": "Your sign-in link for {{site_name}}",
@@ -27,7 +27,16 @@
   },
   "buttons": {
     "view": "View →",
-    "reset": "Reset password →",
-    "signIn": "Sign in →"
-  }
+    "reset": "Set a new password",
+    "signIn": "Sign in →",
+    "resetNote": "Link expires in {{minutes}} minutes and works once."
+  },
+  "request": {
+    "title": "Request details",
+    "time": "Time",
+    "device": "Device",
+    "location": "Location"
+  },
+  "supportLink": "contact support",
+  "sentBy": "Sent by {{site}}"
 }

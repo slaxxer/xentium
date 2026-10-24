@@ -20,7 +20,7 @@ import type { HeadTags, PageInfo, PageSource, SeoProvider } from "@xentium/contr
  *
  * Companion docs for the parts that live on the WEB side (this package is the
  * server contract only):
- *  - `docs/plugin-acp-autosave.md` — ACP admin surfaces. Config pages and
+ *  - `docs/plugin-acp-pages.md` — ACP admin surfaces. Config pages and
  *    per-group panels AUTOSAVE (no Save button) via the host's `useAutosave` +
  *    `AutosaveStatus`; entity modals, secrets and destructive actions keep an
  *    explicit action. Read before building any plugin admin UI.
@@ -375,6 +375,23 @@ export interface ContentKindHandler {
  * platform can offer.
  */
 export interface PluginHost extends BasePluginHost {
+  /** Background jobs for THIS plugin (see `ctx.registerJob`). */
+  jobs: PluginJobs;
+  /** THIS plugin's settings (see `ctx.registerSettings`). */
+  settings: PluginSettings;
+  /** Files and images for THIS plugin. */
+  files: PluginFiles;
+  /** Rate limits for THIS plugin's routes and actions. */
+  limits: PluginLimits;
+  /** A cache for THIS plugin. */
+  cache: PluginCache;
+  /** Members, named and shown as their privacy allows. */
+  users: PluginUsers;
+  /** The site's time zone and days. */
+  time: PluginTime;
+  /** The host's Zod 4, for settings schemas and validation, so you need not bundle your own. */
+  zod: typeof import("zod").z;
+
   /**
    * Progression primitives (§38). Core owns the ladder; a plugin owns the
    * thresholds and limits for its own content, keyed by the group id this
@@ -383,16 +400,15 @@ export interface PluginHost extends BasePluginHost {
   /**
    * Ask whether a user holds a permission (implied permissions included) — the same
    * answer `middleware.requirePermission` acts on, for code that must decide rather
-   * than refuse. OPTIONAL: older hosts do not provide it, so check before calling.
+   * than refuse.
    */
-  permissions?: {
+  permissions: {
     has: (userId: string, key: string) => Promise<boolean>;
   };
   /**
    * Content visibility and embeds (see `EmbedHandler`, `ContentKindHandler`).
-   * OPTIONAL: older hosts do not provide it — and then an embed must stay hidden.
    */
-  content?: {
+  content: {
     /** Fails closed: unknown kind, disabled owner or an error is `false`. */
     canView:      (kind: string, id: string, viewerId: string | null) => Promise<boolean>;
     /** Call after saving content that may hold embeds (HTML or ProseMirror JSON). */
@@ -427,9 +443,9 @@ export interface PluginHost extends BasePluginHost {
    * Email anyone, account or not (a guest who opened a support ticket), in the site's
    * notification email design: `title` and `body` are plain text (escaped), `link`
    * becomes the button. Queued, so it never slows the request. `localeOf` answers the
-   * language a member's emails go out in. Core 1.0.0-alpha.19+; optional before.
+   * language a member's emails go out in.
    */
-  email?: {
+  email: {
     send: (opts: { to: string; title: string; body: string; link?: string; buttonLabel?: string; locale?: string }) => Promise<void>;
     localeOf: (userId: string) => Promise<string>;
   };
@@ -438,20 +454,19 @@ export interface PluginHost extends BasePluginHost {
    * Core's LOCAL IP → country lookup (DB-IP Country Lite, refreshed monthly by the
    * `geoip-refresh` job). Nothing leaves the server. `countryOf` answers an ISO
    * 3166-1 alpha-2 code, or null for a private IP or before the first download.
-   * Optional: cores before 1.0.0-alpha.16 have none.
    */
-  geo?: {
+  geo: {
     countryOf: (ip: string) => string | null;
     available: () => boolean;
   };
 
   /**
-   * Search engines (core 1.0.0-alpha.19+; optional on older cores). `describe` answers
+   * Search engines. `describe` answers
    * what a page is as a guest may see it (any registered source), `defaults` the tags
    * core writes without a provider, `head` the tags actually written, `sources` every
    * page source (core's and plugins') for sitemaps.
    */
-  seo?: {
+  seo: {
     describe: (path: string) => Promise<PageInfo | null>;
     defaults: (path: string, info: PageInfo | null) => Promise<HeadTags>;
     head: (path: string) => Promise<HeadTags>;
@@ -466,6 +481,401 @@ export interface PluginHost extends BasePluginHost {
   };
 }
 
+// ── Events and filters ─────────────────────────────────────────
+
+/**
+ * What core announces, and what each event carries. Listen with `ctx.on(name, fn)`.
+ *
+ * Every event is sent AFTER the change is committed, and listeners run after the
+ * request has moved on: a listener cannot slow, fail or undo what happened. Payloads
+ * are ids and the few facts you need to decide; fetch the rest yourself, minding
+ * who may see it. A listener has 5 seconds; start a job for anything longer.
+ *
+ * Plugins announce their own events with `ctx.emit("<pluginId>.<what>", payload)`;
+ * other plugins listen to those by name.
+ *
+ * This list only grows in 1.x: an event is never renamed or removed before 2.0.
+ */
+export interface CoreEventMap {
+  /**
+   * A new account exists. `method`: how it was made. `addons`: what add-ons' own
+   * sign-up fields collected, by add-on id (password sign-ups only); store your part.
+   */
+  "user.registered": { userId: string; method: "password" | "oauth" | "admin"; addons?: Record<string, unknown> };
+  /** A member signed in (after any PIN step). */
+  "user.loggedIn": { userId: string; method: string };
+  /** A member changed their profile or account settings. `fields`: which ones. */
+  "user.updated": { userId: string; fields: string[] };
+  /** A member's email address changed (confirmed). */
+  "user.emailChanged": { userId: string };
+  /** A member joined or left groups. */
+  "user.groupsChanged": { userId: string; added: string[]; removed: string[] };
+  /** A member received a warning. */
+  "user.warned": { userId: string; warningId: string; byUserId: string | null };
+  /** A member was banned. `until`: ISO time, or null for permanent. */
+  "user.banned": { userId: string; until: string | null; byUserId: string | null };
+  /** A member's ban ended or was lifted. */
+  "user.unbanned": { userId: string };
+
+  "article.created": { articleId: string; authorId: string };
+  /** An article became visible to readers (published now, or a scheduled one went live). */
+  "article.published": { articleId: string; authorId: string };
+  "article.updated": { articleId: string; authorId: string };
+  "article.deleted": { articleId: string; authorId: string };
+
+  "comment.created": { commentId: string; articleId: string; authorId: string };
+  "comment.deleted": { commentId: string; articleId: string; authorId: string };
+
+  /** Someone reported content. `targetType` is core's (`article`, `comment`, `user`, …) or a plugin's kind. */
+  "content.reported": { reportId: string; targetType: string; targetId: string; reporterId: string };
+
+  /** A site setting was saved in the ACP. */
+  "setting.changed": { key: string };
+  "plugin.enabled": { pluginId: string };
+  "plugin.disabled": { pluginId: string };
+  /** The site switched themes. `themeKey`: "" = the built-in Core theme. */
+  "theme.switched": { themeKey: string };
+}
+
+/** Stop an action, with the message members see: a translation key in your namespace. */
+export interface FilterRefusal {
+  /** e.g. `"myplugin:errors.reservedName"`; shipped in your plugin's locales. */
+  refuse: string;
+  /** Values for the message's placeholders. */
+  params?: Record<string, string | number>;
+}
+
+/**
+ * Where core asks plugins before it acts. Register with `ctx.filter(name, fn)`.
+ *
+ * - `*.validate`: return a `FilterRefusal` to stop the action, or nothing to let it
+ *   through. The first refusal wins.
+ * - `profile.extra`: return data to add to a profile response; it appears under
+ *   `extra["<your plugin id>"]`. You add to responses; you cannot change core's fields.
+ *
+ * A filter has 2 seconds; one that throws or runs out of time counts as "no change".
+ * This list only grows in 1.x.
+ */
+export interface CoreFilterMap {
+  /** Before an account is created (any sign-up path). `addons[<your id>]`: your sign-up field's value, when you have one. */
+  "registration.validate": { input: { email: string; username: string; method: "password" | "oauth" | "admin"; addons?: Record<string, unknown> }; output: FilterRefusal | void };
+  /** Before an article is saved (created or edited). `body` is plain text. */
+  "article.validate": { input: { userId: string; articleId: string | null; title: string; body: string; publish: boolean }; output: FilterRefusal | void };
+  /** Before a comment is saved. `body` is plain text. */
+  "comment.validate": { input: { userId: string; articleId: string; body: string }; output: FilterRefusal | void };
+  /** Before a notification is delivered (in-app and email). Refusing drops it silently. */
+  "notification.validate": { input: { userId: string; type: string; title: string; body: string | null }; output: FilterRefusal | void };
+  /** While a member's profile is answered. `viewerId`: who is looking (null = guest). */
+  "profile.extra": { input: { userId: string; viewerId: string | null }; output: unknown };
+}
+
+export type EventListener<K extends keyof CoreEventMap> =
+  (payload: CoreEventMap[K], meta: { event: K; at: string }) => void | Promise<void>;
+
+export type FilterHandler<K extends keyof CoreFilterMap> =
+  (input: CoreFilterMap[K]["input"]) => CoreFilterMap[K]["output"] | Promise<CoreFilterMap[K]["output"]>;
+
+// ── Background jobs ────────────────────────────────────────────
+
+/**
+ * Work that runs in the background, in the site's worker: exactly once, retried on
+ * failure, and kept across restarts. Use it instead of `setInterval`, which runs once
+ * in EVERY process (each API process and the worker load your plugin) and loses
+ * anything pending when the site restarts.
+ */
+export interface PluginJobDeclaration<T = unknown> {
+  /** Unique within your plugin: letters, digits, `.`, `_`, `-` (no `__`), up to 64. */
+  name: string;
+  handler: (data: T, info: { attempt: number; jobId: string }) => unknown | Promise<unknown>;
+  /** Retries after the first attempt, with a growing pause. 0–10, default 3. */
+  retries?: number;
+}
+
+/** A cron pattern in the site's time zone (at most once a minute), or every N minutes (1–10080). */
+export type PluginJobSchedule = { cron: string } | { everyMinutes: number };
+
+export interface PluginJobs {
+  /** Run now, in the background. Returns the job id. */
+  run(name: string, data?: unknown): Promise<string>;
+  /** Run at `when`. With a `key`, scheduling the same key again MOVES the job. */
+  at(name: string, data: unknown, when: Date, opts?: { key?: string }): Promise<string>;
+  /** Remove a job scheduled with a key. False when there was none, or it is running right now. */
+  cancel(name: string, key: string): Promise<boolean>;
+  /** Repeat on a schedule; call it in `onEnable` (calling again replaces it). Stopped when the plugin is disabled. */
+  every(name: string, schedule: PluginJobSchedule, data?: unknown): Promise<void>;
+  /** Stop a repeating job. */
+  stop(name: string): Promise<void>;
+}
+
+// ── Settings ───────────────────────────────────────────────────
+
+/**
+ * Your plugin's settings, declared as a Zod object (use `host.zod`, or your own Zod 4).
+ * Core stores them, applies defaults, validates every save, and DRAWS THE ACP PAGE
+ * from the schema: a toggle for a boolean, a number field (with its min/max), a
+ * choice for an enum, a text field otherwise. Per field `.meta({ … })`:
+ *  - `title`, `description`: plain text, or a translation key in your namespace;
+ *  - `section`: fields with the same section share a card;
+ *  - `widget: "color" | "textarea"`; `options: { value: "label" }` names an enum's choices;
+ *  - `public: true`: your own pages may read it (`GET /api/addons/<id>/settings`);
+ *    everything else only admins see.
+ * Every field needs a `.default(…)` (or `.optional()`). A stored value that no longer
+ * fits after an update falls back to that field's default.
+ */
+export interface PluginSettingsDeclaration<S = unknown> {
+  /** The page's title (and its ACP menu entry). Default: your plugin's name. */
+  title?: string;
+  /** The ACP section the page sits in (a core key such as "extensions", "content", "system", or your own). Default "extensions". */
+  section?: string;
+  schema: S;
+}
+
+export interface PluginSettings<T = Record<string, unknown>> {
+  /** Every setting, defaults applied. Cached; a save is visible at once. */
+  get(): Promise<T>;
+  /** Save some settings. Throws (422, a message per key) when a value does not fit. */
+  set(patch: Partial<T>): Promise<T>;
+}
+
+// ── People and time ────────────────────────────────────────────
+
+/** A member as core names them everywhere: link, avatar, group colour. */
+export interface PluginUserRef {
+  id: string;
+  username: string;
+  displayName: string | null;
+  /** Absolute or site-relative URL, or null for the default avatar. */
+  avatarUrl: string | null;
+  /** Their primary group's colour, for the name (null = none). */
+  badgeColor: string | null;
+  /** `/u/<username>`. */
+  profileUrl: string;
+  /** False while banned or deactivated. */
+  active: boolean;
+}
+
+/** A birthday a member shows: month and day, never the year. */
+export interface PluginBirthday { userId: string; month: number; day: number }
+
+export interface PluginUsers {
+  /** Name members like core does: one call for a batch of ids (up to 500). Unknown ids are left out. */
+  refs(ids: string[]): Promise<Record<string, PluginUserRef>>;
+  /**
+   * Birthdays between two dates (both included, up to a year): only members who
+   * chose to show their birthday, as the date field's visibility and blocks allow
+   * `viewerId` (null = a guest). The ONLY way a plugin should learn a birthday.
+   */
+  birthdays(from: Date, to: Date, viewerId: string | null): Promise<PluginBirthday[]>;
+  /** May this viewer see the member's profile, or their posts? Account → Privacy and blocks decide. */
+  canSee(viewerId: string | null, userId: string, what: "profile" | "posts"): Promise<boolean>;
+}
+
+export interface PluginTime {
+  /** The site's IANA time zone; UTC when the site shows each visitor their own. */
+  zone(): Promise<string>;
+  /** Midnight of the day `date` (default now) falls on, in the site's zone. */
+  startOfDay(date?: Date): Promise<Date>;
+  /** The calendar day `date` (default now) falls on in the site's zone: YYYY-MM-DD. */
+  dayKey(date?: Date): Promise<string>;
+}
+
+// ── Resources ──────────────────────────────────────────────────
+
+/**
+ * Who may do something with a resource:
+ *  - `"public"`: anyone, guests too (reading only);
+ *  - `"members"`: any signed-in member;
+ *  - `"own"`: the row's owner (needs `owner`), and managers;
+ *  - any other string: holders of that permission key (declare it with `registerPermissions`).
+ */
+export type ResourceAccess = "public" | "members" | "own" | (string & {});
+
+export interface ResourceHookContext {
+  /** Who is acting (always set for writes). */
+  userId: string | null;
+  /** Ask whether the actor holds a permission. */
+  can(permission: string): Promise<boolean>;
+}
+
+/**
+ * Your data, with endpoints from core. Create the table in a migration (it must carry
+ * your `tablePrefix`), describe it here, and core serves it at `/api/p/<pluginId>/<name>`:
+ *
+ *   GET /<name>?page&limit&sort=field|-field&<filter field>=value&q=search&deleted=1
+ *   GET /<name>/:id · POST /<name> · PATCH /<name>/:id · DELETE /<name>/:id · POST /<name>/:id/restore
+ *
+ * with validation (unknown keys refused), permission and ownership checks,
+ * pagination (`{ data, meta }`), soft delete, and events
+ * `<pluginId>.<name>.created|updated|deleted|restored` (`{ id, userId }`).
+ *
+ * The table needs an `id` column (text or uuid; core fills it), one column per schema
+ * field (camelCase field → snake_case column unless `columns` says otherwise), and:
+ * the `owner` column if set; `created_at` (and optionally `updated_at`) unless
+ * `timestamps: false`; `deleted_at` with `softDelete`. Core checks all of it when
+ * your plugin enables, and refuses to enable it when something is missing.
+ *
+ * Your own routes (`registerRoutes`) answer first, so you can replace any of these
+ * for something special; leave the rest to core.
+ */
+export interface PluginResourceDeclaration<S = any> {
+  /** The URL segment: a-z, 0-9, `-`. */
+  name: string;
+  /** Your table; must start with your `tablePrefix`. */
+  table: string;
+  /** The fields clients write, as a Zod object. Use `z.coerce.date()` for times. */
+  schema: S;
+  /** Column per field where it is not the field in snake_case. */
+  columns?: Record<string, string>;
+  /** Default "id". */
+  idColumn?: string;
+  /** The column holding the owner's user id; set on create. Enables "own". */
+  owner?: string;
+  /** created_at / updated_at, kept by core. Default true. */
+  timestamps?: boolean;
+  /** Delete sets deleted_at; managers see and restore deleted rows. */
+  softDelete?: boolean;
+  access: {
+    read: ResourceAccess;
+    create: Exclude<ResourceAccess, "public" | "own">;
+    update: Exclude<ResourceAccess, "public">;
+    delete: Exclude<ResourceAccess, "public">;
+    /** A permission that may do everything to every row, see deleted rows and restore them. */
+    manage?: string;
+  };
+  /** Fields a list may sort by (`createdAt` always may, with timestamps). */
+  sort?: string[];
+  /** Fields a list may filter on, by equality: `?field=value`. */
+  filter?: string[];
+  /** Fields `?q=` searches in. */
+  search?: string[];
+  /** Default "-createdAt" with timestamps. */
+  defaultSort?: string;
+  /**
+   * Your logic around core's. A `before*` hook may throw a XentiumError to refuse, or
+   * return changed data (validated again).
+   */
+  hooks?: {
+    beforeCreate?(data: Record<string, unknown>, ctx: ResourceHookContext): void | Record<string, unknown> | Promise<void | Record<string, unknown>>;
+    afterCreate?(row: Record<string, unknown>, ctx: ResourceHookContext): void | Promise<void>;
+    beforeUpdate?(patch: Record<string, unknown>, before: Record<string, unknown>, ctx: ResourceHookContext): void | Record<string, unknown> | Promise<void | Record<string, unknown>>;
+    afterUpdate?(row: Record<string, unknown>, ctx: ResourceHookContext): void | Promise<void>;
+    beforeDelete?(row: Record<string, unknown>, ctx: ResourceHookContext): void | Promise<void>;
+    afterDelete?(row: Record<string, unknown>, ctx: ResourceHookContext): void | Promise<void>;
+  };
+}
+
+// ── Files and images ───────────────────────────────────────────
+
+/** A file from the request (a multer file works as is), or its bytes. */
+export type PluginFileInput = Uint8Array | { buffer: Uint8Array; originalname?: string };
+
+export interface PluginFileSaveOptions {
+  /** `public`: served at its URL to anyone. `private`: only through your route, with `send`. */
+  visibility: "public" | "private";
+  /**
+   * What may be uploaded, checked by the file's bytes (never its name): kinds
+   * `image`, `pdf`, `archive`, `audio`, `video`, `document`, or single types (`png`, `zip`, …).
+   */
+  accept: string[];
+  /** Default 20 MB; at most 200 MB. */
+  maxBytes?: number;
+  /** Your label for what the file belongs to (`"gallery.photo"`) and its id; used by `list` / `removeFor`. */
+  kind?: string;
+  itemId?: string;
+  /** Who uploaded it (usually `req.userId`). */
+  uploaderId?: string | null;
+  /** Images get thumb (320), medium (1280) and full (2560) sizes. Default true. */
+  variants?: boolean;
+}
+
+export interface PluginFileVariant { url: string | null; width: number; height: number; ext: string }
+
+export interface PluginFile {
+  /** Store this in your table to find the file again. */
+  ref: string;
+  mime: string;
+  ext: string;
+  bytes: number;
+  width: number | null;
+  height: number | null;
+  kind: string | null;
+  itemId: string | null;
+  visibility: "public" | "private";
+  /** The member's own file name: metadata only, never used on disk. */
+  originalName: string | null;
+  uploaderId: string | null;
+  createdAt: string;
+  /** Public files only (null when private). For images, the `full` size. */
+  url: string | null;
+  variants: { thumb: PluginFileVariant; medium: PluginFileVariant; full: PluginFileVariant } | null;
+}
+
+/**
+ * Store files: core checks the type by its bytes, names it, and for every image
+ * removes camera data and GPS (a phone photo carries where it was taken) and makes
+ * its sizes. Remove a file when its item goes; files with no row are purged.
+ */
+export interface PluginFiles {
+  save(file: PluginFileInput, opts: PluginFileSaveOptions): Promise<PluginFile>;
+  /** One of YOUR files, or null. */
+  get(ref: string): Promise<PluginFile | null>;
+  list(filter?: { kind?: string; itemId?: string }): Promise<PluginFile[]>;
+  /**
+   * Answer a request with a file (call it after your own permission check, for a
+   * private file). Non-images always download; `download` names the file.
+   */
+  send(res: unknown, ref: string, opts?: { download?: string | boolean; variant?: "thumb" | "medium" | "full" }): Promise<void>;
+  remove(ref: string): Promise<boolean>;
+  /** Remove every file of an item. Returns how many. */
+  removeFor(filter: { kind?: string; itemId?: string }): Promise<number>;
+}
+
+// ── Notification types ──────────────────────────────────────────────────────
+
+/**
+ * A kind of notification your plugin sends (`ctx.notify({ type, … })`). Each one gets
+ * a switch in members' Account → Notifications, so a member can turn it off; a type
+ * you never declare cannot be turned off, which members will not thank you for.
+ */
+export interface NotificationTypeDeclaration {
+  /** As you pass it to `notify`: `"gallery.comment"`. Not one of core's prefixes (social., profile., mention., article., …). */
+  type: string;
+  /** The switch's label: plain text, or a translation key in your namespace. Default: made from the type ("gallery.new_comment" → "New comment"). */
+  label?: string;
+  description?: string;
+  /** Offer an email switch too (off until the member turns it on). Default true. */
+  email?: boolean;
+  /** Show the switch only to members holding this permission (a staff-only notification). */
+  permission?: string;
+}
+
+// ── Rate limits and cache ───────────────────────────────────────────────────
+
+/**
+ * Limits that hold across every process of the site. Over the limit, a request gets
+ * `429` (XEC-API-4290) with a Retry-After header.
+ */
+export interface PluginLimits {
+  /**
+   * Express middleware for your routes: at most `max` requests per `windowSec`, per
+   * member (put it after `requireAuth`) or, with `by: "ip"`, per address. Create it
+   * once in `onEnable`, not per request.
+   */
+  middleware(name: string, opts: { windowSec: number; max: number; by?: "user" | "ip" }): unknown;
+  /** Count one use of `key` (a member id, an address) and say whether it is still allowed. */
+  check(name: string, key: string, opts: { windowSec: number; max: number }): Promise<{ ok: boolean; remaining: number; retryAfterSec: number }>;
+}
+
+/** A small cache on the site's Redis, for THIS plugin. Values are stored as JSON. */
+export interface PluginCache {
+  get<T = unknown>(key: string): Promise<T | null>;
+  /** Default 300 seconds; at most 30 days. */
+  set(key: string, value: unknown, ttlSec?: number): Promise<void>;
+  del(key: string): Promise<void>;
+  /** The cached value, or `compute()`'s, stored for `ttlSec`. */
+  remember<T>(key: string, ttlSec: number, compute: () => Promise<T> | T): Promise<T>;
+}
+
 // ── Context ──────────────────────────────────────────────────────────────────
 
 /**
@@ -473,6 +883,31 @@ export interface PluginHost extends BasePluginHost {
  * registration that only makes sense on a content and community platform.
  */
 export interface PluginContext extends BasePluginContext<PluginHost> {
+  /**
+   * Declare a background job, in `onEnable`. Then `host.jobs.run / at / every` start it.
+   * While the plugin is disabled its jobs wait; uninstalling removes them.
+   */
+  registerJob<T = unknown>(job: PluginJobDeclaration<T>): void;
+
+  /**
+   * Declare your settings, in `onEnable`; core draws their ACP page. Returns the typed
+   * accessor (also on `host.settings`): `const s = ctx.registerSettings({ schema }); await s.get()`.
+   */
+  registerSettings<S extends { _output: unknown }>(decl: PluginSettingsDeclaration<S>): PluginSettings<S["_output"]>;
+
+  /** Serve a table of yours through core's endpoints (see `PluginResourceDeclaration`). Await it in `onEnable`. */
+  registerResource(decl: PluginResourceDeclaration): Promise<void>;
+
+  /** Listen to a core event (see `CoreEventMap`), or to another plugin's by its name. Dropped on disable. */
+  on<K extends keyof CoreEventMap>(event: K, listener: EventListener<K>): void;
+  on(event: string, listener: (payload: unknown, meta: { event: string; at: string }) => void | Promise<void>): void;
+
+  /** Change or refuse what core does at one of the points in `CoreFilterMap`. Dropped on disable. */
+  filter<K extends keyof CoreFilterMap>(name: K, handler: FilterHandler<K>): void;
+
+  /** Announce your own event. The name must start with your plugin id: `"<pluginId>.photo.uploaded"`. */
+  emit(event: string, payload: unknown): void;
+
   /** Register a frontend nav item. */
   registerNavItem(item: NavItemDeclaration): Promise<void>;
 
@@ -480,7 +915,7 @@ export interface PluginContext extends BasePluginContext<PluginHost> {
   registerAcpPage(page: AcpPageDeclaration): void;
 
   /** Register notification type strings for the user preference UI. */
-  registerNotificationTypes(types: string[]): void;
+  registerNotificationTypes(types: Array<string | NotificationTypeDeclaration>): void;
 
   /** Register a search content source. Core asks it to run the search and
    *  merges results — it never queries the plugin's tables. */
@@ -491,26 +926,24 @@ export interface PluginContext extends BasePluginContext<PluginHost> {
 
   /** Describe (and optionally remove) a kind of this plugin's content when it is
    *  reported, so ModCanvas can show it, link to it and act on its author.
-   *  Deregistered on disable. Optional on older cores — call it as
-   *  `ctx.registerReportTarget?.(…)`. */
-  registerReportTarget?(handler: ReportTargetHandler): void;
+   *  Deregistered on disable. */
+  registerReportTarget(handler: ReportTargetHandler): void;
 
   /** Show your items inside other content (a poll in a post). Deregistered on
-   *  disable. Optional on older cores: `ctx.registerEmbed?.(…)`. */
-  registerEmbed?(handler: EmbedHandler): void;
+   *  disable. */
+  registerEmbed(handler: EmbedHandler): void;
 
   /** Own a kind of content for `host.content.canView` (and so for embeds inside
-   *  it). Deregistered on disable — embeds in it then stay hidden. Optional on
-   *  older cores: `ctx.registerContentKind?.(…)`. */
-  registerContentKind?(handler: ContentKindHandler): void;
+   *  it). Deregistered on disable — embeds in it then stay hidden. */
+  registerContentKind(handler: ContentKindHandler): void;
 
   /** Describe your own pages for search engines and sitemaps (a thread, a file). Only
-   *  what a guest may open. Core 1.0.0-alpha.19+: call as `ctx.registerPageSource?.(…)`. */
-  registerPageSource?(source: PageSource): void;
+   *  what a guest may open. */
+  registerPageSource(source: PageSource): void;
 
   /** Become the site's SEO provider: the tags of every page, robots.txt and the
-   *  sitemaps. One at a time. Core 1.0.0-alpha.19+. */
-  registerSeoProvider?(provider: SeoProvider): void;
+   *  sitemaps. One at a time. */
+  registerSeoProvider(provider: SeoProvider): void;
 
   /** Register a site-stats source shown in the footer. Deregistered on disable. */
   registerStatSource(source: StatSource): void;
@@ -518,7 +951,7 @@ export interface PluginContext extends BasePluginContext<PluginHost> {
   /** Register progression promotion criteria (§38). A disabled plugin's criteria
    *  stop counting. The admin UI for its thresholds belongs in the core Group
    *  settings dialog via the web-side `groupConfigPanel` slot, and autosaves —
-   *  see `docs/plugin-acp-autosave.md`. */
+   *  see `docs/plugin-acp-pages.md`. */
   registerProgressionCriteria(criteria: ProgressionCriteria): void;
   /**
    * Something a BADGE can be earned for — e.g. the forum's posts and threads.

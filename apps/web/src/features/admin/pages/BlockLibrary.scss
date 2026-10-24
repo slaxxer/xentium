@@ -177,3 +177,92 @@
     color: var(--c-fg-subtle);
   }
 }
+
+/* Ready-made sections (ADR-0012): tiles that draw their column shape. */
+.lay-sec {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+
+  &__head {
+    font-size: var(--fs-2xs);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--c-fg-subtle);
+  }
+
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--sp-2);
+  }
+
+  &__tile {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px;
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-md);
+    background: var(--c-surface);
+    color: var(--c-fg);
+    font: inherit;
+    font-size: var(--fs-xs);
+    font-weight: 600;
+    text-align: start;
+    cursor: grab;
+
+    &:hover { border-color: var(--c-accent); }
+    &:active { cursor: grabbing; }
+  }
+
+  &__shape,
+  &__pick {
+    display: flex;
+    gap: 3px;
+
+    i {
+      flex: 1 1 0;
+      border-radius: 3px;
+      background: var(--c-border);
+    }
+  }
+
+  &__shape {
+    height: 26px;
+    &.is-accent i { background: var(--c-accent); }
+  }
+
+  &__name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  &__columns {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+  }
+
+  &__picker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2);
+  }
+
+  &__pick {
+    width: 58px;
+    height: 38px;
+    padding: 6px;
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-md);
+    background: var(--c-surface);
+    cursor: pointer;
+
+    &:hover { border-color: var(--c-accent); }
+
+    &.is-on {
+      border-color: var(--c-accent);
+      box-shadow: 0 0 0 1px var(--c-accent);
+      i { background: var(--c-accent); }
+    }
+  }
+}

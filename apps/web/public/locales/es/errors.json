@@ -2,6 +2,7 @@
   "XEC-API-4001": "Comprueba los datos e inténtalo de nuevo.",
   "XEC-API-4003": "No tienes permiso para hacer eso.",
   "XEC-API-4031": "Esto está desactivado en la demo.",
+  "XEC-API-4150": "No se aceptan solicitudes comprimidas.",
   "XEC-API-4004": "No encontrado.",
   "XEC-API-4290": "Demasiadas solicitudes. Espera e inténtalo de nuevo.",
   "XEC-API-5000": "Algo salió mal. Inténtalo de nuevo.",
@@ -53,5 +54,6 @@
   "XEC-UPDATE-4221": "Esa contraseña no es correcta.",
   "XEC-USER-4021": "Este perfil solo es visible para miembros.",
   "XEC-USER-4022": "No se puede seguir a este miembro.",
-  "XEC-USER-4023": "Este miembro no acepta tus publicaciones en su muro."
+  "XEC-USER-4023": "Este miembro no acepta tus publicaciones en su muro.",
+  "XEC-PLUGIN-4220": "Un complemento de este sitio no lo ha permitido."
 }

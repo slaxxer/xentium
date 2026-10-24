@@ -22,16 +22,17 @@ import { useTranslation } from "react-i18next";
 import { FontAwesomeIcon } from "../../../components/Icon";
 import {
   faPlus, faRotateLeft, faRotateRight, faXmark,
-  faDesktop, faTabletScreenButton, faMobileScreenButton, faEye, faUsers, faCube, faPalette, faCircleQuestion, faArrowLeft, faArrowUp, faArrowDown, faUpDownLeftRight,
+  faDesktop, faTabletScreenButton, faMobileScreenButton, faEye, faUsers, faCube, faPalette, faCircleQuestion, faArrowUp, faArrowDown, faUpDownLeftRight,
   faCheck, faSpinner, faEllipsis,
   faChevronDown, faFileLines, faWindowMaximize, faArrowUpRightFromSquare,
-  faClone, faTrash, faIcons,
+  faClone, faTrash, faIcons, faCodeCompare,
 } from "@fortawesome/free-solid-svg-icons";
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { z } from "zod";
 import {
   CORE_TEMPLATE_KEYS,
   DEFAULT_VARIANT,
+  defaultLayoutFor,
   isChromeTemplate,
   regionsFor,
   requiredBlocksFor,
@@ -102,8 +103,14 @@ import { BlockBackgroundFields, BACKGROUND_PROPS } from "./BlockBackground";
 import { BlockEdgeArtFields } from "./BlockEdgeArt";
 import { edgeExtensions } from "../../../layout/edgeRegistry";
 import { CHROME_SETTINGS } from "./ChromeSettings";
-import { ThemeStyleFields, themeDraftCss, useThemeTokens } from "./ThemeStyle";
+import { ThemeStyleFields, effectiveGlobal, themeDraftCss, useThemeTokenPatch, useThemeTokens } from "./ThemeStyle";
+import { blockPanelsFor } from "../../../layout/blockPanelRegistry";
 import { InspectorFold } from "./InspectorFold";
+import { SectionColumnsPicker, SectionPresets } from "./SectionPresets";
+import {
+  buildPreset, layoutChanges, sectionLayoutOf, setSectionLayout,
+  type PresetText, type RemovedBlock, type SectionPreset,
+} from "../../../layout/sections";
 import "./LayoutEditorPage.scss";
 import { IconPicker } from "../../../components/IconPicker";
 import { blockLabel, pluginText } from "../../../lib/coreText";
@@ -126,6 +133,16 @@ import { Button } from "../../../components/AcpControls";
  * the window would not be a tablet.
  */
 type DeviceId = "desktop" | "tablet" | "phone";
+
+/**
+ * Desktop is never drawn narrower than this.
+ *
+ * Since the settings became their own pane (ADR-0012) the canvas can be ~620px on a
+ * 1440 screen, and "fill" there drew the PHONE navbar under a Desktop label. Below this
+ * width the page is drawn at it and scaled to fit (Fit is the default), which keeps the
+ * layout a desktop visitor gets.
+ */
+const DESKTOP_MIN = 1200;
 const DEVICES: Record<DeviceId, { width: number | "fill"; icon: IconDefinition }> = {
   desktop: { width: "fill", icon: faDesktop },
   tablet:  { width: 834,    icon: faTabletScreenButton },
@@ -255,6 +272,20 @@ interface InstalledTheme {
  * one. Keyed by it, so switching themes starts fresh: undo history, selection and the
  * open document all belong to the theme they were made in.
  */
+/**
+ * Whether the block clips what is drawn outside its box, measured in the preview: a
+ * theme's cut card corners are a clip-path on the card, which hides an outward edge.
+ * Read when the panel renders; the preview is same-origin.
+ */
+function clipsOutside(frame: HTMLIFrameElement | null, id: string): boolean {
+  try {
+    const el = frame?.contentDocument?.querySelector(`[data-xt-block="${CSS.escape(id)}"]`)?.firstElementChild;
+    return !!el && getComputedStyle(el).clipPath !== "none";
+  } catch {
+    return false;
+  }
+}
+
 export function LayoutEditorPage() {
   // Only Theme Studio renders it: the Studio owns the page header and the one Publish
   // for layouts and styles together.
@@ -290,6 +321,8 @@ function LayoutEditorInner({ themeKey }: { themeKey: string | null }) {
    * mounted. Assigned on every render instead.
    */
   const pushAllRef = useRef<() => void>(() => {});
+  /** The last change marks sent to the preview, so a reloaded frame gets them again. */
+  const changesMsgRef = useRef<{ ids: string[]; show: boolean }>({ ids: [], show: false });
   // Always the template default: no template takes variants since custom pages were
   // removed. Kept as a name because every request and preview message carries it.
   const variant = DEFAULT_VARIANT;
@@ -398,7 +431,7 @@ function LayoutEditorInner({ themeKey }: { themeKey: string | null }) {
    */
   const advancedFlag = useUiFlag("layout:advanced");
   const advanced = advancedFlag.on === true;
-  const railTab = advanced ? railTabChosen : "blocks";
+  const railTab = railTabChosen;
 
   /**
    * The first-visit tour. Opens by itself once per admin, the first time the editor
@@ -420,7 +453,7 @@ function LayoutEditorInner({ themeKey }: { themeKey: string | null }) {
   /** The "Move to…" list in the settings panel. */
   const [moveOpen, setMoveOpen] = useState(false);
   const [device, setDevice] = useState<DeviceId>("desktop");
-  const [zoom, setZoom] = useState<"fit" | "full">("full");
+  const [zoom, setZoom] = useState<"fit" | "full">("fit");
   const stageRef = useRef<HTMLDivElement>(null);
   const [stage, setStage] = useState({ w: 0, h: 0 });
 
@@ -444,7 +477,7 @@ function LayoutEditorInner({ themeKey }: { themeKey: string | null }) {
    */
   const configuredWidth = DEVICES[device].width;
   const deviceWidth = configuredWidth === "fill"
-    ? (stage.w > 0 ? stage.w : 1280)
+    ? Math.max(stage.w > 0 ? stage.w : 1280, DESKTOP_MIN)
     : configuredWidth;
   /**
    * How much room the frame wants, against how much the pane has.
@@ -649,6 +682,8 @@ function LayoutEditorInner({ themeKey }: { themeKey: string | null }) {
         left?: number; right?: number;
         slot?: string;
         blockType?: string; delta?: number;
+        beforeId?: string | null; afterId?: string | null; preset?: string;
+        prop?: string; value?: string;
       };
 
       if (msg?.source !== "xt-preview") return;
@@ -715,10 +750,18 @@ function LayoutEditorInner({ themeKey }: { themeKey: string | null }) {
       }
 
       // A block dragged in from the library and dropped on the page.
+      // A preset arrives as one too, carrying which; it is a whole section, built here.
       if (msg.type === "insert" && msg.blockType && msg.region && typeof msg.index === "number") {
-        latest.current.insertAt(msg.blockType, {
+        const at = latest.current.placeAt({
           region: msg.region, parentId: msg.parentId ?? null, index: msg.index,
-        });
+        }, msg.beforeId, msg.afterId);
+        if (msg.preset) latest.current.insertPreset(msg.preset as SectionPreset, at);
+        else latest.current.insertAt(msg.blockType, at);
+      }
+
+      // Text typed on the page. Applied like a settings-panel edit, one undo step.
+      if (msg.type === "inlineEdit" && msg.id && msg.prop && typeof msg.value === "string") {
+        latest.current.inlineEdit(msg.id, msg.prop, msg.value);
       }
 
       // The `+` under a block: the next pick goes straight after it.
@@ -734,11 +777,10 @@ function LayoutEditorInner({ themeKey }: { themeKey: string | null }) {
         // in the preview is one undo step exactly like a move made in the rail. It
         // reads the document through `docRef`, which is why this listener can be
         // registered once and still never act on a stale document.
-        latest.current.applyTree((r) => moveBlock(r, msg.id!, {
-          region:   msg.region!,
-          parentId: msg.parentId ?? null,
-          index:    msg.index!,
-        }));
+        const at = latest.current.placeAt({
+          region: msg.region, parentId: msg.parentId ?? null, index: msg.index,
+        }, msg.beforeId, msg.afterId);
+        latest.current.applyTree((r) => moveBlock(r, msg.id!, at));
         setSelectedId(msg.id);
       }
 
@@ -783,6 +825,7 @@ function LayoutEditorInner({ themeKey }: { themeKey: string | null }) {
     if (liveFrame) win.postMessage({ source: "xt-editor", type: "frame", frame: liveFrame }, window.location.origin);
     win.postMessage({ source: "xt-editor", type: "previewDate", md: viewDateRef.current }, window.location.origin);
     win.postMessage({ source: "xt-editor", type: "previewHour", hour: viewHourRef.current }, window.location.origin);
+    win.postMessage({ source: "xt-editor", type: "changes", ...changesMsgRef.current }, window.location.origin);
     // The preview draws a restricted block like any other — the chip is the only
     // place the condition shows — so it needs the words for it.
     win.postMessage(
@@ -799,6 +842,9 @@ function LayoutEditorInner({ themeKey }: { themeKey: string | null }) {
           duplicate: t("layoutEditor.duplicateBlock"),
           remove:    t("layoutEditor.removeBlock"),
           insert:    t("layoutEditor.library.addHere"),
+          changed:   t("layoutEditor.sections.changedTag"),
+          dropHere:  t("layoutEditor.sections.dropHere"),
+          empty:     t("layoutEditor.sections.emptyHere"),
         },
       },
       window.location.origin,
@@ -827,6 +873,8 @@ function LayoutEditorInner({ themeKey }: { themeKey: string | null }) {
    * after switching back to Block.
    */
   const { data: themeDraft } = useThemeTokens();
+  const themeTokens = useMemo(() => effectiveGlobal(themeDraft), [themeDraft]);
+  const patchThemeTokens = useThemeTokenPatch();
   const styleCss = useMemo(
     () => [themeDraftCss(themeDraft), variantCss].filter(Boolean).join("\n"),
     [themeDraft, variantCss],
@@ -1020,6 +1068,29 @@ function LayoutEditorInner({ themeKey }: { themeKey: string | null }) {
     () => (doc && selectedId ? findNode(doc.regions, selectedId) : null),
     [doc, selectedId],
   );
+
+  /**
+   * What publishing would change, block by block, against what is live (ADR-0012).
+   *
+   * Counted in the toolbar; marked on the page only while "Show changes" is on, since
+   * an outline on every edited block is noise while you are still making them.
+   */
+  const publishedDoc = draftQuery.data?.published;
+  const changes = useMemo(
+    () => (doc && publishedDoc && publishedDoc.templateKey === doc.templateKey
+      ? layoutChanges(doc.regions, publishedDoc.regions)
+      : null),
+    [doc, publishedDoc],
+  );
+  const changeCount = changes ? changes.changed.size + changes.removed.length : 0;
+  const [showChanges, setShowChanges] = useState(false);
+  useEffect(() => { if (changeCount === 0) setShowChanges(false); }, [changeCount]);
+  useEffect(() => {
+    changesMsgRef.current = { ids: changes ? [...changes.changed] : [], show: showChanges };
+    previewRef.current?.contentWindow?.postMessage(
+      { source: "xt-editor", type: "changes", ...changesMsgRef.current }, window.location.origin,
+    );
+  }, [changes, showChanges]);
 
   /**
    * Everywhere the selected block may go, for "Move to…": each area of this page
@@ -1245,9 +1316,13 @@ function LayoutEditorInner({ themeKey }: { themeKey: string | null }) {
     markEnd: (region: string) => void;
     nudge: (id: string, delta: number) => void;
     removable: (id: string) => boolean;
+    placeAt: (at: DropAt, beforeId?: string | null, afterId?: string | null) => DropAt;
+    insertPreset: (preset: SectionPreset, at: DropAt) => void;
+    inlineEdit: (id: string, prop: string, value: string) => void;
   }>({
     applyTree, undo: undoEdit, redo: redoEdit, browse, duplicate: () => {}, remove: () => {}, removable: () => false,
     insertAt: () => {}, markAfter: () => {}, markEnd: () => {}, nudge: () => {},
+    placeAt: (at) => at, insertPreset: () => {}, inlineEdit: () => {},
   });
 
   /**
@@ -1408,11 +1483,102 @@ function LayoutEditorInner({ themeKey }: { themeKey: string | null }) {
   };
 
   /** Tell the page which library block is being dragged, so it can aim the drop. */
-  const announceDrag = (type: string | null) => {
+  const announceDrag = (type: string | null, preset?: SectionPreset) => {
     previewRef.current?.contentWindow?.postMessage(
-      type ? { source: "xt-editor", type: "dragNew", blockType: type } : { source: "xt-editor", type: "dragNewEnd" },
+      type
+        ? { source: "xt-editor", type: "dragNew", blockType: type, ...(preset ? { preset } : {}) }
+        : { source: "xt-editor", type: "dragNewEnd" },
       window.location.origin,
     );
+  };
+
+  /**
+   * Where a drop from the page lands, in THIS document's terms.
+   *
+   * The page names the neighbours it was dropped between, and those win over its
+   * index: it does not draw every block in a list (another audience's, one that drew
+   * nothing), so the count it saw is not an index into the document.
+   */
+  const placeAt = (at: DropAt, beforeId?: string | null, afterId?: string | null): DropAt => {
+    const regionsNow = docRef.current?.regions ?? {};
+    const list = at.parentId == null
+      ? regionsNow[at.region] ?? []
+      : findNode(regionsNow, at.parentId)?.node.children ?? [];
+    const before = beforeId ? list.findIndex((n) => n.id === beforeId) : -1;
+    if (before >= 0) return { ...at, index: before };
+    const after = afterId ? list.findIndex((n) => n.id === afterId) : -1;
+    if (after >= 0) return { ...at, index: after + 1 };
+    return beforeId || afterId ? at : { ...at, index: list.length };
+  };
+
+  /** A ready-made section's starting words, in the admin's language. */
+  const presetWords = (): PresetText => ({
+    eyebrow:      t("layoutEditor.sections.words.eyebrow"),
+    title:        t("layoutEditor.sections.words.title"),
+    body:         t("layoutEditor.sections.words.body"),
+    featureTitle: t("layoutEditor.sections.words.featureTitle"),
+    featureBody:  t("layoutEditor.sections.words.featureBody"),
+    ctaTitle:     t("layoutEditor.sections.words.ctaTitle"),
+    ctaBody:      t("layoutEditor.sections.words.ctaBody"),
+  });
+
+  const insertPreset = (preset: SectionPreset, at: DropAt): boolean => {
+    const current = docRef.current;
+    if (!current) return false;
+    const node = buildPreset(preset, presetWords(), collectIds(current.regions));
+    applyTree((r) => insertBlock(r, node, at));
+    if (docRef.current === current) return false;
+    setSelectedId(node.id);
+    setInsertTarget(null);
+    return true;
+  };
+
+  /**
+   * A CLICKED preset: straight after the section the selection is in, else at the end
+   * of the open area. Always between sections — never inside a column.
+   */
+  const placePreset = (preset: SectionPreset) => {
+    const current = docRef.current;
+    if (!current) return;
+    const sel = selectedIdRef.current ? findNode(current.regions, selectedIdRef.current) : null;
+    const top = sel ? ancestorsOf(current.regions, sel.node.id)[0] ?? sel.node : null;
+    const at = top ? findNode(current.regions, top.id) : null;
+    const region = at?.region ?? (regions.includes("main") ? "main" : openRegion);
+    const index = at ? at.index + 1 : (current.regions[region] ?? []).length;
+    if (!insertPreset(preset, { region, parentId: null, index })) {
+      toast.warning(t("layoutEditor.library.notHere", { block: t(`layoutEditor.sections.preset.${preset}`) }));
+    }
+  };
+
+  /**
+   * Text typed on the page. Only props the block's own schema has are written — the
+   * page says which prop, and a page is not trusted to name one that does not exist.
+   */
+  const inlineEdit = (id: string, prop: string, value: string) => {
+    const at = findNode(docRef.current?.regions ?? {}, id);
+    if (!at || !(prop in (schemaFor(at.node.type)?.properties ?? {}))) return;
+    updateProps(id, { ...at.node.props, [prop]: value });
+    setSelectedId(id);
+  };
+
+  /**
+   * Put a block that is live, but gone from the draft, back where it was.
+   *
+   * Same ids when nothing in the draft uses them, so a block put back is simply
+   * unchanged again; fresh ones otherwise (one of its children was moved out first).
+   */
+  const putBack = (r: RemovedBlock) => {
+    const current = docRef.current;
+    if (!current) return;
+    const taken = collectIds(current.regions);
+    const clash = (n: BlockNode): boolean => taken.has(n.id) || (n.children ?? []).some(clash);
+    const node = clash(r.node) ? cloneBlock(r.node, taken) : structuredClone(r.node);
+    const parentThere = r.parentId == null || !!findNode(current.regions, r.parentId);
+    const at: DropAt = parentThere
+      ? { region: r.region, parentId: r.parentId, index: r.index }
+      : { region: r.region, parentId: null, index: (current.regions[r.region] ?? []).length };
+    applyTree((rg) => insertBlock(rg, node, at));
+    setSelectedId(node.id);
   };
 
   /**
@@ -1507,7 +1673,9 @@ function LayoutEditorInner({ themeKey }: { themeKey: string | null }) {
     applyTree, undo: undoEdit, redo: redoEdit, browse,
     duplicate: duplicateNode, remove: removeNode,
     insertAt: (type, at) => { addBlockAt(type, at); },
-    markAfter, markEnd, nudge,
+    markAfter, markEnd, nudge, placeAt,
+    insertPreset: (preset, at) => { insertPreset(preset, at); },
+    inlineEdit,
     removable: (id) => {
       const at = findNode(docRef.current?.regions ?? {}, id);
       return !!at && !required.has(at.node.type);
@@ -1971,13 +2139,21 @@ function LayoutEditorInner({ themeKey }: { themeKey: string | null }) {
             </span>
           ) : null}
 
-          {hasDraft && (
-            <span className="lay__pill lay__pill--warn">
-              <span className="lay__pill-dot" />
-              {t("layoutEditor.aheadOfLive")}
-            </span>
-          )}
         </span>
+
+        {/* What publishing would change, and the switch that marks it on the page. */}
+        {changes && (
+          <button type="button" className={`lay__changes${showChanges ? " is-on" : ""}`}
+            aria-pressed={showChanges} disabled={changeCount === 0}
+            onClick={() => setShowChanges((v) => !v)}>
+            <FontAwesomeIcon icon={faCodeCompare} />
+            {changeCount === 0
+              ? t("layoutEditor.sections.noChanges")
+              : showChanges
+                ? t("layoutEditor.sections.hideChanges")
+                : t("layoutEditor.sections.changes", { count: changeCount })}
+          </button>
+        )}
 
         <div className="lay__bar-actions">
           <Button variant="ghost" className="lay__help" onClick={() => setTourOpen(true)}
@@ -2061,6 +2237,19 @@ function LayoutEditorInner({ themeKey }: { themeKey: string | null }) {
       )}
 
 
+      {showChanges && changes && changes.removed.length > 0 && (
+        <div className="lay__removed" role="status">
+          <span>{t("layoutEditor.sections.removed")}</span>
+          {changes.removed.map((r) => (
+            <button key={r.node.id} type="button" className="lay__removed-item" onClick={() => putBack(r)}
+              title={t("layoutEditor.sections.putBack")}>
+              <FontAwesomeIcon icon={iconFor(r.node.type)} /> {blockLabel(r.node.type)}
+              <em>{t("layoutEditor.sections.putBack")}</em>
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="lay__grid">
         {/* THREE panes: what the page is made of, the page, and the selected block.
             The structure and the library share the left rail because both answer
@@ -2073,270 +2262,21 @@ function LayoutEditorInner({ themeKey }: { themeKey: string | null }) {
               The rail answers "what goes on this page" when nothing is selected and
               "what about this one" when something is: one place, one at a time, and
               the canvas keeps its full width. Back (or Esc) returns to the blocks. */}
-          {selected && doc ? (
-          <div className="lay__props">
-            <div className="lay__props-bar">
-              <button type="button" className="lay__props-back" onClick={() => setSelectedId(null)}>
-                <FontAwesomeIcon icon={faArrowLeft} /> {t("layoutEditor.backToBlocks")}
-              </button>
-              <Button variant="ghost"
-                onClick={() => setSelectedId(null)}
-                title={t("layoutEditor.closeSettings")}
-                aria-label={t("layoutEditor.closeSettings")}>
-                <FontAwesomeIcon icon={faXmark} />
-              </Button>
-            </div>
-
-            <div className="lay__props-ident">
-              <span className="lay__props-icon" aria-hidden="true">
-                <FontAwesomeIcon icon={iconFor(selected.node.type)} />
-              </span>
-              <span className="lay__props-text">
-                <b>{blockLabel(selected.node.type)}</b>
-                {/* Where it sits: the area, then each container. A parent is otherwise
-                    hard to click, since every point inside it belongs to a child. */}
-                <span className="lay__props-path">
-                  <span>{regionLabel(selected.region, templateKey, t)}</span>
-                  {ancestorsOf(doc.regions, selected.node.id).map((p) => (
-                    <span key={p.id} className="lay__props-path-step">
-                      <span aria-hidden="true">›</span>
-                      <button type="button" onClick={() => setSelectedId(p.id)}>{blockLabel(p.type)}</button>
-                    </span>
-                  ))}
-                </span>
-              </span>
-            </div>
-
-            {/* One row of everything that ARRANGES the block. The canvas has the same
-                actions on the block itself; these are here so the panel is enough. */}
-            <div className="lay__props-acts">
-              <Button variant="ghost"
-                disabled={selected.index === 0}
-                onClick={() => nudge(selected.node.id, -1)}
-                title={`${t("layoutEditor.moveUp")} (Alt+↑)`} aria-label={t("layoutEditor.moveUp")}>
-                <FontAwesomeIcon icon={faArrowUp} />
-              </Button>
-              <Button variant="ghost"
-                disabled={selected.index >= selected.list.length - 1}
-                onClick={() => nudge(selected.node.id, 1)}
-                title={`${t("layoutEditor.moveDown")} (Alt+↓)`} aria-label={t("layoutEditor.moveDown")}>
-                <FontAwesomeIcon icon={faArrowDown} />
-              </Button>
-              <div className="lay__moveto">
-                <button type="button" className={`btn-ghost btn-sm${moveOpen ? " is-on" : ""}`}
-                  aria-expanded={moveOpen} onClick={() => setMoveOpen((o) => !o)}>
-                  <FontAwesomeIcon icon={faUpDownLeftRight} /> {t("layoutEditor.moveTo")}
-                </button>
-                {moveOpen && (
-                  <div className="lay__moveto-list" role="menu">
-                    <div className="lay__moveto-head">{t("layoutEditor.moveToTitle")}</div>
-                    {moveTargets.length === 0 && <div className="lay__moveto-none">{t("layoutEditor.moveToNone")}</div>}
-                    {moveTargets.map((tg) => (
-                      <button key={`${tg.region}:${tg.parentId ?? ""}`} type="button" role="menuitem"
-                        className="lay__moveto-item" disabled={tg.current}
-                        style={{ paddingInlineStart: `${12 + tg.depth * 14}px` }}
-                        onClick={() => { moveInto(selected.node.id, tg.region, tg.parentId); setMoveOpen(false); }}>
-                        <FontAwesomeIcon icon={tg.parentId ? iconFor(tg.type!) : faWindowMaximize} />
-                        <span>{tg.label}</span>
-                        {tg.current && <em>{t("layoutEditor.moveToHere")}</em>}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <span className="lay__props-acts-gap" />
-              <Button variant="ghost"
-                onClick={() => duplicateNode(selected.node.id)}
-                title={`${t("layoutEditor.duplicateBlock")} (Ctrl+D)`} aria-label={t("layoutEditor.duplicateBlock")}>
-                <FontAwesomeIcon icon={faClone} />
-              </Button>
-              {!required.has(selected.node.type) && (
-                <Button variant="ghost" className="lay__danger"
-                  onClick={() => removeNode(selected.node.id)}
-                  title={`${t("layoutEditor.removeBlock")} (Del)`} aria-label={t("layoutEditor.removeBlock")}>
-                  <FontAwesomeIcon icon={faTrash} />
-                </Button>
-              )}
-            </div>
-
-            {/* Two tabs, as the design draws them: what this BLOCK is (its settings, who
-                sees it, its edge art) and the THEME it sits in (colourway, corners, glow
-                — tokens, saved in the appearance draft). The block's style variant sits
-                under Theme style: it chooses which of the theme's looks the block wears,
-                and its colours are theme tokens too. */}
-            {advanced && <div className="lay__props-tabs" role="tablist" aria-label={t("layoutEditor.inspectorTabs")}>
-              <button type="button" role="tab" aria-selected={inspectorTab === "block"}
-                className={inspectorTab === "block" ? "is-on" : ""} onClick={() => setInspectorTab("block")}>
-                <FontAwesomeIcon icon={faCube} />{t("layoutEditor.tabBlock")}
-              </button>
-              <button type="button" role="tab" aria-selected={inspectorTab === "theme"}
-                className={inspectorTab === "theme" ? "is-on" : ""} onClick={() => setInspectorTab("theme")}>
-                <FontAwesomeIcon icon={faPalette} />{t("layoutEditor.tabTheme")}
-              </button>
-            </div>}
-            <div className="lay__props-body">
-              {/* Simple mode is the block's own settings only. */}
-              {inspectorTab === "block" || !advanced ? (
-                <>
-                {(() => {
-                  const about = t(`layoutEditor.blockDesc.${selected.node.type}`, { defaultValue: "" });
-                  return about ? <p className="lay__props-about">{about}</p> : null;
-                })()}
-                <div className="lay__props-section">{t("layoutEditor.sectionSettings")}</div>
-                {(() => {
-                  // The site chrome's three bands have their own panels (ChromeSettings),
-                  // which also carry the structure settings: where search sits, the
-                  // navbar's small logo, which end its links sit at.
-                  const Chrome = CHROME_SETTINGS[selected.node.type];
-                  if (Chrome && doc) {
-                    return (
-                      <>
-                        <Chrome key={`chrome:${selected.node.id}`} node={selected.node} regions={doc.regions}
-                          onProps={(next) => updateProps(selected.node.id, next)}
-                          onTree={(next) => applyTree(() => next)} />
-                      </>
-                    );
-                  }
-                  const hasProps = Object.keys(schemaFor(selected.node.type)?.properties ?? {}).length > 0;
-                  return (
-                    <>
-                      <SchemaFields
-                        compact
-                        schema={schemaFor(selected.node.type)}
-                        // Core blocks' setting texts are translated; a plugin block's are its own.
-                        textKey={`blocks.${blockTextType(selected.node.type)}.props`}
-                        values={selected.node.props}
-                        onChange={(next) => updateProps(selected.node.id, next)}
-                        // The background props get a picker, an uploader and a preview
-                        // instead of a text box and a number — see BlockBackground.
-                        omit={paintsBackground(selected.node.type) ? BACKGROUND_PROPS : undefined}
-                      />
-                      {!hasProps && <div className="acp-hint">{t("layoutEditor.noProps")}</div>}
-                      {/* Whether a block paints is read from its SCHEMA, not its name.
-                          ⚠ NAMESPACED key: BlockStyleFields below keys on the bare id, and
-                          two siblings sharing a key make React duplicate them. */}
-                      {paintsBackground(selected.node.type) && (
-                        <BlockBackgroundFields
-                          key={`bg:${selected.node.id}`}
-                          image={selected.node.props.backgroundImage as string | undefined}
-                          gradient={selected.node.props.backgroundGradient as string[] | undefined}
-                          angle={selected.node.props.backgroundAngle as number | undefined}
-                          onChange={(patch) => updateProps(selected.node.id, { ...selected.node.props, ...patch })}
-                          inherits={STYLED_SURFACES.has(selected.node.type)}
-                        />
-                      )}
-                    </>
-                  );
-                })()}
-
-
-                {/* The header's dropdowns + the pill they open from: theme tokens, offered
-                    where the admin clicks them (the preview opens the dropdown too). */}
-                {(() => {
-                  const groups = menuGroupsFor(selected.node.type);
-                  return groups && (
-                    <InspectorFold key={`menu:${selected.node.id}`} defaultOpen
-                      title={t("layoutEditor.dropdownStyle")}>
-                      <BlockMenuStyle groups={groups} />
-                    </InspectorFold>
-                  );
-                })()}
-
-                {/* A required block may be moved anywhere but never restricted: an
-                    audience would achieve by hiding exactly what deletion is
-                    forbidden to do. Refused by the API too. */}
-                {/* Advanced only — unless the block already HAS an audience, which must
-                    stay visible (and removable) in Simple too. */}
-                {(advanced || selected.node.visibility) && (
-                <InspectorFold key={`vis:${selected.node.id}`} title={t("layoutEditor.whoSeesIt")}
-                  active={!!selected.node.visibility}>
-                  {required.has(selected.node.type) ? (
-                    <div className="acp-hint lay__vis-note">{t("layoutEditor.audienceRequired")}</div>
-                  ) : (
-                    <BlockVisibilityFields bare
-                      value={selected.node.visibility}
-                      onChange={(next) => updateVisibility(selected.node.id, next)}
-                    />
-                  )}
-                </InspectorFold>
-                )}
-
-                {/* Edge art belongs to a SURFACE — a band, a card, a panel — not to a link
-                    or a button. Still offered where a block already has some, so it can
-                    be taken off again. */}
-                {((advanced && hasSurface(selected.node.type)) || selected.node.edges) && (
-                  <InspectorFold key={`edge:${selected.node.id}`} title={t("layoutEditor.edge.title")}
-                    active={!!(selected.node.edges?.top || selected.node.edges?.bottom)}>
-                    <BlockEdgeArtFields bare
-                      value={selected.node.edges}
-                      onChange={(next) => applyTree((r) => updateBlockEdges(r, selected.node.id, next))}
-                    />
-                  </InspectorFold>
-                )}
-
-                {/* One icon, picked in the preview. Shown only while an icon of THIS block
-                    is picked — the override lives on the block. */}
-                {iconPick && iconPick.id === selected.node.id && (
-                  <div className="lay__iconpick" ref={iconPanelRef}>
-                    <div className="acp-label">
-                      {t("layoutEditor.iconOverride", { slot: iconPick.slot.replace("#", " · ") })}
-                    </div>
-                    <IconPicker
-                      key={iconPick.slot}
-                      value={selected.node.iconOverrides?.[iconPick.slot] ?? ""}
-                      onChange={(tok) => applyTree((r) =>
-                        updateBlockIconOverride(r, iconPick.id, iconPick.slot, tok))}
-                    />
-                    {/* Clearing must be reachable: the picker has no empty state. */}
-                    <Button variant="ghost"
-                      disabled={!selected.node.iconOverrides?.[iconPick.slot]}
-                      onClick={() => applyTree((r) =>
-                        updateBlockIconOverride(r, iconPick.id, iconPick.slot, undefined))}>
-                      {t("layoutEditor.iconOverrideClear")}
-                    </Button>
-                  </div>
-                )}
-
-                </>
-              ) : (
-                <ThemeStyleFields>
-                {/* Click-to-scope: the block chooses a look, the panel edits what that
-                      look means. Keyed by block so switching selection resets it. */}
-                  <BlockStyleFields
-                    key={selected.node.id}
-                    variant={selected.node.variant}
-                    onVariantChange={(next) => updateVariant(selected.node.id, next)}
-                    className={selected.node.className}
-                    onClassNameChange={(next) => updateClassName(selected.node.id, next)}
-                    headingFont={selected.node.headingFont}
-                    onHeadingFontChange={(next) => updateHeadingFont(selected.node.id, next)}
-                    isContainer={!!getBlock(selected.node.type)?.container}
-                    onPreviewCss={setVariantCss}
-                  />
-
-                </ThemeStyleFields>
-              )}
-            </div>
-          </div>
-          ) : (
         <div className="lay__tree">
           {/* Blocks to add, or the whole tree. The canvas is where blocks are selected
               and arranged now; the tree stays one tab away for everything the canvas
               cannot show, and as the keyboard path. */}
           {/* Simple mode has only the blocks, so a lone tab would be a label pretending to be a control. */}
-          {advanced && <div className="lay__railtabs" role="tablist" aria-label={t("layoutEditor.library.tabs")}>
+          <div className="lay__railtabs" role="tablist" aria-label={t("layoutEditor.library.tabs")}>
             <button type="button" role="tab" aria-selected={railTab === "blocks"}
               className={railTab === "blocks" ? "is-on" : ""} onClick={() => setRailTab("blocks")}>
-              {t("layoutEditor.library.blocks")}
+              {t("layoutEditor.sections.add")}
             </button>
-            {advanced && <button type="button" role="tab" aria-selected={railTab === "layers"}
+            <button type="button" role="tab" aria-selected={railTab === "layers"}
               className={railTab === "layers" ? "is-on" : ""} onClick={() => setRailTab("layers")}>
-              {t("layoutEditor.library.layers")}
-              <span className="lay__tab-count">
-                {Object.values(doc?.regions ?? {}).reduce((n, list) => n + (list?.length ?? 0), 0)}
-              </span>
-            </button>}
-          </div>}
+              {t("layoutEditor.sections.outline")}
+            </button>
+          </div>
 
           {railTab === "blocks" ? (
             <>
@@ -2345,6 +2285,13 @@ function LayoutEditorInner({ themeKey }: { themeKey: string | null }) {
               <ChromeStyles kind={templateKey === "chrome.header" ? "header" : "footer"}
                 regions={doc.regions}
                 onApply={(next) => applyTree((r) => ({ ...r, ...next }))} />
+            )}
+            {doc && !isChromeTemplate(templateKey) && (
+              <SectionPresets
+                onPick={placePreset}
+                onDragStart={(p) => announceDrag("section", p)}
+                onDragEnd={() => announceDrag(null)}
+              />
             )}
             <BlockLibrary
               templateKey={templateKey}
@@ -2379,7 +2326,6 @@ function LayoutEditorInner({ themeKey }: { themeKey: string | null }) {
             </>
           )}
         </div>
-          )}
         </div>
 
         {/* ── Preview ───────────────────────────────────────────────────── */}
@@ -2522,6 +2468,308 @@ function LayoutEditorInner({ themeKey }: { themeKey: string | null }) {
             </div>
           </div>
 
+        </div>
+
+        {/* ── Settings: the selection's, or the theme's when nothing is selected ──
+            The third pane (ADR-0012). The rail on the left is always how things are
+            ADDED and found; this one is always what the selected thing is. */}
+        <div className="lay__inspector">
+          {selected && doc ? (
+          <div className="lay__props">
+            <div className="lay__props-bar">
+              <span className="lay__props-bar-title">{t("layoutEditor.sections.settingsTitle")}</span>
+              <Button variant="ghost"
+                onClick={() => setSelectedId(null)}
+                title={t("layoutEditor.closeSettings")}
+                aria-label={t("layoutEditor.closeSettings")}>
+                <FontAwesomeIcon icon={faXmark} />
+              </Button>
+            </div>
+
+            <div className="lay__props-ident">
+              <span className="lay__props-icon" aria-hidden="true">
+                <FontAwesomeIcon icon={iconFor(selected.node.type)} />
+              </span>
+              <span className="lay__props-text">
+                <b>{blockLabel(selected.node.type)}</b>
+                {/* Where it sits: the area, then each container. A parent is otherwise
+                    hard to click, since every point inside it belongs to a child. */}
+                <span className="lay__props-path">
+                  <span>{regionLabel(selected.region, templateKey, t)}</span>
+                  {ancestorsOf(doc.regions, selected.node.id).map((p) => (
+                    <span key={p.id} className="lay__props-path-step">
+                      <span aria-hidden="true">›</span>
+                      <button type="button" onClick={() => setSelectedId(p.id)}>{blockLabel(p.type)}</button>
+                    </span>
+                  ))}
+                </span>
+              </span>
+            </div>
+
+            {/* One row of everything that ARRANGES the block. The canvas has the same
+                actions on the block itself; these are here so the panel is enough. */}
+            <div className="lay__props-acts">
+              <Button variant="ghost"
+                disabled={selected.index === 0}
+                onClick={() => nudge(selected.node.id, -1)}
+                title={`${t("layoutEditor.moveUp")} (Alt+↑)`} aria-label={t("layoutEditor.moveUp")}>
+                <FontAwesomeIcon icon={faArrowUp} />
+              </Button>
+              <Button variant="ghost"
+                disabled={selected.index >= selected.list.length - 1}
+                onClick={() => nudge(selected.node.id, 1)}
+                title={`${t("layoutEditor.moveDown")} (Alt+↓)`} aria-label={t("layoutEditor.moveDown")}>
+                <FontAwesomeIcon icon={faArrowDown} />
+              </Button>
+              <div className="lay__moveto">
+                <button type="button" className={`btn-ghost btn-sm${moveOpen ? " is-on" : ""}`}
+                  aria-expanded={moveOpen} onClick={() => setMoveOpen((o) => !o)}>
+                  <FontAwesomeIcon icon={faUpDownLeftRight} /> {t("layoutEditor.moveTo")}
+                </button>
+                {moveOpen && (
+                  <div className="lay__moveto-list" role="menu">
+                    <div className="lay__moveto-head">{t("layoutEditor.moveToTitle")}</div>
+                    {moveTargets.length === 0 && <div className="lay__moveto-none">{t("layoutEditor.moveToNone")}</div>}
+                    {moveTargets.map((tg) => (
+                      <button key={`${tg.region}:${tg.parentId ?? ""}`} type="button" role="menuitem"
+                        className="lay__moveto-item" disabled={tg.current}
+                        style={{ paddingInlineStart: `${12 + tg.depth * 14}px` }}
+                        onClick={() => { moveInto(selected.node.id, tg.region, tg.parentId); setMoveOpen(false); }}>
+                        <FontAwesomeIcon icon={tg.parentId ? iconFor(tg.type!) : faWindowMaximize} />
+                        <span>{tg.label}</span>
+                        {tg.current && <em>{t("layoutEditor.moveToHere")}</em>}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <span className="lay__props-acts-gap" />
+              <Button variant="ghost"
+                onClick={() => duplicateNode(selected.node.id)}
+                title={`${t("layoutEditor.duplicateBlock")} (Ctrl+D)`} aria-label={t("layoutEditor.duplicateBlock")}>
+                <FontAwesomeIcon icon={faClone} />
+              </Button>
+              {!required.has(selected.node.type) && (
+                <Button variant="ghost" className="lay__danger"
+                  onClick={() => removeNode(selected.node.id)}
+                  title={`${t("layoutEditor.removeBlock")} (Del)`} aria-label={t("layoutEditor.removeBlock")}>
+                  <FontAwesomeIcon icon={faTrash} />
+                </Button>
+              )}
+            </div>
+
+            {/* Two tabs, as the design draws them: what this BLOCK is (its settings, who
+                sees it, its edge art) and the THEME it sits in (colourway, corners, glow
+                — tokens, saved in the appearance draft). The block's style variant sits
+                under Theme style: it chooses which of the theme's looks the block wears,
+                and its colours are theme tokens too. */}
+            {advanced && <div className="lay__props-tabs" role="tablist" aria-label={t("layoutEditor.inspectorTabs")}>
+              <button type="button" role="tab" aria-selected={inspectorTab === "block"}
+                className={inspectorTab === "block" ? "is-on" : ""} onClick={() => setInspectorTab("block")}>
+                <FontAwesomeIcon icon={faCube} />{t("layoutEditor.tabBlock")}
+              </button>
+              <button type="button" role="tab" aria-selected={inspectorTab === "theme"}
+                className={inspectorTab === "theme" ? "is-on" : ""} onClick={() => setInspectorTab("theme")}>
+                <FontAwesomeIcon icon={faPalette} />{t("layoutEditor.tabTheme")}
+              </button>
+            </div>}
+            <div className="lay__props-body">
+              {/* Simple mode is the block's own settings only. */}
+              {inspectorTab === "block" || !advanced ? (
+                <>
+                {(() => {
+                  const about = t(`layoutEditor.blockDesc.${selected.node.type}`, { defaultValue: "" });
+                  return about ? <p className="lay__props-about">{about}</p> : null;
+                })()}
+                {(selected.node.type === "section" || selected.node.type === "columns") && (
+                  <SectionColumnsPicker
+                    key={`cols:${selected.node.id}`}
+                    value={sectionLayoutOf(selected.node)}
+                    onChange={(k) => applyTree((r) => setSectionLayout(r, selected.node.id, k))}
+                  />
+                )}
+                {(() => {
+                  // Text typed over a TRANSLATED default is one language for everyone
+                  // now. Said where it happened, with the way back.
+                  const shipped = findNode(defaultLayoutFor(templateKey).regions, selected.node.id)?.node;
+                  const fixed = Object.entries(shipped?.props ?? {}).filter(([k, v]) =>
+                    !!v && typeof v === "object" && "key" in v && typeof selected.node.props[k] === "string");
+                  if (fixed.length === 0) return null;
+                  return (
+                    <div className="lay__fixedtext">
+                      <p className="acp-hint">{t("layoutEditor.sections.fixedText")}</p>
+                      <Button variant="ghost"
+                        onClick={() => updateProps(selected.node.id, { ...selected.node.props, ...Object.fromEntries(fixed) })}>
+                        {t("layoutEditor.sections.useTranslated")}
+                      </Button>
+                    </div>
+                  );
+                })()}
+                <div className="lay__props-section">{t("layoutEditor.sectionSettings")}</div>
+                {(() => {
+                  // The site chrome's three bands have their own panels (ChromeSettings),
+                  // which also carry the structure settings: where search sits, the
+                  // navbar's small logo, which end its links sit at.
+                  const Chrome = CHROME_SETTINGS[selected.node.type];
+                  if (Chrome && doc) {
+                    return (
+                      <>
+                        <Chrome key={`chrome:${selected.node.id}`} node={selected.node} regions={doc.regions}
+                          onProps={(next) => updateProps(selected.node.id, next)}
+                          onTree={(next) => applyTree(() => next)} />
+                      </>
+                    );
+                  }
+                  const hasProps = Object.keys(schemaFor(selected.node.type)?.properties ?? {}).length > 0;
+                  return (
+                    <>
+                      <SchemaFields
+                        compact
+                        schema={schemaFor(selected.node.type)}
+                        // Core blocks' setting texts are translated; a plugin block's are its own.
+                        textKey={`blocks.${blockTextType(selected.node.type)}.props`}
+                        values={selected.node.props}
+                        onChange={(next) => updateProps(selected.node.id, next)}
+                        // The background props get a picker, an uploader and a preview
+                        // instead of a text box and a number — see BlockBackground.
+                        omit={paintsBackground(selected.node.type) ? BACKGROUND_PROPS : undefined}
+                      />
+                      {!hasProps && <div className="acp-hint">{t("layoutEditor.noProps")}</div>}
+                      {/* Whether a block paints is read from its SCHEMA, not its name.
+                          ⚠ NAMESPACED key: BlockStyleFields below keys on the bare id, and
+                          two siblings sharing a key make React duplicate them. */}
+                      {paintsBackground(selected.node.type) && (
+                        <BlockBackgroundFields
+                          key={`bg:${selected.node.id}`}
+                          image={selected.node.props.backgroundImage as string | undefined}
+                          gradient={selected.node.props.backgroundGradient as string[] | undefined}
+                          angle={selected.node.props.backgroundAngle as number | undefined}
+                          onChange={(patch) => updateProps(selected.node.id, { ...selected.node.props, ...patch })}
+                          inherits={STYLED_SURFACES.has(selected.node.type)}
+                        />
+                      )}
+                    </>
+                  );
+                })()}
+
+
+                {/* The header's dropdowns + the pill they open from: theme tokens, offered
+                    where the admin clicks them (the preview opens the dropdown too). */}
+                {(() => {
+                  const groups = menuGroupsFor(selected.node.type);
+                  return groups && (
+                    <InspectorFold key={`menu:${selected.node.id}`} defaultOpen
+                      title={t("layoutEditor.dropdownStyle")}>
+                      <BlockMenuStyle groups={groups} />
+                    </InspectorFold>
+                  );
+                })()}
+
+                {/* A required block may be moved anywhere but never restricted: an
+                    audience would achieve by hiding exactly what deletion is
+                    forbidden to do. Refused by the API too. */}
+                {/* Advanced only — unless the block already HAS an audience, which must
+                    stay visible (and removable) in Simple too. */}
+                {(advanced || selected.node.visibility) && (
+                <InspectorFold key={`vis:${selected.node.id}`} title={t("layoutEditor.whoSeesIt")}
+                  active={!!selected.node.visibility}>
+                  {required.has(selected.node.type) ? (
+                    <div className="acp-hint lay__vis-note">{t("layoutEditor.audienceRequired")}</div>
+                  ) : (
+                    <BlockVisibilityFields bare
+                      value={selected.node.visibility}
+                      onChange={(next) => updateVisibility(selected.node.id, next)}
+                    />
+                  )}
+                </InspectorFold>
+                )}
+
+                {/* Edge art belongs to a SURFACE — a band, a card, a panel — not to a link
+                    or a button. Still offered where a block already has some, so it can
+                    be taken off again. */}
+                {((advanced && hasSurface(selected.node.type)) || selected.node.edges) && (
+                  <InspectorFold key={`edge:${selected.node.id}`} title={t("layoutEditor.edge.title")}
+                    active={!!(selected.node.edges?.top || selected.node.edges?.bottom)}>
+                    <BlockEdgeArtFields bare
+                      clipsOutside={clipsOutside(previewRef.current, selected.node.id)}
+                      blockType={selected.node.type}
+                      templateKey={templateKey}
+                      value={selected.node.edges}
+                      onChange={(next) => applyTree((r) => updateBlockEdges(r, selected.node.id, next))}
+                    />
+                  </InspectorFold>
+                )}
+
+                {/* Add-ons' settings for this kind of block (an avatar effect on the avatar
+                    block). They stage site-wide theme tokens, so they show on every page. */}
+                {blockPanelsFor(selected.node.type).map(({ id, title, active, Panel }) => (
+                  <InspectorFold key={`panel:${id}:${selected.node.id}`} title={title()}
+                    active={active?.(themeTokens) ?? false}>
+                    <Panel
+                      block={{ id: selected.node.id, type: selected.node.type, props: selected.node.props ?? {} }}
+                      templateKey={templateKey}
+                      themeTokens={themeTokens}
+                      setThemeTokens={(tokens) => patchThemeTokens.mutate(tokens)}
+                    />
+                  </InspectorFold>
+                ))}
+
+                {/* One icon, picked in the preview. Shown only while an icon of THIS block
+                    is picked — the override lives on the block. */}
+                {iconPick && iconPick.id === selected.node.id && (
+                  <div className="lay__iconpick" ref={iconPanelRef}>
+                    <div className="acp-label">
+                      {t("layoutEditor.iconOverride", { slot: iconPick.slot.replace("#", " · ") })}
+                    </div>
+                    <IconPicker
+                      key={iconPick.slot}
+                      value={selected.node.iconOverrides?.[iconPick.slot] ?? ""}
+                      onChange={(tok) => applyTree((r) =>
+                        updateBlockIconOverride(r, iconPick.id, iconPick.slot, tok))}
+                    />
+                    {/* Clearing must be reachable: the picker has no empty state. */}
+                    <Button variant="ghost"
+                      disabled={!selected.node.iconOverrides?.[iconPick.slot]}
+                      onClick={() => applyTree((r) =>
+                        updateBlockIconOverride(r, iconPick.id, iconPick.slot, undefined))}>
+                      {t("layoutEditor.iconOverrideClear")}
+                    </Button>
+                  </div>
+                )}
+
+                </>
+              ) : (
+                <ThemeStyleFields>
+                {/* Click-to-scope: the block chooses a look, the panel edits what that
+                      look means. Keyed by block so switching selection resets it. */}
+                  <BlockStyleFields
+                    key={selected.node.id}
+                    variant={selected.node.variant}
+                    onVariantChange={(next) => updateVariant(selected.node.id, next)}
+                    className={selected.node.className}
+                    onClassNameChange={(next) => updateClassName(selected.node.id, next)}
+                    headingFont={selected.node.headingFont}
+                    onHeadingFontChange={(next) => updateHeadingFont(selected.node.id, next)}
+                    isContainer={!!getBlock(selected.node.type)?.container}
+                    onPreviewCss={setVariantCss}
+                  />
+
+                </ThemeStyleFields>
+              )}
+            </div>
+          </div>
+          ) : (
+          <div className="lay__props lay__props--theme">
+            <div className="lay__props-ident">
+              <span className="lay__props-icon" aria-hidden="true"><FontAwesomeIcon icon={faPalette} /></span>
+              <span className="lay__props-text">
+                <b>{t("layoutEditor.sections.themeTitle")}</b>
+                <span className="lay__props-path">{t("layoutEditor.sections.themeHint")}</span>
+              </span>
+            </div>
+            <div className="lay__props-body"><ThemeStyleFields /></div>
+          </div>
+          )}
         </div>
       </div>
 

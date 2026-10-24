@@ -37,6 +37,8 @@ nodevo-redesign/
 
 # Official plugins live in their own repos — not committed to core
 plugins/official/
+# Plugins made with `pnpm plugin:new`: each is its own project.
+plugins/local/
 
 # Packaged .xtplugin archives (build output for marketplace upload) — not committed
 plugins/packaged/

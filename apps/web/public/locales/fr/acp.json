@@ -868,6 +868,12 @@
         "cause": "DEMO_MODE=true dans l'environnement du serveur.",
         "fix": "Rien à corriger sur une démo. Sur votre propre installation, laissez DEMO_MODE non défini."
       },
+      "XEC-API-4150": {
+        "msg": "Requête compressée refusée",
+        "desc": "Le corps de la requête a été envoyé compressé (gzip, deflate ou Brotli). L'API n'accepte que des corps non compressés, afin que des données compressées ne soient jamais décompressées.",
+        "cause": "Un client ou un script a ajouté un en-tête Content-Encoding à sa requête.",
+        "fix": "Envoyez le corps sans compression. Les navigateurs et la CLI Xentium le font déjà."
+      },
       "XEC-API-4004": {
         "msg": "Introuvable",
         "desc": "La ressource demandée n'existe pas.",
@@ -1239,6 +1245,12 @@
         "desc": "Retirer cette clé ou ce fournisseur laisserait le compte sans moyen de connexion.",
         "cause": "Le compte n'a ni mot de passe ni autre clé ou fournisseur.",
         "fix": "Définissez d'abord un mot de passe (via un lien de réinitialisation) ou ajoutez un autre moyen."
+      },
+      "XEC-PLUGIN-4220": {
+        "msg": "Refusé par une extension",
+        "desc": "Un filtre d'un plugin installé a arrêté cette action.",
+        "cause": "Un plugin a enregistré une vérification (par exemple à l'inscription ou à l'enregistrement d'un contenu) qui a refusé cette saisie.",
+        "fix": "Lisez le message affiché au membre ; il vient du plugin. Pour changer la règle, voyez les réglages de ce plugin ou désactivez-le."
       }
     },
     "memberPlaceholder": "Membre (facultatif)",
@@ -1316,7 +1328,10 @@
     "scheduleSaved": "Planification enregistrée.",
     "saveFailed": "Impossible d'enregistrer la planification.",
     "queuedToRun": "« {{label}} » mise en file pour exécution immédiate.",
-    "triggerFailed": "Impossible de déclencher la tâche."
+    "triggerFailed": "Impossible de déclencher la tâche.",
+    "fromAddons": "Des extensions",
+    "fromAddonsHint": "Tâches répétées planifiées par vos extensions. Chacune gère son horaire ; modifiez-le dans ses réglages.",
+    "everyMinutes": "Toutes les {{count}} min"
   },
   "tasks": {
     "title": "Tâches personnalisées",
@@ -2626,7 +2641,9 @@
         "queued": "En attente que le programme de mise à jour de votre serveur la prenne en charge.",
         "running": "N'arrêtez pas le serveur. Le site est hors ligne pendant la minute du redémarrage.",
         "done": "Tout s'est bien passé. La version précédente reste sur le serveur ; vous pouvez y revenir depuis l'historique des migrations.",
-        "failed": "Quelque chose a échoué, nous avons donc tout remis en l'état. Votre site tourne sur {{from}}."
+        "failed": "Quelque chose a échoué, nous avons donc tout remis en l'état. Votre site tourne sur {{from}}.",
+        "confirmRollback": "Le site revient à la version qu'il utilisait avant cette mise à jour. Une fois lancé, vous pouvez fermer ceci.",
+        "doneRollback": "Vous êtes de retour sur {{version}}. Rechargez le panneau pour charger sa version de l'ACP. La version plus récente reste sur le serveur."
       },
       "loading": "Chargement…",
       "close": "Fermer",
@@ -2734,7 +2751,16 @@
       "stalledNote": "Le programme de mise à jour n'a rien signalé depuis un moment. Vérifiez-le sur le serveur : journalctl -u xentium-updater",
       "rollbackTo": "Revenir à {{version}}",
       "rollbackNote": "Revient à {{version}}. La base de données reste telle quelle.",
-      "rollbackConfirm": "Revenir en arrière"
+      "rollbackConfirm": "Revenir en arrière",
+      "rollbackPromise": {
+        "switch": "Nous revenons en arrière",
+        "switchDesc": "{{version}} est toujours sur le serveur et tourne de nouveau.",
+        "database": "Votre base de données reste telle quelle",
+        "databaseDesc": "Rien n'est supprimé. Pour tout annuler, restaurez la sauvegarde de la mise à jour à la main.",
+        "restart": "Nous redémarrons le site",
+        "restartDesc": "Il est hors ligne quelques secondes."
+      },
+      "reauthDescRollback": "Revenir en arrière remplace le code exécuté par votre site, nous vous redemandons donc votre mot de passe."
     }
   },
   "license": {
@@ -4074,6 +4100,7 @@
         "out": "Vers l'extérieur",
         "in": "Vers l'intérieur"
       },
+      "clippedOut": "Le thème coupe les coins de ce bloc, ce qui masque aussi tout ce qui dépasse. Choisissez Vers l'intérieur pour voir le bord.",
       "dirHint": {
         "bottom-out": "Pend sous le bloc, par-dessus ce qui suit.",
         "bottom-in": "Monte depuis le bord inférieur, sur le bloc lui-même.",
@@ -4196,20 +4223,20 @@
       },
       "select": {
         "title": "Cliquez sur un élément de la page",
-        "body": "L'aperçu est votre vraie page. Cliquez sur une partie pour la sélectionner : un titre, le fil, la navigation.",
+        "body": "L'aperçu est votre vraie page. Cliquez sur une partie pour la sélectionner. Double-cliquez sur un titre pour le réécrire directement.",
         "task": "Cliquez sur un élément de l'aperçu pour continuer."
       },
       "panel": {
-        "title": "Ses réglages apparaissent ici",
-        "body": "Modifiez les réglages, montez-le ou descendez-le, ou utilisez Déplacer… pour le mettre ailleurs, comme dans la barre latérale. Vous pouvez aussi le glisser sur la page. Ctrl+Z annule tout."
+        "title": "Ses réglages sont à droite",
+        "body": "Modifiez les réglages, choisissez les colonnes d'une section ou qui voit un bloc. Sans sélection, ce côté affiche votre thème. Ctrl+Z annule tout."
       },
       "add": {
-        "title": "Ajoutez des blocs",
-        "body": "Revenez à Blocs pour voir tout ce que vous pouvez ajouter. Glissez un bloc sur la page, ou cliquez pour l'ajouter après le bloc choisi."
+        "title": "Construire avec des sections",
+        "body": "Une page est une pile de sections. Glissez une section toute prête entre deux sections, puis glissez des blocs dans ses colonnes. Pendant le glisser, une ligne montre chaque endroit possible."
       },
       "mode": {
-        "title": "Simple ou Avancé",
-        "body": "Simple montre l'essentiel pour commencer. Avancé ajoute les calques, qui voit un bloc, les styles du thème et les icônes."
+        "title": "Voyez ce que vous avez changé",
+        "body": "Ici s'affiche ce que la publication changerait. Cliquez pour marquer chaque bloc modifié sur la page et remettre ce que vous avez retiré."
       },
       "publish": {
         "title": "Rien n'est en ligne avant de publier",
@@ -4219,6 +4246,52 @@
         "title": "C'est tout",
         "body": "Amusez-vous à le faire vôtre. Vous pouvez revoir cette visite à tout moment avec le bouton ?."
       }
+    },
+    "sections": {
+      "title": "Sections",
+      "add": "Ajouter",
+      "outline": "Plan",
+      "columns": "Colonnes",
+      "columnsHint": "Moins de colonnes ne retire aucun bloc : ils passent dans la dernière colonne.",
+      "columnsCustom": "Ces colonnes ont des largeurs personnalisées. Choisissez une forme pour les remplacer.",
+      "layout": {
+        "one": "Une colonne",
+        "half": "Deux colonnes",
+        "twoOne": "Deux colonnes, large à gauche",
+        "oneTwo": "Deux colonnes, large à droite",
+        "three": "Trois colonnes"
+      },
+      "preset": {
+        "hero": "Bannière",
+        "features": "Trois atouts",
+        "textBlock": "Texte",
+        "callToAction": "Appel à l'action",
+        "emptyOne": "Vide, une colonne",
+        "emptyTwo": "Vide, deux colonnes"
+      },
+      "words": {
+        "eyebrow": "Bienvenue",
+        "title": "Un titre pour cette section",
+        "body": "Écrivez quelque chose ici. Double-cliquez sur un texte de la page pour le modifier.",
+        "featureTitle": "Un atout",
+        "featureBody": "Dites en une phrase pourquoi il compte.",
+        "ctaTitle": "Prêt à nous rejoindre ?",
+        "ctaBody": "Dites aux visiteurs quoi faire ensuite."
+      },
+      "changedTag": "Modifié",
+      "dropHere": "Déposez ici",
+      "emptyHere": "Déposez un bloc ici",
+      "changes": "{{count}} modification",
+      "changes_other": "{{count}} modifications",
+      "noChanges": "Aucune modification",
+      "hideChanges": "Masquer les modifications",
+      "removed": "Retiré depuis la publication :",
+      "putBack": "Remettre",
+      "settingsTitle": "Réglages",
+      "themeTitle": "Thème",
+      "themeHint": "S'applique à toutes les pages. Cliquez sur un élément de la page pour ne modifier que lui.",
+      "fixedText": "Vous avez remplacé le texte traduit : ce texte est maintenant le même dans toutes les langues.",
+      "useTranslated": "Utiliser à nouveau le texte traduit"
     }
   },
   "groups": {
@@ -4431,7 +4504,33 @@
     "testDesc": "Envoie le modèle de test SMTP à l'adresse de votre choix.",
     "legacy": "Ce modèle a été enregistré en HTML brut par une version précédente et est toujours envoyé tel quel. Réinitialisez-le pour le modifier ici.",
     "langDefault": "Non modifié, cet e-mail est envoyé dans la langue de chaque membre. Dès que vous le modifiez, tout le monde reçoit votre version.",
-    "langCustom": "Votre version est envoyée telle quelle à tout le monde. Réinitialisez-la pour que chaque membre reçoive la version par défaut dans sa langue."
+    "langCustom": "Votre version est envoyée telle quelle à tout le monde. Réinitialisez-la pour que chaque membre reçoive la version par défaut dans sa langue.",
+    "design": {
+      "title": "Design",
+      "desc": "L'apparence de tous les e-mails envoyés par ce site : la couleur, l'en-tête et une note sous le message. La carte reste blanche avec un texte foncé pour rester lisible dans toutes les applis de messagerie, en mode clair ou sombre.",
+      "defaults": "Valeurs par défaut",
+      "accent": "Couleur d'accent",
+      "accentDesc": "Le bandeau du haut, les boutons et les liens. Sur une couleur claire, le texte dessus devient foncé.",
+      "page": "Couleur de page",
+      "pageDesc": "Le fond autour du message.",
+      "header": "En-tête",
+      "headerDesc": "Ce qui apparaît en haut de chaque e-mail. Les images viennent d'Apparence → Identité ; les applis de messagerie n'affichent que PNG, JPEG ou GIF.",
+      "logoMissing": "Aucun logo dans un format lisible par les applis de messagerie n'est téléversé, les e-mails affichent donc l'icône et le nom.",
+      "headers": {
+        "icon": "Icône et nom",
+        "logo": "Logo",
+        "name": "Nom seul"
+      },
+      "support": "Lien « contacter le support »",
+      "supportDesc": "Où mène « contactez le support » dans l'e-mail de réinitialisation du mot de passe : une adresse web ou une adresse e-mail. Vide affiche le texte sans lien.",
+      "supportPlaceholder": "https://example.com/support ou support@example.com",
+      "supportInvalid": "Saisissez une adresse web (https://…) ou une adresse e-mail.",
+      "footer": "Note de bas de page",
+      "footerDesc": "Une note sous le message, comme votre adresse. Le nom et l'adresse du site suivent toujours.",
+      "footerPlaceholder": "Exemple SARL · 1 rue Principale · Paris",
+      "preview": "Aperçu",
+      "previewDesc": "L'e-mail de réinitialisation du mot de passe avec vos modifications, tel qu'il sera envoyé."
+    }
   },
   "themes": {
     "title": "Thèmes",
@@ -6102,5 +6201,11 @@
     "rename": "Renommer",
     "renamed": "Catégorie renommée",
     "dragHint": "Glisser pour réordonner (ou Alt + ↑/↓)"
+  },
+  "addonSettings": {
+    "eyebrow": "Extension",
+    "subtitle": "Les réglages proposés par cette extension. Les changements s'appliquent à l'enregistrement.",
+    "general": "Général",
+    "unavailable": "Cette extension n'a pas de réglages ici, ou elle est désactivée."
   }
 }

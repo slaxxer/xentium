@@ -213,6 +213,14 @@ Both get the same props:
 | `ext` | Your settings (`edge.ext.<namespace>`), unparsed |
 | `setExt(next)` | Replace your settings; `undefined` removes them |
 | `write(edge)` | Replace the whole edge, for presets; `undefined` removes it |
+| `side` | `"top"` or `"bottom"`, the side being edited (core 1.0.0-alpha.20+) |
+| `blockType` | The block the edges are on, such as `header` or `profileCard` (core 1.0.0-alpha.20+) |
+| `templateKey` | The template being edited, such as `profile` (core 1.0.0-alpha.20+) |
+
+Use `blockType` and `templateKey` to offer a setting only where it works, and keep
+showing it where an edge already has it on, so it can be turned off. A setting that
+belongs to one kind of block and should apply site-wide, like an avatar effect, is a
+[block panel](./plugin-blocks.md#settings-on-someone-elses-block) instead.
 
 Build the sections from core's classes so they match the panel around them:
 `lay__props-section` for a heading, `lay__seg` for a segmented control (add

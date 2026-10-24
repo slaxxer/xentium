@@ -18,6 +18,7 @@ import { addPasskey, deviceName, isPasskeyCancel, passkeysSupported, startProvid
 import { uiLocale } from "../../../lib/i18n";
 import { fieldLabel } from "../../../lib/coreText";
 import { ProfileFieldInput } from "../../profiles/ProfileFieldInput";
+import { slotRegistry } from "../../../plugins/slotRegistry";
 
 interface ProfileFieldDef {
   id: string; key: string; label: string; type: string; placeholder: string | null;
@@ -74,6 +75,9 @@ export function RegisterPanel() {
   const [username, setUsername] = useState("");
   const [name, setName] = useState("");
   const [fields, setFields] = useState<ProfileFieldDef[]>([]);
+  // Add-ons' own sign-up fields (slotRegistry.registerRegistrationField), by add-on id.
+  const addonFields = slotRegistry.getRegistrationFields();
+  const [addons, setAddons] = useState<Record<string, unknown>>({});
   const [values, setValues] = useState<Record<string, string>>({});
   const [password, setPassword] = useState("");
   const [pinOn, setPinOn] = useState(false);
@@ -177,6 +181,7 @@ export function RegisterPanel() {
         fields: fields.filter((f) => (values[f.id] ?? "").trim())
           // No privacy: each answer starts with its field's default (ACP → Profile Fields).
           .map((f) => ({ fieldId: f.id, value: values[f.id]!.trim() })),
+        addons,
       });
       setStep("done");
       await applyLogin(res.accessToken);
@@ -296,6 +301,10 @@ export function RegisterPanel() {
                   onChange={(value) => setValues((v) => ({ ...v, [f.id]: value }))} />
                 {f.helpText && <span className="dw-hint">{f.helpText}</span>}
               </label>
+            ))}
+            {addonFields.map(({ slot, pluginId }) => (
+              <slot.component key={slot.id} value={addons[pluginId]}
+                onChange={(value) => setAddons((a) => ({ ...a, [pluginId]: value }))} />
             ))}
             <FormError>{error}</FormError>
             <button className="dw-btn dw-btn--primary dw-btn--wide" disabled={!accountReady || !!busy}>

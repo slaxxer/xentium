@@ -22,6 +22,7 @@
  */
 import { LocalStorageProvider, type StorageProvider } from "@xentium/server-kit";
 import { env } from "../../config/env.js";
+import { cleanImage } from "../../shared/media/images.js";
 
 /**
  * ⚠ Keep in step with `jobs/scheduled-actions/purgeOrphanedUploads.ts`, which sweeps
@@ -29,11 +30,24 @@ import { env } from "../../config/env.js";
  * files are REFERENCED becomes a directory whose contents are all orphans, and the
  * purge deletes them on a schedule long after anyone connects the two.
  */
-export const ALLOWED_UPLOAD_DIRS = ["avatars", "covers", "articles", "pages", "groups", "themes", "layouts", "emojis"] as const;
+export const ALLOWED_UPLOAD_DIRS = ["avatars", "covers", "articles", "pages", "groups", "themes", "layouts", "emojis", "addons"] as const;
 
 export { LocalStorageProvider };
 
-export const storage: StorageProvider = new LocalStorageProvider({
+/**
+ * Core's storage: the framework provider, with every raster image cleaned on the way
+ * in — turned upright, re-encoded without EXIF/GPS (`shared/media/images.ts`). In ONE
+ * place on purpose: every upload path (avatars, covers, article images, emojis, group
+ * icons, layout backgrounds, theme assets, add-on files) gets it, including ones
+ * written after this, without each having to remember.
+ */
+class CleaningStorageProvider extends LocalStorageProvider {
+  override async save(subdir: string, filename: string, data: Buffer): Promise<string> {
+    return super.save(subdir, filename, await cleanImage(data, filename));
+  }
+}
+
+export const storage: StorageProvider = new CleaningStorageProvider({
   baseDir: env.UPLOAD_DIR,
   allowedSubdirs: ALLOWED_UPLOAD_DIRS,
 });

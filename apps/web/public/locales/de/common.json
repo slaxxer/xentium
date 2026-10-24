@@ -734,5 +734,12 @@
     "bannedForever": "{{user}} wird dauerhaft gesperrt",
     "fixed": "Von der Vorlage festgelegt. Teamleiter mit der Berechtigung zum Überschreiben können das ändern.",
     "override": "Überschreiben (Teamleitung)"
+  },
+  "uploader": {
+    "dropOne": "Datei hierher ziehen oder klicken, um eine auszuwählen",
+    "dropMany": "Dateien hierher ziehen oder klicken, um auszuwählen",
+    "max": "Bis zu {{size}} je Datei",
+    "tooLarge": "Größer als {{size}}",
+    "failed": "Das Hochladen ist fehlgeschlagen. Versuch es noch einmal."
   }
 }

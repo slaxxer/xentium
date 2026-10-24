@@ -76,6 +76,9 @@ const boolObj = (keys: string[]) =>
 export const notificationPreferencesSchema = z.object({
   inApp: boolObj(["new_follower", "profile_activity", "mentions", "article_activity", "progression", "badges"]),
   email: boolObj(["new_follower", "profile_activity", "mentions"]),
+  /** Add-ons' notification types, by type; unknown types are ignored by the service. */
+  addons: z.record(z.string().max(100), z.object({ inApp: z.boolean(), email: z.boolean() }))
+    .refine((v) => Object.keys(v).length <= 200, "Too many types").optional(),
 });
 
 export const profileFieldValuesSchema = z.object({

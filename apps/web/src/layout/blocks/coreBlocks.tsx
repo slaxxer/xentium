@@ -18,6 +18,7 @@ import { ArticleIndexBlock, ArticleCategoriesBlock, ArticleTrendingBlock, Articl
 import "./coreBlocks.scss";
 import { TokenIcon } from "../../components/TokenIcon";
 import { resolveImageSource, sectionBackground } from "./sectionBackground";
+import { inlineText, isEditorPreview } from "../previewMode";
 // Re-exported: these lived here first, and blocks and the editor import them from here.
 export { resolveImageSource, sectionBackground };
 
@@ -135,12 +136,13 @@ function HeadingBlock({ props }: BlockProps<{ text: LocalizedText; eyebrow?: Loc
   const Tag = (`h${props.level}`) as "h1" | "h2" | "h3";
   return (
     <header className={`xt-heading xt-heading--${props.align}`}>
-      {eyebrow && <div className="xt-heading__eyebrow">{eyebrow}</div>}
-      <Tag className="xt-heading__title">
+      {eyebrow && <div className="xt-heading__eyebrow" {...inlineText("eyebrow")}>{eyebrow}</div>}
+      <Tag className="xt-heading__title" {...(props.icon ? {} : inlineText("text"))}>
         {/* ⚠ `TokenIcon` renders nothing at all when the prop is absent or cannot be
             drawn, so a heading without one is unchanged down to the markup. */}
         {props.icon && <TokenIcon token={props.icon} className="xt-heading__icon" />}
-        {text}
+        {/* Its own element in the editor only, so typing over it does not take the icon. */}
+        {props.icon && isEditorPreview() ? <span {...inlineText("text")}>{text}</span> : text}
       </Tag>
     </header>
   );
@@ -149,7 +151,7 @@ function HeadingBlock({ props }: BlockProps<{ text: LocalizedText; eyebrow?: Loc
 function EyebrowBlock({ props }: BlockProps<{ text: LocalizedText; align: "start" | "center" }>) {
   const text = useText(props.text);
   if (!text) return null;
-  return <div className={`xt-eyebrow xt-eyebrow--${props.align}`}>{text}</div>;
+  return <div className={`xt-eyebrow xt-eyebrow--${props.align}`} {...inlineText("text")}>{text}</div>;
 }
 
 registerBlock({

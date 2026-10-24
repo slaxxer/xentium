@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import { prisma } from "../../infrastructure/db.js";
 import { redis, rkey } from "../../infrastructure/redis.js";
 import { sendEmail } from "../../infrastructure/email/email.service.js";
+import { logger } from "../../infrastructure/logging/logger.js";
 import { renderEmailTemplate, siteVars } from "../../infrastructure/email/email-templates.js";
 import { finishSignIn, type SignInContext, type SignInResult } from "./auth.signin.js";
 import { recipientLocale } from "../../shared/i18n/serverText.js";
@@ -45,8 +46,13 @@ export async function requestMagicLink(email: string, persistent: boolean, local
     username: user.username,
     expiry_minutes: String(MAGIC_LINK_TTL_SEC / 60),
   }, await recipientLocale({ userId: user.id, hint: localeHint }));
-  const sent = await sendEmail(user.email, mail.subject, mail.html);
-  if (!sent) {
+  // A failed send answers like an unknown address: a 500 here only for real accounts
+  // would tell anyone which addresses have one. The admin finds it in the server log.
+  const sent = await sendEmail(user.email, mail.subject, mail.html).catch((err: unknown) => {
+    logger.error({ err, template: "magic_link" }, "email send failed");
+    return null;
+  });
+  if (sent === false) {
     // Dev fallback, as for reset links: without SMTP the link goes to stderr.
     process.stderr.write(`\n\x1b[33m[DEV] Sign-in link for ${user.email}:\x1b[0m\n  ${link}\n\n`);
   }

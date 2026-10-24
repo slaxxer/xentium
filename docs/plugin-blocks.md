@@ -133,7 +133,7 @@ offers a drop, so it never shows a drop target that would be refused. Core's
 tracks is the number of `column` children. A number that repeats what the tree already
 says will sooner or later disagree with it.
 
-**Nesting has a limit:** `MAX_BLOCK_DEPTH` is 5 (a region's own blocks count as 1). The
+**Nesting has a limit:** `MAX_BLOCK_DEPTH` is 8 (a region's own blocks count as 1). The
 editor enforces it, and so does every save, because a stored document didn't
 necessarily come from the editor.
 
@@ -276,6 +276,42 @@ icon on every instance anyone ever creates.
 
 More in [Icons](icon-kits.md).
 
+## How the editor arranges your block
+
+Theme Studio shows a page as a stack of **sections**. A section has one to three
+columns, and blocks go into the columns. Your block needs nothing special for this:
+
+- **A block** can be dragged into any column, section or container that accepts it.
+  While an admin drags, the editor draws a line at every place it can go and drops it
+  on the line nearest the pointer.
+- **A section (or a `columns` row) only goes between sections.** If your container is
+  a section-like band, give admins a `section` with your block inside rather than a
+  container of your own, so it behaves like every other section.
+- **Your containers still take drops**, by the same `childTypes` and `onlyInside`
+  rules as before. On a page they show as one group that moves as a whole, with their
+  contents listed in the Outline tab.
+
+### Text admins can type over
+
+An admin can double-click text on the page and type over it. A block opts in by
+putting `data-xt-inline="<prop>"` on the element that shows exactly one prop's text,
+and nothing else:
+
+```tsx
+component: ({ props }) => (
+  <div className="mp-banner">
+    <h2 data-xt-inline="title">{props.title}</h2>
+    <p data-xt-inline="subtitle">{props.subtitle}</p>
+  </div>
+),
+```
+
+The prop has to be a plain string (or a `LocalizedText`) in your schema; the editor
+ignores names your schema doesn't have. When the element also holds an icon or a
+count, wrap just the text in a `<span>` and mark that. Don't mark text that you fill in
+from data (a member count, the site name), since typing over it would replace the live
+value with a fixed one. The attribute does nothing on the live site.
+
 ## CSS handles
 
 Besides the variant, an admin can give any block a **`className`**: their own handle for
@@ -301,6 +337,50 @@ What that means for you:
   sits between a container and its children in the DOM, and selectors match the DOM even
   though the wrapper has no box. Use descendant selectors. We shipped this bug in core
   once, and it broke the mobile layout of every styled column.
+
+## Settings on someone else's block
+
+Sometimes your plugin has an effect that belongs to a block it didn't make: a ring
+around avatars belongs to the avatar block, not to every block on the page. A **block
+panel** puts your settings on the blocks you name, and only there, in Theme Studio's
+settings pane (core 1.0.0-alpha.20 and newer).
+
+```ts
+// vite.config.ts externals: "@web/layout/blockPanelRegistry": `${H}.webBlockPanels`
+const panels = window.__XENTIUM_HOST__?.webBlockPanels;
+if (panels) {
+  panels.registerBlockPanel({
+    id: "myplugin.glow",              // "<namespace>.<name>"
+    pluginId: "my-plugin",
+    blockTypes: ["profileAvatar"],     // the blocks it shows on
+    title: () => i18n.t("myplugin:glow.title"),
+    active: (tokens) => tokens["--myplugin-glow"] === "on",  // the dot beside the title
+    Panel: GlowPanel,
+  });
+}
+```
+
+Your panel gets the selected `block` (`id`, `type`, `props`), the `templateKey` being
+edited, and the theme's site-wide tokens:
+
+| Prop | |
+|---|---|
+| `themeTokens` | The theme's site-wide tokens as the draft has them |
+| `setThemeTokens(tokens)` | Stage tokens in the theme's draft; `null` clears one |
+
+What you stage is part of the theme's style. It shows in the editor's preview at once,
+goes live when the admin publishes, belongs to that theme only, and reaches **every
+page**, because it is served in the site's stylesheet. So a panel is the right tool for
+an effect that should follow the theme everywhere, set from the block it is about. Name
+your tokens with your own prefix (`--myplugin-…`), and read them in your CSS, or in your
+script with `getComputedStyle(document.documentElement)` when CSS alone can't switch
+the effect on.
+
+A panel never changes the block's own props. If your setting only matters on the page
+the block is on, it belongs in your own block's props instead.
+
+When your plugin is off, its panels are gone and what they staged stays in the theme,
+unused, until the plugin is back.
 
 ## Data: core blocks vs plugin blocks
 

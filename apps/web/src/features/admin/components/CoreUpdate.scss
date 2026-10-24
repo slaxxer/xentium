@@ -490,6 +490,12 @@
     h2 { margin: 0; font-size: var(--fs-md); font-weight: 800; color: var(--c-fg); }
     p { margin: 4px 0 0; font-size: var(--fs-xs); color: var(--c-fg-muted); }
   }
+  // A finished update: just its line and the way back.
+  &.is-finished {
+    padding: 12px 16px;
+    .cur-runcard__head { align-items: center; }
+    h2 { font-size: var(--fs-sm); }
+  }
 }
 .cur-chip {
   padding: 2px 10px; border-radius: 999px; font-size: var(--fs-2xs); font-weight: 700;

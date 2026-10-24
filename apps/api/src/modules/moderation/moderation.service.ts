@@ -11,6 +11,7 @@ import { describeTarget } from "./reportTarget.js";
 import { revokeUserAccessTokens } from "../auth/session-revocation.js";
 import { staffGroupKeys } from "../../shared/utils/staff.js";
 import { removeArticleComment } from "../articles/comment.remove.js";
+import { emit } from "../../core/events/events.js";
 
 
 // Find the most recent unresolved case linking a user (used to decide whether a
@@ -152,6 +153,7 @@ export const moderationService = {
     const report = await prisma.moderationReport.create({
       data: { ...data, status: "pending", targetUserId: info.authorId, contentSnapshot: info.snapshot },
     });
+    emit("content.reported", { reportId: report.id, targetType: data.targetType, targetId: data.targetId, reporterId: data.reporterId });
 
     await notifyPermHolders("moderation.report.manage", {
       type:  "mod.new_report",
@@ -226,6 +228,8 @@ export const moderationService = {
         expiresAt:  data.expiry !== undefined ? templateWarningExpiry(data.expiry) : warningExpiry(data.expiresAt),
       },
     });
+
+    emit("user.warned", { userId: data.userId, warningId: warning.id, byUserId: data.issuedById });
 
     await writeModLog({
       actorId:    data.issuedById,
@@ -374,6 +378,7 @@ export const moderationService = {
     });
 
     await revokeUserAccessTokens(userId);
+    emit("user.banned", { userId, until: type === "permanent" ? null : expiresAt?.toISOString() ?? null, byUserId: null });
 
     await notificationService.dispatch({
       userId,
@@ -493,6 +498,7 @@ export const moderationService = {
       });
       // And any access token already in flight (BUGS.md #4), so the next request fails.
       await revokeUserAccessTokens(user.id);
+      emit("user.banned", { userId: user.id, until: null, byUserId: actorId });
       await notificationService.dispatch({
         userId:   user.id,
         type:     "moderation.ban_issued",
@@ -567,6 +573,7 @@ export const moderationService = {
           data: { actorId: null, actorType: "system", action: "ban.auto_issued", targetType: "user", targetId: user.id, reason },
         });
       });
+      emit("user.banned", { userId: user.id, until: null, byUserId: null });
       await notificationService.dispatch({
         userId:   user.id,
         type:     "moderation.ban_issued",
@@ -589,6 +596,7 @@ export const moderationService = {
 
     // Same removal as the author's own delete: the comment and its replies go, counters follow.
     await prisma.$transaction((tx) => removeArticleComment(tx, commentId, actorId, reason));
+    emit("comment.deleted", { commentId, articleId: comment.articleId, authorId: comment.authorId });
 
     await writeModLog({
       actorId,
@@ -935,6 +943,10 @@ export const moderationService = {
     });
 
     await revokeUserAccessTokens(data.userId);
+    emit("user.banned", {
+      userId: data.userId, byUserId: data.issuedById,
+      until: data.type === "permanent" ? null : data.expiresAt?.toISOString() ?? null,
+    });
 
     if (data.notify !== false) await notificationService.dispatch({
       userId:   data.userId,
@@ -1122,6 +1134,7 @@ export const moderationService = {
         data: { actorId: liftedById, actorType: "user", action: "ban.lifted", targetType: "user", targetId: ban.userId, reason: `Ban lifted (was: ${ban.reason})` },
       });
     });
+    emit("user.unbanned", { userId: ban.userId });
 
     await notificationService.dispatch({
       userId:   ban.userId,

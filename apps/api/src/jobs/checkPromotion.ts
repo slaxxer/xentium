@@ -12,6 +12,7 @@ import { bullConnection, bullPrefix, queues } from "../infrastructure/queue.js";
 import { notificationService } from "../modules/notifications/notification.service.js";
 import { permissionCache } from "../modules/permissions/permission.cache.js";
 import { progressionCriteriaRegistry } from "../core/progression-registry/progression-criteria-registry.js";
+import { emitGroupsChanged } from "../core/events/events.js";
 
 export interface CheckPromotionPayload {
   userId: string;
@@ -130,6 +131,7 @@ export async function processCheckPromotion(
 
   // Flush the permission cache — user now has different group memberships
   await permissionCache.invalidate(userId);
+  emitGroupsChanged(userId, currentProg ? [currentProg.groupId] : [], [nextRung.groupId]);
 
   // ── Notify ───────────────────────────────────────────────────────────────
 

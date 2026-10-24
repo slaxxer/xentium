@@ -6,7 +6,7 @@
     },
     "password_reset": {
       "subject": "Restablece tu contraseña de {{site_name}}",
-      "body": "<h2>Restablece tu contraseña</h2><p>Hemos recibido una solicitud para restablecer tu contraseña. Pulsa el botón de abajo para elegir una nueva. Este enlace caduca en {{expiry_minutes}} minutos y solo se puede usar una vez.</p><p>{{reset_button}}</p><p>Si no lo has solicitado tú, puedes ignorar este correo: tu contraseña seguirá siendo la misma.</p>"
+      "body": "<h1>Vamos a recuperar tu acceso.</h1><p>Alguien ha pedido restablecer la contraseña de tu cuenta. Si fuiste tú, crea una nueva aquí abajo.</p><p>{{reset_button}}</p><p>{{request_box}}</p><hr><p>¿No fuiste tú? Ignora este correo y tu contraseña no cambiará. Si vuelve a pasar, {{support_link}}.</p>"
     },
     "magic_link": {
       "subject": "Tu enlace de inicio de sesión para {{site_name}}",
@@ -27,7 +27,16 @@
   },
   "buttons": {
     "view": "Ver →",
-    "reset": "Restablecer contraseña →",
-    "signIn": "Iniciar sesión →"
-  }
+    "reset": "Crear una contraseña nueva",
+    "signIn": "Iniciar sesión →",
+    "resetNote": "El enlace caduca en {{minutes}} minutos y solo funciona una vez."
+  },
+  "request": {
+    "title": "Detalles de la solicitud",
+    "time": "Hora",
+    "device": "Dispositivo",
+    "location": "Ubicación"
+  },
+  "supportLink": "contacta con soporte",
+  "sentBy": "Enviado por {{site}}"
 }

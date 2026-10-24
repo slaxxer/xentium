@@ -2,6 +2,7 @@ import { Worker } from "bullmq";
 import { prisma } from "../infrastructure/db.js";
 import { bullConnection, bullPrefix } from "../infrastructure/queue.js";
 import { notificationService } from "../modules/notifications/notification.service.js";
+import { emit } from "../core/events/events.js";
 
 const QUEUE_NAME = "ban-expiry";
 
@@ -35,6 +36,7 @@ export async function processBanExpiry(): Promise<void> {
       })),
     });
   });
+  for (const b of expiredBans) emit("user.unbanned", { userId: b.userId });
 
   await Promise.all(
     expiredBans.map((b) =>

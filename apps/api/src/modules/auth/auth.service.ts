@@ -9,11 +9,13 @@ import { revokeUserAccessTokens } from "./session-revocation.js";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
 import { authGuardRegistry } from "../../core/auth-guard-registry/auth-guard-registry.js";
 import { sendEmail } from "../../infrastructure/email/email.service.js";
-import { renderEmailTemplate, siteVars } from "../../infrastructure/email/email-templates.js";
+import { logger } from "../../infrastructure/logging/logger.js";
+import { renderEmailTemplate, requestVars, siteVars } from "../../infrastructure/email/email-templates.js";
 import { notificationService } from "../notifications/notification.service.js";
 import { getSetting } from "../../shared/utils/settings.js";
 import { recipientLocale } from "../../shared/i18n/serverText.js";
 import { assertProfileFieldValues, privacyFor } from "../users/profileFieldValues.js";
+import { assertAllowed, emit } from "../../core/events/events.js";
 
 /** `cookies` carries the SIGNED cookies through to auth guards, which read their
  *  own (a beta plugin needs `xt_beta`). Core never inspects them itself. */
@@ -163,6 +165,7 @@ export async function login(identifier: string, password: string, pin: string | 
   }
 
   const tokens = await createSession(user.id, meta, { persistent: opts.persistent ?? true });
+  emit("user.loggedIn", { userId: user.id, method: "password" });
   return {
     user: { id: user.id, email: user.email },
     ...tokens,
@@ -234,6 +237,7 @@ export async function register(
   meta: Meta,
   inviteCode?: string,
   name?: string,
+  addons: Record<string, unknown> = {},
 ) {
   /**
    * Plugin gates run FIRST, and one of them may own registration outright.
@@ -288,6 +292,7 @@ export async function register(
   if (existingUsername) {
     throw new XentiumError({ code: "XEC-AUTH-2002", httpStatus: 409, message: "Username is already taken" });
   }
+  await assertAllowed("registration.validate", { email, username, method: "password", addons });
 
   // Optional display / full name (registration.collect_name). Only stored when
   // collection is on; required only when the admin marked it required.
@@ -341,6 +346,7 @@ export async function register(
   // The form's consent box covered every document members must accept (the
   // controller refused the sign-up without it): record each at its revision.
   await legalService.accept(user.id);
+  emit("user.registered", { userId: user.id, method: "password", addons });
 
   // Invalidate the email verification code
   await redis.del(rkey("regcode", email));
@@ -385,7 +391,12 @@ export async function register(
  * the email exists (§43 — account enumeration prevention). When the account is
  * found and active, a single-use DB-backed token is created and emailed.
  */
-export async function requestPasswordReset(email: string, localeHint?: string): Promise<void> {
+export async function requestPasswordReset(
+  email: string,
+  localeHint?: string,
+  /** Who asked, for the mail's request details. Absent when an admin sends the reset. */
+  request?: { ip?: string | null; userAgent?: string | null },
+): Promise<void> {
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user || !user.isActive) return; // silent no-op — never leak existence
 
@@ -401,13 +412,20 @@ export async function requestPasswordReset(email: string, localeHint?: string): 
   const appUrl = process.env.APP_URL ?? "http://localhost:5173";
   const link = `${appUrl.replace(/\/$/, "")}/reset-password?token=${raw}`;
 
+  const locale = await recipientLocale({ userId: user.id, hint: localeHint });
   const reset = await renderEmailTemplate("password_reset", {
     ...(await siteVars()),
+    ...(request ? await requestVars(request, locale) : {}),
     reset_url: link,
     expiry_minutes: String(Math.round(RESET_TOKEN_TTL_MS / 60_000)),
-  }, await recipientLocale({ userId: user.id, hint: localeHint }));
-  const sent = await sendEmail(email, reset.subject, reset.html);
-  if (!sent) {
+  }, locale);
+  // A failed send answers like an unknown address: a 500 here only for real accounts
+  // would tell anyone which addresses have one. The admin finds it in the server log.
+  const sent = await sendEmail(email, reset.subject, reset.html).catch((err: unknown) => {
+    logger.error({ err, template: "password_reset" }, "email send failed");
+    return null;
+  });
+  if (sent === false) {
     // Dev fallback — see sendRegistrationCode for why this writes to stderr.
     process.stderr.write(
       `\n\x1b[33m[DEV] Password reset link for ${email}:\x1b[0m\n  ${link}\n\n`,

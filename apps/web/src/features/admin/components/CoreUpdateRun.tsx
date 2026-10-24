@@ -61,34 +61,45 @@ export interface RunView {
 
 export const RUN_KEY = ["acp-core-update-run"] as const;
 
+const isGoing = (v: RunView | null | undefined) => !!v && (v.queued || v.status?.state === "running");
+
+/** The last run state we know of, kept across the restart (when the API can't answer). */
+let lastRun: RunView | null = null;
+
+/**
+ * Record a run state: from a poll, or from the answer to starting one. The start
+ * path matters most for a ROLLBACK: it restarts the site within milliseconds, so
+ * the next poll already meets the 502 — and only a run we know is going makes that
+ * "restarting" rather than a fatal error.
+ */
+export function trackRun(v: RunView): RunView {
+  lastRun = v;
+  // The restart answers 502 for a moment: no fatal overlay while a run is going.
+  holdFatalErrors(isGoing(v));
+  return v;
+}
+
 /** The run, polled every second while one is going (and once a minute otherwise). */
 export function useCoreUpdateRun(enabled = true) {
-  const last = useRef<RunView | null>(null);
   const [reconnecting, setReconnecting] = useState(false);
   const query = useQuery<RunView>({
     queryKey: RUN_KEY,
     queryFn: async () => {
       try {
-        const v = await api.get<RunView>("/admin/core-update/run");
-        last.current = v;
+        const v = trackRun(await api.get<RunView>("/admin/core-update/run"));
         setReconnecting(false);
-        // The restart answers 502 for a moment: no fatal overlay while a run is going.
-        holdFatalErrors(v.queued || v.status?.state === "running");
         return v;
       } catch (e) {
-        // The API is down for the restart in the middle of an update: keep showing the run.
-        if (last.current && (last.current.queued || last.current.status?.state === "running")) {
+        // The API is down for the restart in the middle of a run: keep showing the run.
+        if (isGoing(lastRun)) {
           setReconnecting(true);
-          return last.current;
+          return lastRun!;
         }
         throw e;
       }
     },
     enabled,
-    refetchInterval: (q) => {
-      const v = q.state.data;
-      return v && (v.queued || v.status?.state === "running") ? 1000 : 60_000;
-    },
+    refetchInterval: (q) => (isGoing(q.state.data) ? 1000 : 60_000),
     refetchIntervalInBackground: true,
   });
   return { ...query, reconnecting };
@@ -96,18 +107,22 @@ export function useCoreUpdateRun(enabled = true) {
 
 // ── Opening the dialog from anywhere ────────────────────────────────────────
 
-let dialogOpen = false;
+/** What the dialog was opened for: the offered update, or going back to the release an update replaced. */
+type DialogMode = { action: "update" } | { action: "rollback"; version: string };
+let dialogMode: DialogMode | null = null;
 const listeners = new Set<() => void>();
 const emit = () => listeners.forEach((l) => l());
-export function openCoreUpdateRun() { dialogOpen = true; emit(); }
-function closeCoreUpdateRun() { dialogOpen = false; emit(); }
-function useDialogOpen() {
-  return useSyncExternalStore((l) => { listeners.add(l); return () => listeners.delete(l); }, () => dialogOpen);
+export function openCoreUpdateRun() { dialogMode = { action: "update" }; emit(); }
+/** A rollback runs in the same dialog as an update: confirm, then every step live. */
+export function openCoreRollback(version: string) { dialogMode = { action: "rollback", version }; emit(); }
+function closeCoreUpdateRun() { dialogMode = null; emit(); }
+function useDialogMode() {
+  return useSyncExternalStore((l) => { listeners.add(l); return () => listeners.delete(l); }, () => dialogMode);
 }
 
 /** Mounted once in the ACP shell. Reopens the dialog for the admin whose update is running. */
 export function CoreUpdateRunHost() {
-  const open = useDialogOpen();
+  const mode = useDialogMode();
   const { user } = useAuth();
   const run = useCoreUpdateRun(!!user && userCan(user, CorePermissions.SYSTEM_UPDATE));
   const reopened = useRef<string | null>(null);
@@ -116,10 +131,10 @@ export function CoreUpdateRunHost() {
     // Whoever started a run that is still going sees it again after a reload.
     if (s && s.state === "running" && s.requestedBy?.id === user?.id && reopened.current !== s.id) {
       reopened.current = s.id;
-      openCoreUpdateRun();
+      if (s.action === "rollback") openCoreRollback(s.to); else openCoreUpdateRun();
     }
   }, [s, user?.id]);
-  return open ? <CoreUpdateRunDialog onClose={closeCoreUpdateRun} /> : null;
+  return mode ? <CoreUpdateRunDialog mode={mode} onClose={closeCoreUpdateRun} /> : null;
 }
 
 // ── The shared progress view ────────────────────────────────────────────────
@@ -202,7 +217,7 @@ export function RunProgress({ status, reconnecting, showLogByDefault = false }: 
       <ol className="cur-steps">
         {steps.map((s) => (
           <li key={s.key} ref={s.key === activeKey ? activeRef : undefined}
-            className={`cur-step is-${s.state}${s.key === "restore" || s.key === "switch-back" ? " is-undo" : ""}`}>
+            className={`cur-step is-${s.state}${status.action === "update" && (s.key === "restore" || s.key === "switch-back") ? " is-undo" : ""}`}>
             <div className="cur-step__row">
               <span className="cur-step__dot" aria-hidden="true">
                 {s.state === "done" && <FontAwesomeIcon icon={faCheck} />}
@@ -283,7 +298,7 @@ export function RunProgress({ status, reconnecting, showLogByDefault = false }: 
 
 // ── The dialog ─────────────────────────────────────────────────────────────
 
-export function CoreUpdateRunDialog({ onClose }: { onClose: () => void }) {
+export function CoreUpdateRunDialog({ mode = { action: "update" }, onClose }: { mode?: DialogMode; onClose: () => void }) {
   const { t } = useTranslation("acp");
   const qc = useQueryClient();
   const run = useCoreUpdateRun();
@@ -300,19 +315,25 @@ export function CoreUpdateRunDialog({ onClose }: { onClose: () => void }) {
     : showRun && status ? (status.state === "running" ? "running" : status.state === "done" ? "done" : "failed")
     : "confirm";
 
+  const rolling = mode.action === "rollback";
   const start = useMutation({
-    mutationFn: () => api.post<RunView>("/admin/core-update/run", { version: view?.offered, password }),
+    mutationFn: () => rolling
+      ? api.post<RunView>("/admin/core-update/rollback", { password })
+      : api.post<RunView>("/admin/core-update/run", { version: view?.offered, password }),
     onMutate: () => setPreviousRun(view?.status?.id ?? null),
-    onSuccess: (v) => { setPassword(""); setAsked(true); qc.setQueryData(RUN_KEY, v); },
+    onSuccess: (v) => { setPassword(""); setAsked(true); qc.setQueryData(RUN_KEY, trackRun(v)); },
   });
 
   const closable = phase !== "running" && phase !== "queued";
-  const version = status && showRun ? status.to : view?.offered ?? "";
+  const version = status && showRun ? status.to : rolling ? mode.version : view?.offered ?? "";
   const title = phase === "done" ? t(status?.action === "rollback" ? "coreUpdate.run.titleRolledBackDone" : "coreUpdate.run.titleDone", { version })
     : phase === "failed" ? t(status?.state === "rolled-back" ? "coreUpdate.run.titleRolledBack" : "coreUpdate.run.titleFailed")
-    : phase === "running" || phase === "queued" ? t(status?.action === "rollback" ? "coreUpdate.run.titleRollingBack" : "coreUpdate.run.titleRunning", { version })
-    : t("coreUpdate.run.titleConfirm", { version });
-  const sub = t(`coreUpdate.run.sub.${phase}`, { from: status?.from ?? view?.running ?? "" });
+    : phase === "queued" ? t(rolling ? "coreUpdate.run.titleRollingBack" : "coreUpdate.run.titleRunning", { version })
+    : phase === "running" ? t(status?.action === "rollback" ? "coreUpdate.run.titleRollingBack" : "coreUpdate.run.titleRunning", { version })
+    : t(rolling ? "coreUpdate.run.rollbackTo" : "coreUpdate.run.titleConfirm", { version });
+  const sub = t(rolling && phase === "confirm" ? "coreUpdate.run.sub.confirmRollback"
+    : phase === "done" && status?.action === "rollback" ? "coreUpdate.run.sub.doneRollback"
+    : `coreUpdate.run.sub.${phase}`, { from: status?.from ?? view?.running ?? "", version });
   const err = start.error;
 
   return (
@@ -320,7 +341,7 @@ export function CoreUpdateRunDialog({ onClose }: { onClose: () => void }) {
       <section className="acp-modal cur-dialog" role="dialog" aria-modal="true" aria-label={title} onClick={(e) => e.stopPropagation()}>
         <header className="cur-dialog__head">
           <span className={`cur-dialog__icon is-${phase}`} aria-hidden="true">
-            <FontAwesomeIcon icon={phase === "done" ? faCheck : phase === "failed" ? faRotateLeft : faDownload} />
+            <FontAwesomeIcon icon={phase === "done" ? faCheck : phase === "failed" || rolling ? faRotateLeft : faDownload} />
           </span>
           <div className="cur-dialog__titles">
             <h2>{title}</h2>
@@ -336,6 +357,27 @@ export function CoreUpdateRunDialog({ onClose }: { onClose: () => void }) {
         <div className="cur-dialog__body">
           {!view ? (
             <p className="cur-muted">{t("coreUpdate.run.loading")}</p>
+          ) : phase === "confirm" && rolling ? (
+            <>
+              <div className="cur-versions">
+                <span>{view.running}</span>
+                <FontAwesomeIcon icon={faArrowRight} />
+                <b>{mode.version}</b>
+              </div>
+              <ol className="cur-promises">
+                {(["switch", "database", "restart"] as const).map((k, i) => (
+                  <li key={k}>
+                    <span className="cur-promises__n">{i + 1}</span>
+                    <span><b>{t(`coreUpdate.run.rollbackPromise.${k}`)}</b><small>{t(`coreUpdate.run.rollbackPromise.${k}Desc`, { version: mode.version })}</small></span>
+                  </li>
+                ))}
+              </ol>
+              <form className="cur-reauth" onSubmit={(e) => { e.preventDefault(); if (password) start.mutate(); }}>
+                <label htmlFor="cur-pw"><b>{t("coreUpdate.run.reauth")}</b><small>{t("coreUpdate.run.reauthDescRollback")}</small></label>
+                <input id="cur-pw" className="inp" type="password" autoComplete="current-password" value={password}
+                  onChange={(e) => setPassword(e.target.value)} placeholder={t("coreUpdate.run.passwordPh")} autoFocus />
+              </form>
+            </>
           ) : phase === "confirm" ? (
             !view.available ? (
               <div className="cur-setup">
@@ -376,14 +418,18 @@ export function CoreUpdateRunDialog({ onClose }: { onClose: () => void }) {
 
         <footer className="cur-dialog__foot">
           <span className="cur-muted">
-            {phase === "confirm" && view?.available && view.offered ? t("coreUpdate.run.footConfirm")
+            {phase === "confirm" && (rolling || (view?.available && view.offered)) ? t("coreUpdate.run.footConfirm")
               : phase === "running" || phase === "queued" ? t("coreUpdate.run.footRunning")
               : phase === "done" && status?.backup ? t("coreUpdate.run.footBackup", { file: status.backup }) : ""}
           </span>
           {phase === "confirm" && (
             <>
               <Button variant="ghost" onClick={onClose}>{t("coreUpdate.run.cancel")}</Button>
-              {view?.available && view.offered && (
+              {rolling ? (
+                <Button icon={faRotateLeft} disabled={!password || start.isPending} onClick={() => start.mutate()}>
+                  {t("coreUpdate.run.rollbackTo", { version: mode.version })}
+                </Button>
+              ) : view?.available && view.offered && (
                 <Button icon={faDownload} disabled={!password || start.isPending} onClick={() => start.mutate()}>
                   {t("coreUpdate.run.updateTo", { version: view.offered })}
                 </Button>
@@ -416,25 +462,21 @@ export function CoreUpdateRunDialog({ onClose }: { onClose: () => void }) {
 /**
  * The top of System → Migration History: the update on offer (Update now opens
  * the dialog), and the latest update or rollback the updater ran, live while it
- * runs. A finished update can be rolled back from here, with the password again.
+ * runs. Once it went through, the steps are history: one line is left, which
+ * keeps the way back (Roll back opens the same dialog as an update). A failed or stalled
+ * run keeps the whole card, because that is when the steps matter.
  */
 export function CoreUpdateRunCard() {
   const { t } = useTranslation("acp");
-  const qc = useQueryClient();
   const { user } = useAuth();
   const allowed = userCan(user, CorePermissions.SYSTEM_UPDATE);
   const run = useCoreUpdateRun(allowed);
-  const [askPw, setAskPw] = useState(false);
-  const [password, setPassword] = useState("");
-  const rollback = useMutation({
-    mutationFn: () => api.post<RunView>("/admin/core-update/rollback", { password }),
-    onSuccess: (v) => { setPassword(""); setAskPw(false); qc.setQueryData(RUN_KEY, v); },
-  });
   const view = run.data;
   if (!allowed || !view) return null;
   const s = view.status;
   const going = view.queued || s?.state === "running";
   const canRollback = !going && view.available && s?.action === "update" && s.state === "done" && s.to === view.running;
+  const finished = !view.stalled && s?.state === "done";
 
   return (
     <div className="cur-history">
@@ -450,29 +492,19 @@ export function CoreUpdateRunCard() {
       )}
 
       {s && (
-        <section className="mh-card cur-runcard" aria-label={t("coreUpdate.run.cardLabel")}>
+        <section className={`mh-card cur-runcard${finished ? " is-finished" : ""}`} aria-label={t("coreUpdate.run.cardLabel")}>
           <header className="cur-runcard__head">
             <div>
               <h2>{t(s.action === "rollback" ? "coreUpdate.run.cardRollback" : "coreUpdate.run.cardUpdate", { from: s.from, to: s.to })}</h2>
               <p>{t("coreUpdate.run.cardMeta", { who: s.requestedBy?.username ?? "–", when: new Date(s.startedAt).toLocaleString() })}{s.backup ? ` · ${s.backup}` : ""}</p>
             </div>
             <span className={`cur-chip is-${view.stalled ? "failed" : s.state}`}>{t(view.stalled ? "coreUpdate.run.chip.stalled" : `coreUpdate.run.chip.${s.state}`)}</span>
-            {canRollback && !askPw && (
-              <Button variant="ghost" icon={faRotateLeft} onClick={() => setAskPw(true)}>{t("coreUpdate.run.rollbackTo", { version: s.from })}</Button>
+            {canRollback && (
+              <Button variant="ghost" icon={faRotateLeft} onClick={() => openCoreRollback(s.from)}>{t("coreUpdate.run.rollbackTo", { version: s.from })}</Button>
             )}
           </header>
-          {askPw && (
-            <form className="cur-rollback" onSubmit={(e) => { e.preventDefault(); if (password) rollback.mutate(); }}>
-              <span className="cur-muted">{t("coreUpdate.run.rollbackNote", { version: s.from })}</span>
-              <input className="inp" type="password" autoComplete="current-password" value={password} autoFocus
-                onChange={(e) => setPassword(e.target.value)} placeholder={t("coreUpdate.run.passwordPh")} aria-label={t("coreUpdate.run.reauth")} />
-              <Button variant="ghost" onClick={() => { setAskPw(false); setPassword(""); }}>{t("coreUpdate.run.cancel")}</Button>
-              <Button type="submit" disabled={!password || rollback.isPending}>{t("coreUpdate.run.rollbackConfirm")}</Button>
-              {rollback.error && <span className="cur-formerror" role="alert">{apiErrorMessage(rollback.error)}</span>}
-            </form>
-          )}
           {view.stalled && <p className="cur-formerror">{t("coreUpdate.run.stalledNote")}</p>}
-          <RunProgress status={s} reconnecting={run.reconnecting} />
+          {!finished && <RunProgress status={s} reconnecting={run.reconnecting} />}
         </section>
       )}
     </div>
