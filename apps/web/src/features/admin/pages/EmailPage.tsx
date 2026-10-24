@@ -11,7 +11,7 @@ import { SaveChip } from "../../../components/SaveChip";
 import { Toggle, TextField, NumberStepper, Button } from "../../../components/AcpControls";
 import { AcpIcon } from "./acpIcons";
 import { Composer, type ComposerHandle } from "../../../components/composer/Composer";
-import { EmailDesignCard, footerText, isHex, type EmailDesign } from "./EmailDesign";
+import { EmailDesignCard, footerText, isHex, isSupportAddress, type EmailDesign } from "./EmailDesign";
 import "./acpSystem.scss";
 import "./EmailPage.scss";
 
@@ -225,9 +225,9 @@ export function EmailPage() {
     value: designDraft ?? undefined,
     savedValue: designSaved,
     // A half-typed colour is not saved; the field shows it is invalid.
-    onSave: (d) => (d && isHex(d.accent) && isHex(d.page) ? designMut.mutateAsync(d) : undefined),
+    onSave: (d) => (d && isHex(d.accent) && isHex(d.page) && isSupportAddress(d.support) ? designMut.mutateAsync(d) : undefined),
     onDiscard: () => { if (designSavedRef.current) setDesignDraft(designSavedRef.current); },
-    describe: (value, saved) => (["accent", "page", "header", "footer"] as const)
+    describe: (value, saved) => (["accent", "page", "header", "support", "footer"] as const)
       .filter((k) => value && saved && value[k] !== saved[k])
       .map((k) => ({
         key: `design.${k}`,

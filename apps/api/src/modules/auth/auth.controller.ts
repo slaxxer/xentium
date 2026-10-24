@@ -192,7 +192,7 @@ export async function refreshHandler(req: Request, res: Response) {
 export async function requestPasswordResetHandler(req: Request, res: Response) {
   const parsed = requestPasswordResetSchema.parse(req.body);
 
-  await requestPasswordReset(parsed.email, requestLocaleHint(req));
+  await requestPasswordReset(parsed.email, requestLocaleHint(req), { ip: req.ip, userAgent: uaOf(req) });
   res.json({ ok: true });
 }
 

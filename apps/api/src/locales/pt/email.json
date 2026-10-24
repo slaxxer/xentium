@@ -6,7 +6,7 @@
     },
     "password_reset": {
       "subject": "Repõe a tua palavra-passe do {{site_name}}",
-      "body": "<h2>Repõe a tua palavra-passe</h2><p>Recebemos um pedido para repor a tua palavra-passe. Clica no botão abaixo para escolher uma nova. Esta ligação expira em {{expiry_minutes}} minutos e só pode ser usada uma vez.</p><p>{{reset_button}}</p><p>Se não foste tu a pedir, podes ignorar este e-mail: a tua palavra-passe continua a mesma.</p>"
+      "body": "<h1>Vamos recuperar o teu acesso.</h1><p>Alguém pediu para repor a palavra-passe da tua conta. Se foste tu, define uma nova abaixo.</p><p>{{reset_button}}</p><p>{{request_box}}</p><hr><p>Não foste tu? Ignora este e-mail e a tua palavra-passe não muda. Se voltar a acontecer, {{support_link}}.</p>"
     },
     "magic_link": {
       "subject": "A tua ligação de início de sessão no {{site_name}}",
@@ -27,7 +27,16 @@
   },
   "buttons": {
     "view": "Ver →",
-    "reset": "Repor palavra-passe →",
-    "signIn": "Iniciar sessão →"
-  }
+    "reset": "Definir uma nova palavra-passe",
+    "signIn": "Iniciar sessão →",
+    "resetNote": "A ligação expira em {{minutes}} minutos e só funciona uma vez."
+  },
+  "request": {
+    "title": "Detalhes do pedido",
+    "time": "Hora",
+    "device": "Dispositivo",
+    "location": "Local"
+  },
+  "supportLink": "contacta o suporte",
+  "sentBy": "Enviado por {{site}}"
 }

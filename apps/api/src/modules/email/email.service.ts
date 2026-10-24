@@ -50,6 +50,9 @@ async function sampleVars(): Promise<Record<string, string>> {
     code: "123456",
     new_email: "new-address@example.com",
     expiry_minutes: "15",
+    request_time: new Intl.DateTimeFormat("en", { dateStyle: "medium", timeStyle: "short" }).format(new Date()),
+    request_device: "Chrome 141 · macOS",
+    request_location: "Germany",
   };
 }
 
