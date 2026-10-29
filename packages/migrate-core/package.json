@@ -16,7 +16,7 @@
     "@xentium/sdk": "workspace:*",
     "htmlparser2": "^10.1.0",
     "pg": "^8.23.1",
-    "sanitize-html": "^2.18.0"
+    "sanitize-html": "^2.18.1"
   },
   "devDependencies": {
     "@types/pg": "^8.23.1",
