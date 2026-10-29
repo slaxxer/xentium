@@ -119,6 +119,13 @@ export interface PluginHost {
     optionalAuth: any;
     /** `requirePermission(key)` → middleware gating on a permission key. */
     requirePermission: (key: string) => any;
+    /**
+     * Ask a signed-in member with two-factor sign-in on for a fresh code before the
+     * request runs (mount AFTER requireAuth, before any upload parser). The browser
+     * answers the 403 by asking for the code and repeating the request. Passes
+     * straight through for a member without 2FA. Absent on an older host.
+     */
+    requireStepUp?: any;
   };
   utils: {
     /**

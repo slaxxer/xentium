@@ -445,6 +445,17 @@ export interface PluginHost extends BasePluginHost {
    * becomes the button. Queued, so it never slows the request. `localeOf` answers the
    * language a member's emails go out in.
    */
+  /**
+   * Re-check who is asking, for the changes a stolen session must not make alone
+   * (where money goes, an email address). Pair it with `middleware.requireStepUp`.
+   */
+  auth: {
+    /** The member's current password is `password`. False for an account without one. */
+    verifyPassword: (userId: string, password: string) => Promise<boolean>;
+    /** Whether the member has a password at all (not one made only through a sign-in provider). */
+    hasPassword: (userId: string) => Promise<boolean>;
+  };
+
   email: {
     send: (opts: { to: string; title: string; body: string; link?: string; buttonLabel?: string; locale?: string }) => Promise<void>;
     localeOf: (userId: string) => Promise<string>;

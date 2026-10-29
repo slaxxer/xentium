@@ -256,6 +256,18 @@ Verifying a webhook or a signed request? `req.rawBody` holds the exact JSON body
 as they arrived. Hash those, never `JSON.stringify(req.body)`: re-serialising gives
 different bytes and the signature never matches.
 
+## Sensitive changes
+
+Some changes must not be made by a stolen session alone: where a member's money goes,
+the address their mail goes to. Ask again:
+
+- `host.middleware.requireStepUp` on the route: a member with two-factor sign-in on is
+  asked for a fresh code (the browser prompts and repeats the request). Mount it after
+  `requireAuth` and before any upload parser.
+- `host.auth.verifyPassword(userId, password)` in the handler, for their current
+  password. `host.auth.hasPassword(userId)` says whether they have one at all (a member
+  who only signs in through Google or GitHub doesn't).
+
 ## Settings
 
 Declare your settings as a schema. Core stores them, fills in defaults, checks every save and

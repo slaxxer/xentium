@@ -5,6 +5,10 @@ import { CorePermissions, registerTemplate } from "@xentium/contracts";
 import { progressionCriteriaRegistry } from "../progression-registry/progression-criteria-registry.js";
 import { badgeCriteriaRegistry } from "../badge-registry/badge-criteria-registry.js";
 import { pool, prisma } from "../../infrastructure/db.js";
+import { requireStepUp } from "../../modules/auth/twoFactor.service.js";
+import { verifyPassword } from "../../modules/auth/auth.password.js";
+import { isLegacyScheme, verifyLegacyPassword } from "../../modules/auth/auth.legacyPassword.js";
+import { hasUsablePassword } from "../../modules/auth/signInMethods.service.js";
 import { pluginRouter } from "./plugin-router.js";
 import { acpPageRegistry } from "./acp-page-registry.js";
 import { securityScanRegistry } from "../security/security-scan-registry.js";
@@ -91,6 +95,23 @@ const host: Omit<PluginHost, "jobs" | "settings" | "files" | "limits" | "cache">
     optionalAuth,
     // Wrap so plugins can pass any permission-key string (core type is a strict union).
     requirePermission: (key: string) => requirePermission(key as never),
+    requireStepUp,
+  },
+  // The same rules as signing in: a hash starting with "!" can never verify (an
+  // imported or provider-only account), and a migrated account keeps its source
+  // platform's scheme until its next sign-in upgrades it.
+  auth: {
+    verifyPassword: async (userId: string, password: string) => {
+      const u = await prisma.user.findUnique({ where: { id: userId }, select: { passwordHash: true, passwordScheme: true } });
+      if (!u || !hasUsablePassword(u.passwordHash)) return false;
+      return (isLegacyScheme(u.passwordScheme)
+        ? verifyLegacyPassword(u.passwordScheme, u.passwordHash, password)
+        : verifyPassword(u.passwordHash, password)).catch(() => false);
+    },
+    hasPassword: async (userId: string) => {
+      const u = await prisma.user.findUnique({ where: { id: userId }, select: { passwordHash: true } });
+      return !!u && hasUsablePassword(u.passwordHash);
+    },
   },
   progression: { getEffectiveGroupId: getEffectiveProgressionGroupId },
   // Embeds inside content, and who may see that content (fails closed).
