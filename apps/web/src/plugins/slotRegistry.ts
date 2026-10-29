@@ -49,6 +49,32 @@ export interface AccountSectionSlot {
   component: ComponentType;
 }
 
+// ── Account tab ───────────────────────────────────────────────────────────────
+/**
+ * A tab of its own on the member's Account page (`/account?tab=<id>`), listed in
+ * the account menu after core's tabs, under its `group` heading. For a plugin
+ * whose member pages belong with the account (a shop's licences and invoices),
+ * so it never builds an account area of its own.
+ *
+ * `id` is namespaced (`store.licences`) and is the tab's URL value. `permission`
+ * hides the tab from members without it (a hint: the plugin's endpoints check
+ * again). `keywords` feed the account menu's search.
+ */
+export interface AccountTabSlot {
+  id: string;
+  /** A getter may translate it at render. */
+  label: string;
+  /** FontAwesome IconDefinition. */
+  icon?: unknown;
+  /** Heading the tab is listed under; tabs sharing one are grouped. Absent = no heading. */
+  group?: string;
+  /** Lower renders higher, within the plugin tabs. */
+  order?: number;
+  permission?: string;
+  keywords?: string;
+  component: ComponentType;
+}
+
 // ── Sign-up field ─────────────────────────────────────────────────────────────
 /**
  * An add-on's own field on the sign-up form (core 1.0.0). Its value is sent as
@@ -385,6 +411,7 @@ export interface ComposerToolSlot {
 class SlotRegistry {
   private profileTabs:       ProfileTabSlot[]       = [];
   private accountSections:   AccountSectionSlot[]   = [];
+  private accountTabs:       AccountTabSlot[]       = [];
   private privacySections:   PrivacySectionSlot[]   = [];
   private settingsSections:  SettingsSectionSlot[]  = [];
   private editorPanels:      EditorPanelSlot[]      = [];
@@ -435,6 +462,7 @@ class SlotRegistry {
   registerPluginMeta(meta: PluginMeta)                      { this._activePlugin = meta.pluginId; this.pluginMetas.push(meta); }
   registerProfileTab(slot: ProfileTabSlot)                  { this._own(slot.id);     this.profileTabs.push(slot); }
   registerAccountSection(slot: AccountSectionSlot)          { this._own(slot.id);     this.accountSections.push(slot); }
+  registerAccountTab(slot: AccountTabSlot)                  { this._own(slot.id);     this.accountTabs.push(slot); }
   registerRegistrationField(slot: RegistrationFieldSlot)    { this._own(slot.id);     this.registrationFields.push(slot); }
   registerPrivacySection(slot: PrivacySectionSlot)          { this._own(slot.id);     this.privacySections.push(slot); }
   registerSettingsSection(slot: SettingsSectionSlot)         { this._own(slot.id);     this.settingsSections.push(slot); }
@@ -466,6 +494,7 @@ class SlotRegistry {
 
   getProfileTabs()       { return [...this.profileTabs]; }
   getAccountSections()   { return [...this.accountSections]; }
+  getAccountTabs()       { return [...this.accountTabs].sort((a, b) => (a.order ?? 100) - (b.order ?? 100)); }
   /** Sign-up fields, each with the add-on id its value is sent under. */
   getRegistrationFields() {
     return [...this.registrationFields]
@@ -534,6 +563,7 @@ class SlotRegistry {
     this.profileTabs       = this.profileTabs.filter((s) => !this._ownedBy(s.id, pluginId));
     this.editorPanels      = this.editorPanels.filter((s) => !this._ownedBy(s.id, pluginId));
     this.accountSections   = this.accountSections.filter((s) => !this._ownedBy(s.id, pluginId));
+    this.accountTabs       = this.accountTabs.filter((s) => !this._ownedBy(s.id, pluginId));
     this.registrationFields = this.registrationFields.filter((s) => !this._ownedBy(s.id, pluginId));
     this.privacySections   = this.privacySections.filter((s) => !this._ownedBy(s.id, pluginId));
     this.routes            = this.routes.filter((r) => !this._ownedBy(r.path, pluginId));

@@ -121,6 +121,22 @@
     padding-bottom: var(--sp-1);
   }
 
+  /* A wrapper per entry, so a plugin group's heading can sit above its first tab;
+     it takes no box, so the column and the narrow strip lay out as before. */
+  &__entry { display: contents; }
+
+  /* A plugin's group of tabs (registerAccountTab `group`). */
+  &__group {
+    margin: var(--sp-3) 12px var(--sp-1);
+    font-size: var(--fs-xs);
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--c-fg-subtle);
+
+    @media (max-width: 900px) { display: none; }
+  }
+
   &__empty {
     margin: var(--sp-2) var(--sp-1);
     font-size: var(--fs-xs);

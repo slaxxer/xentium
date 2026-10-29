@@ -325,6 +325,31 @@ slotRegistry.registerUserMenuItem({
 The menu only shows to signed-in members. The page it links to still decides who may
 open it (`requiresAuth` on the route), and your API still checks every request.
 
+### Account tabs (`slotRegistry.registerAccountTab`)
+
+A plugin whose member pages belong with the account (licences, invoices, a membership)
+adds them as tabs of the member's own Account page instead of building an account area
+of its own. Each tab is listed in the account menu after core's tabs, under its `group`
+heading, and opens at `/account?tab=<id>`:
+
+```ts
+slotRegistry.registerAccountTab({
+  id: "my-plugin.invoices",           // namespaced; also the tab's URL value
+  get label() { return getI18n().t("my-plugin:account.invoices"); },
+  group: "Shop",                      // tabs sharing a group are listed together
+  icon: faReceipt,
+  permission: "my-plugin.buy",        // optional: hidden from members without it
+  keywords: "bills receipts",         // optional: found by the account menu's search
+  order: 10,
+  component: InvoicesTab,
+});
+```
+
+Draw the tab with the account page's own cards (`acct-card`) so it looks like the
+tabs around it. Pair it with a user-menu entry pointing at `/account?tab=<id>` when
+members should reach it in one click. The tab is a hint for what to show: your API
+still checks every request.
+
 ### Icons
 
 **Import `FontAwesomeIcon` from the externalized module.** Every plugin already does,

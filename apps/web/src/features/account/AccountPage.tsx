@@ -13,7 +13,7 @@
  * A settings page is the thing people link each other to ("it's under Privacy"), and
  * a deep link that cannot be produced by using the page is not a deep link.
  */
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ComponentType } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, Navigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -21,9 +21,11 @@ import { FontAwesomeIcon } from "../../components/Icon";
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import {
   faUser, faLock, faBell, faPalette, faShield,
-  faMagnifyingGlass, faArrowUpRightFromSquare,
+  faMagnifyingGlass, faArrowUpRightFromSquare, faPuzzlePiece,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "../../hooks/useAuth";
+import { userCan } from "../../lib/authStore";
+import { slotRegistry } from "../../plugins/slotRegistry";
 import { api } from "../../lib/api";
 import { ProfileTab } from "./tabs/ProfileTab";
 import { SecurityTab } from "./tabs/SecurityTab";
@@ -43,15 +45,46 @@ const TABS: { id: Tab; icon: IconDefinition }[] = [
   { id: "privacy",       icon: faShield  },
 ];
 
+interface RailItem {
+  id: string;
+  icon: IconDefinition;
+  label: string;
+  /** What the menu's search looks through. */
+  hay: string;
+  /** A plugin tab's heading. */
+  group?: string;
+  /** A plugin tab's page. */
+  component?: ComponentType;
+}
+
 export function AccountPage() {
   const { t } = useTranslation(["account", "common"]);
   const { isAuthenticated, isLoading, user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [query, setQuery] = useState("");
 
+  /**
+   * The menu: core's tabs, then any a plugin added (`registerAccountTab`), under their
+   * group headings. A plugin tab the member lacks the permission for is not listed
+   * (and its URL falls back to Profile, like any unknown tab).
+   */
+  const items = useMemo<RailItem[]>(() => [
+    ...TABS.map((x) => ({
+      id: x.id, icon: x.icon, label: t(`account:tabs.${x.id}`),
+      hay: `${t(`account:tabs.${x.id}`)} ${t(`account:nav.keywords.${x.id}`)}`,
+    })),
+    ...slotRegistry.getAccountTabs()
+      .filter((s) => !s.permission || userCan(user, s.permission))
+      .map((s) => ({
+        id: s.id, icon: (s.icon ?? faPuzzlePiece) as IconDefinition, label: s.label, group: s.group,
+        hay: `${s.label} ${s.group ?? ""} ${s.keywords ?? ""}`, component: s.component,
+      })),
+  ], [t, user]);
+
   const param = searchParams.get("tab");
-  const tab: Tab = (param && TABS.some((x) => x.id === param) ? param : "profile") as Tab;
-  const setTab = (next: Tab) => setSearchParams(next === "profile" ? {} : { tab: next }, { replace: true });
+  const tab: string = param && items.some((x) => x.id === param) ? param : "profile";
+  const setTab = (next: string) => setSearchParams(next === "profile" ? {} : { tab: next }, { replace: true });
+  const PluginTab = items.find((x) => x.id === tab)?.component;
 
   /**
    * Read for the rail's notification count ONLY.
@@ -73,18 +106,15 @@ export function AccountPage() {
       security:      user?.twoFactor?.enabled ? t("account:nav.tfaOn")
         : user?.loginPinEnabled ? t("account:nav.pinOn") : t("account:nav.pinOff"),
       notifications: notifs.data ? t("account:nav.onCount", { count: on }) : "",
-    } as Partial<Record<Tab, string>>;
+    } as Partial<Record<string, string>>;
   }, [notifs.data, user?.loginPinEnabled, user?.twoFactor?.enabled, t]);
 
   /** Searching the nav searches what each section CONTAINS, not just its name. */
   const shown = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return TABS;
-    return TABS.filter((x) => {
-      const hay = `${t(`account:tabs.${x.id}`)} ${t(`account:nav.keywords.${x.id}`)}`;
-      return hay.toLowerCase().includes(q);
-    });
-  }, [query, t]);
+    if (!q) return items;
+    return items.filter((x) => x.hay.toLowerCase().includes(q));
+  }, [query, items]);
 
   if (isLoading) return <div className="account-loading">{t("common:actions.loading")}</div>;
   if (!isAuthenticated) return <Navigate to="/" replace />;
@@ -117,17 +147,21 @@ export function AccountPage() {
           </div>
 
           <nav className="acct-nav">
-            {shown.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className={`acct-nav__item${tab === item.id ? " is-on" : ""}`}
-                onClick={() => setTab(item.id)}
-              >
-                <FontAwesomeIcon className="acct-ic" icon={item.icon} />
-                <span className="acct-nav__label">{t(`account:tabs.${item.id}`)}</span>
-                {meta[item.id] && <em>{meta[item.id]}</em>}
-              </button>
+            {shown.map((item, i) => (
+              <div key={item.id} className="acct-nav__entry">
+                {item.group && item.group !== shown[i - 1]?.group && (
+                  <div className="acct-nav__group">{item.group}</div>
+                )}
+                <button
+                  type="button"
+                  className={`acct-nav__item${tab === item.id ? " is-on" : ""}`}
+                  onClick={() => setTab(item.id)}
+                >
+                  <FontAwesomeIcon className="acct-ic" icon={item.icon} />
+                  <span className="acct-nav__label">{item.label}</span>
+                  {meta[item.id] && <em>{meta[item.id]}</em>}
+                </button>
+              </div>
             ))}
             {shown.length === 0 && (
               <p className="acct-nav__empty">{t("account:searchNoMatch", { query })}</p>
@@ -141,6 +175,7 @@ export function AccountPage() {
           {tab === "notifications" && <NotificationsTab />}
           {tab === "preferences"   && <PreferencesTab />}
           {tab === "privacy"       && <PrivacyTab />}
+          {PluginTab && <PluginTab />}
         </div>
       </div>
     </div>
