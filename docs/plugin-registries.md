@@ -261,6 +261,15 @@ An admin page, and a link in the site's nav.
 Plugin nav links always go below core's. The `position` you declare is a hint, not an
 index; admins reorder links in the ACP.
 
+A plugin with several pages in its own section can split the panel with headings, the
+way System has Setup and Logs: give each page a `group`. Pages of one group are listed
+together, in the order you register them; a page without one goes first.
+
+```ts
+ctx.registerAcpPage({ section: "Store", label: "Overview", path: "/admin/store" });
+ctx.registerAcpPage({ section: "Store", label: "Orders", path: "/admin/store/orders", group: "Sales" });
+```
+
 A plugin with its own ACP section can give it one of the ACP's own icons, so it matches
 the core sections (outline, filled while you're in it): add `acpIcon` to
 `slotRegistry.registerPluginMeta`, with `forum`, `files`, `support` or `shop`. Without it,

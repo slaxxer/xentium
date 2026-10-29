@@ -159,22 +159,39 @@ const SECTION_ALIASES: Record<string, string> = {
   access: "users", "access control": "users", members: "users",
 };
 
+export interface RegisteredAcpPage { section: string; label: string; path: string; pluginId: string; group?: string }
+
+/**
+ * Plugin pages per section. A page's `group` is a heading in the section's panel;
+ * a group's pages are kept together in registration order, so a heading is never
+ * repeated further down.
+ */
+export function pluginSections(pages: RegisteredAcpPage[]): Record<string, NavChild[]> {
+  const map = pages.reduce<Record<string, NavChild[]>>((acc, page) => {
+    // Rendered through t(): a plugin's translation key when it ships one, else its literal label.
+    const own = pluginTextKey(`acpPages.${page.path.replace(/^\/admin\//, "")}`);
+    const group = page.group ? (pluginTextKey(`acpGroups.${page.group}`) ?? page.group) : undefined;
+    (acc[page.section] ??= []).push({ label: own ?? page.label, to: page.path, ...(group ? { group } : {}) });
+    return acc;
+  }, {});
+  for (const children of Object.values(map)) {
+    const order = [...new Set(children.map((c) => c.group))];
+    children.sort((a, b) => order.indexOf(a.group) - order.indexOf(b.group));
+  }
+  return map;
+}
+
 /** Returns the core nav with plugin-registered sections merged in:
  *  "content-area" plugin sections (e.g. Forum) sit between Content and Moderation;
  *  everything else goes after Moderation — matching the original sidebar behavior. */
 export function useAcpNav(): NavItem[] {
-  const { data: pluginPages = [] } = useQuery<{ section: string; label: string; path: string; pluginId: string }[]>({
+  const { data: pluginPages = [] } = useQuery<RegisteredAcpPage[]>({
     queryKey: ["acp-registered-pages"],
     queryFn: () => api.get("/admin/registered-pages"),
     staleTime: 60_000,
   });
 
-  const pluginSectionMap = pluginPages.reduce<Record<string, NavChild[]>>((acc, page) => {
-    // Rendered through t(): a plugin's translation key when it ships one, else its literal label.
-    const own = pluginTextKey(`acpPages.${page.path.replace(/^\/admin\//, "")}`);
-    (acc[page.section] ??= []).push({ label: own ?? page.label, to: page.path });
-    return acc;
-  }, {});
+  const pluginSectionMap = pluginSections(pluginPages);
 
   // A plugin page whose `section` matches an existing core section key (e.g.
   // "Users") nests INTO that core group rather than getting its own top-level

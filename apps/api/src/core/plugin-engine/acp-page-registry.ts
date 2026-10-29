@@ -3,6 +3,8 @@ export interface AcpPageDeclaration {
   label:   string;
   path:    string;
   icon?:   string;
+  /** A heading in the section's panel (plain text, or the plugin's translation). */
+  group?:  string;
 }
 
 class AcpPageRegistry {

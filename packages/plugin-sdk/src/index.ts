@@ -61,6 +61,12 @@ export interface AcpPageDeclaration {
   label:   string;
   path:    string;                 // frontend route path e.g. "/admin/forum/categories"
   icon?:   string;
+  /**
+   * A heading in the section's panel this page sits under ("Sales", "Catalog"):
+   * plain text, or `host.acpGroups.<group>` in your namespace for a translation.
+   * Pages of one group are listed together, in the order you register them.
+   */
+  group?:  string;
 }
 
 /** A normalized search hit (source-agnostic). Mirrors HomeFeedItem — core never
