@@ -24,6 +24,21 @@ export interface NavChild {
 export function childMatches(child: NavChild, path: string): boolean {
   return path.startsWith(child.to) || !!child.within?.some((w) => path.startsWith(w.to));
 }
+
+/**
+ * The ONE entry of a section that `path` belongs to: the most specific match. A
+ * section whose first page is its own root (a plugin's `/admin/store` beside
+ * `/admin/store/orders`) would otherwise light up that first entry on every page.
+ */
+export function activeChild(children: NavChild[], path: string): NavChild | undefined {
+  const depth = (c: NavChild) => Math.max(
+    path.startsWith(c.to) ? c.to.length : -1,
+    ...(c.within ?? []).map((w) => (path.startsWith(w.to) ? w.to.length : -1)),
+  );
+  let best: NavChild | undefined;
+  for (const c of children) if (depth(c) >= 0 && (!best || depth(c) > depth(best))) best = c;
+  return best;
+}
 export interface NavItem {
   label: string;        // `acp` i18n key for core items; literal label for plugin sections
   icon: ReactNode;

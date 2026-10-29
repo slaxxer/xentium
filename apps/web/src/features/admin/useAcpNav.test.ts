@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { ACP_NAV, ACP_NAV_INDEX, isNavItemActive, activeNavSection, navItemId, pluginSections } from "./useAcpNav";
+import { ACP_NAV, ACP_NAV_INDEX, isNavItemActive, activeNavSection, navItemId, pluginSections, activeChild } from "./useAcpNav";
 
 /**
  * The topbar breadcrumb and command palette used to keep their own copy of the
@@ -160,5 +160,25 @@ describe("pluginSections", () => {
     const out = pluginSections([page("B"), page("A")]);
     expect(out.Store!.map((c) => c.label)).toEqual(["B", "A"]);
     expect(out.Store!.every((c) => c.group === undefined)).toBe(true);
+  });
+});
+
+describe("activeChild", () => {
+  const store = [
+    { label: "Overview", to: "/admin/store" },
+    { label: "Orders", to: "/admin/store/orders" },
+    { label: "Customers", to: "/admin/store/customers" },
+  ];
+
+  it("lights the most specific entry, not a section root that prefixes every page", () => {
+    expect(activeChild(store, "/admin/store")?.label).toBe("Overview");
+    expect(activeChild(store, "/admin/store/orders")?.label).toBe("Orders");
+    expect(activeChild(store, "/admin/store/customers/abc")?.label).toBe("Customers");
+  });
+
+  it("counts a page reached through an entry (within) as that entry", () => {
+    const themes = [{ label: "Themes", to: "/admin/themes", within: [{ to: "/admin/theme-studio", label: "Studio" }] }];
+    expect(activeChild(themes, "/admin/theme-studio")?.label).toBe("Themes");
+    expect(activeChild(themes, "/admin/users")).toBeUndefined();
   });
 });
