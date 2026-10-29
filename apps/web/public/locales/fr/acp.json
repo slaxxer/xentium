@@ -3810,7 +3810,14 @@
       "700": "Gras",
       "800": "Extra-gras",
       "900": "Noir"
-    }
+    },
+    "pageDesign": "Design de la page",
+    "pageWholeSite": "Tout le site",
+    "pageOnly": "Seulement {{page}}",
+    "pageOnlyHint": "Vous modifiez seulement {{page}} : chaque couleur et taille changée ici s’applique uniquement à cette page, en-tête et pied de page compris.",
+    "pageSiteHint": "Vous modifiez tout le site. Passez à la page pour lui donner un style propre.",
+    "pagesWithLook": "Pages avec leur propre style",
+    "pageScope": "Page : {{page}}"
   },
   "layoutEditor": {
     "structure": "Structure",

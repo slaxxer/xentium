@@ -2,7 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import multer from "multer";
 import { requirePermission } from "../../shared/middleware/requirePermission.js";
-import { CorePermissions, SCOPE_SELECTOR, scopedTokensSchema, tokenMapSchema,
+import { CorePermissions, SCOPE_SELECTOR, isPageScope, scopedTokensSchema, tokenMapSchema,
          DEFAULT_ICON_STYLE, isIconStyle,
          COMPOSER_TOOL_IDS, COMPOSER_DEFAULT_CONFIG, resolveComposerConfig } from "@xentium/contracts";
 import { appearanceService, parseColourwayId } from "./appearance.service.js";
@@ -180,7 +180,7 @@ appearanceRouter.patch("/tokens/scope/:scope", adminGuard, async (req, res, next
     const { scope } = z.object({
       // Only a scope this build knows — an unknown one would be stored and then
       // silently skipped by buildCSS, which looks like the save failed.
-      scope: z.string().refine((s) => s === "global" || s in SCOPE_SELECTOR, "unknown scope"),
+      scope: z.string().refine((s) => s === "global" || s in SCOPE_SELECTOR || isPageScope(s), "unknown scope"),
     }).parse(req.params);
 
     // `null` clears; the value rules are the same as a full token save.

@@ -3937,7 +3937,14 @@
       "700": "Bold",
       "800": "Extra bold",
       "900": "Black"
-    }
+    },
+    "pageDesign": "Page design",
+    "pageWholeSite": "Whole site",
+    "pageOnly": "Only {{page}}",
+    "pageOnlyHint": "Editing {{page}} only: every colour and size you change here applies on this page alone, header and footer included.",
+    "pageSiteHint": "Editing the whole site. Switch to the page to give it a look of its own.",
+    "pagesWithLook": "Pages with their own look",
+    "pageScope": "Page: {{page}}"
   },
   "layoutEditor": {
     "structure": "Structure",

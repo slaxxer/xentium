@@ -3810,7 +3810,14 @@
       "700": "Fett",
       "800": "Extrafett",
       "900": "Schwarz"
-    }
+    },
+    "pageDesign": "Seitendesign",
+    "pageWholeSite": "Ganze Seite",
+    "pageOnly": "Nur {{page}}",
+    "pageOnlyHint": "Du bearbeitest nur {{page}}: Jede Farbe und Größe, die du hier änderst, gilt nur auf dieser Seite, Kopf- und Fußzeile eingeschlossen.",
+    "pageSiteHint": "Du bearbeitest die ganze Seite. Wechsle zur einzelnen Seite, um ihr ein eigenes Aussehen zu geben.",
+    "pagesWithLook": "Seiten mit eigenem Aussehen",
+    "pageScope": "Seite: {{page}}"
   },
   "layoutEditor": {
     "structure": "Struktur",

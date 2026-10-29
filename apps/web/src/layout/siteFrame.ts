@@ -17,6 +17,7 @@ import {
   isChromeTemplate,
   parseSiteFrame,
   type FrameMode,
+  PAGE_ATTR,
   type SiteFrame,
   type TemplateKey,
 } from "@xentium/contracts";
@@ -30,6 +31,13 @@ const pageListeners = new Set<() => void>();
 function setPageTemplate(next: TemplateKey | null) {
   if (pageTemplate === next) return;
   pageTemplate = next;
+  // Per-page design: the served stylesheet scopes a page's tokens to
+  // `:root[data-xt-page="<key>"]` (`scopeSelector`), so the root says which page
+  // this is, for as long as it is on screen. Pages without a layout carry none.
+  if (typeof document !== "undefined") {
+    if (next) document.documentElement.setAttribute(PAGE_ATTR, next);
+    else document.documentElement.removeAttribute(PAGE_ATTR);
+  }
   for (const fn of pageListeners) fn();
 }
 

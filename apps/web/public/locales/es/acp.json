@@ -3810,7 +3810,14 @@
       "700": "Negrita",
       "800": "Extranegrita",
       "900": "Black"
-    }
+    },
+    "pageDesign": "Diseño de página",
+    "pageWholeSite": "Todo el sitio",
+    "pageOnly": "Solo {{page}}",
+    "pageOnlyHint": "Editando solo {{page}}: cada color y tamaño que cambies aquí se aplica únicamente en esta página, incluidos la cabecera y el pie.",
+    "pageSiteHint": "Editando todo el sitio. Cambia a la página para darle un aspecto propio.",
+    "pagesWithLook": "Páginas con aspecto propio",
+    "pageScope": "Página: {{page}}"
   },
   "layoutEditor": {
     "structure": "Estructura",
