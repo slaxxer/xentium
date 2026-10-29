@@ -16,8 +16,8 @@
 # this job any more anyway.
 #
 # It does NOT move `latest`. Trusted Publishing only signs `npm publish`; a
-# dist-tag change from here fails. After a release, a person runs
-# `node scripts/promote-latest.mjs` on their own npm login.
+# dist-tag change from here fails. After a release, a person moves it on
+# their own npm login.
 #
 # What it needs once, on npmjs.com, for EACH of the ten packages
 # (package → Settings → Trusted Publisher → GitHub Actions):

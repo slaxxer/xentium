@@ -8,7 +8,7 @@
  *   node scripts/publish-release.mjs --only=server
  *
  * It publishes under the prerelease id (`alpha`) and leaves `latest` alone: moving
- * that is a separate, manual step (scripts/promote-latest.mjs) that CI cannot do.
+ * that is a separate, manual step that CI cannot do.
  *
  * ONE script for all four, because a release is one act: every workspace package
  * carries the same version (scripts/set-version.mjs keeps them in lockstep), and
@@ -212,8 +212,8 @@ if (dryRun) {
   console.log("\nDry run — nothing was published.");
 } else {
   console.log(`
-${version} is on npm under "${tag}".${tag === "latest" ? "" : ` \`latest\` has NOT moved: run
-\`node scripts/promote-latest.mjs\` on your own login once every part is up.`}
+${version} is on npm under "${tag}".${tag === "latest" ? "" : ` \`latest\` has NOT moved: move
+it on your own npm login once every part is up.`}
 
 Nothing has been ANNOUNCED: an installed site learns about
 a release from its update source, not from the registry, and that record carries
