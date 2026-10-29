@@ -86,7 +86,14 @@ export function createApp(): Express {
 
   // Before every parser, core's and any plugin's: no compressed bodies (CVE-2026-111497).
   app.use(rejectEncodedBodies);
-  app.use(express.json({ limit: '4mb', inflate: false }));
+  // `rawBody`: the exact bytes, for whatever verifies a signature over them — a payment
+  // provider's webhook, or a signed request from another server. Re-serialising the
+  // parsed body would not give the same bytes, so the hash would never match.
+  app.use(express.json({
+    limit: '4mb',
+    inflate: false,
+    verify: (req, _res, buf) => { (req as express.Request).rawBody = buf; },
+  }));
   app.use(cookieParser(env.COOKIE_SECRET));
   app.use(pinoHttp({ transport: isProd ? undefined : { target: 'pino-pretty' } }));
 

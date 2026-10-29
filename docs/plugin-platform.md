@@ -252,6 +252,10 @@ Three rules:
 - **Don't close the pool.** It belongs to the site. `host.pg` is missing on a core older
   than 1.0.0, so check for it if you support one.
 
+Verifying a webhook or a signed request? `req.rawBody` holds the exact JSON body bytes
+as they arrived. Hash those, never `JSON.stringify(req.body)`: re-serialising gives
+different bytes and the signature never matches.
+
 ## Settings
 
 Declare your settings as a schema. Core stores them, fills in defaults, checks every save and
