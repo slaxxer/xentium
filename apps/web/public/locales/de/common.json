@@ -40,7 +40,8 @@
     "adminPanel": "Admin-Bereich",
     "adminAttention": "Im Adminbereich wartet etwas auf dich",
     "homeAria": "Zur Startseite",
-    "menu": "Menü"
+    "menu": "Menü",
+    "openMenu": "Menü {{label}} öffnen"
   },
   "search": {
     "short": "Suchen",

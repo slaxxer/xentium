@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { Fragment, useEffect, useRef, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink, Link, useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -44,7 +44,12 @@ interface NavItem {
   openInNewTab: boolean;
   visibility: string; // "public" | "members" | "groups"
   placement?: string; // "navbar" | "footer"
+  /** Links in this item's dropdown (one level; ACP → Navigation or a plugin's registerNavItem). */
+  children?: NavItem[];
 }
+
+const visibleTo = (isAuthenticated: boolean) => (item: NavItem) =>
+  item.visibility === "public" || (item.visibility === "members" && isAuthenticated);
 
 /** Core system routes get a localized label; a plugin's link translates through its
  *  `host.nav` text until an admin renames it; custom links use their DB label. */
@@ -60,11 +65,10 @@ function useNavItems(isAuthenticated: boolean) {
     queryFn: () => api.get("/nav-items"),
     staleTime: 60_000,
   });
-  return data.filter(item =>
-    item.placement !== "footer" &&
-    (item.visibility === "public" ||
-      (item.visibility === "members" && isAuthenticated)),
-  );
+  const can = visibleTo(isAuthenticated);
+  return data
+    .filter((item) => item.placement !== "footer" && can(item))
+    .map((item) => ({ ...item, children: (item.children ?? []).filter(can) }));
 }
 
 /** The ACP entry, for whoever holds the key every ACP route requires. */
@@ -328,6 +332,9 @@ export function NavPrimaryLinks() {
               ? t(SYSTEM_NAV_I18N[item.url]!)
               : pluginNavLabel(item.url, item.label);
             return (
+              (item.children?.length ?? 0) > 0 && !isExternal && !item.openInNewTab ? (
+                <NavDropdownLink key={item.id} item={item} label={navLabel} />
+              ) : (
               <li key={item.id}>
                 {isExternal || item.openInNewTab ? (
                   <a
@@ -345,9 +352,52 @@ export function NavPrimaryLinks() {
                   <NavLink to={item.url}>{navLabel}</NavLink>
                 )}
               </li>
+              )
             );
           })}
         </ul>
+  );
+}
+
+/**
+ * A navbar link with links under it (ACP → Navigation, or a plugin's dropdown).
+ * The label still goes to its own page; hovering opens the dropdown, and the caret
+ * button opens it from the keyboard. Closes on a click outside, Escape, leaving
+ * the link, and when the page changes. Drawn with the user menu's dropdown classes,
+ * so it follows the same "Menus & dropdowns" tokens.
+ */
+function NavDropdownLink({ item, label }: { item: NavItem; label: string }) {
+  const { t } = useTranslation("common");
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLLIElement>(null);
+  const { pathname, search } = useLocation();
+  useEffect(() => { setOpen(false); }, [pathname, search]);
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) setOpen(false); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("mousedown", onDown); document.removeEventListener("keydown", onKey); };
+  }, [open]);
+
+  return (
+    <li ref={ref} className="pub-nav__has-menu" onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
+      <NavLink to={item.url}>{label}</NavLink>
+      <button type="button" className="pub-nav__menu-caret" aria-expanded={open} aria-haspopup="menu"
+        aria-label={t("nav.openMenu", { label })} onClick={() => setOpen((o) => !o)}>
+        <FontAwesomeIcon icon={faChevronDown} />
+      </button>
+      {open && (
+        <div className="pub-nav__dropdown pub-nav__dropdown--nav xt-pop" role="menu">
+          {item.children!.map((c) => (
+            <NavLink key={c.id} role="menuitem" to={c.url} className="pub-nav__dropdown-item">
+              {pluginNavLabel(c.url, c.label)}
+            </NavLink>
+          ))}
+        </div>
+      )}
+    </li>
   );
 }
 
@@ -397,7 +447,12 @@ export function NavMobileMenu({ tools }: { tools?: React.ReactNode }) {
                 {item.openInNewTab && <FontAwesomeIcon icon={faArrowUpRightFromSquare} />}
               </a>
             ) : (
-              <NavLink key={item.id} to={item.url} end={item.url === "/"}>{labelOf(item)}</NavLink>
+              <Fragment key={item.id}>
+                <NavLink to={item.url} end={item.url === "/"}>{labelOf(item)}</NavLink>
+                {item.children?.map((c) => (
+                  <NavLink key={c.id} to={c.url} className="pub-nav__sheet-sub">{labelOf(c)}</NavLink>
+                ))}
+              </Fragment>
             ))}
           </nav>
           {tools && <div className="pub-nav__sheet-tools">{tools}</div>}

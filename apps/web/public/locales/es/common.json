@@ -40,7 +40,8 @@
     "adminPanel": "Panel de administración",
     "adminAttention": "Hay algo en el panel de administración que requiere tu atención",
     "homeAria": "Ir a la página de inicio",
-    "menu": "Menú"
+    "menu": "Menú",
+    "openMenu": "Abrir el menú {{label}}"
   },
   "search": {
     "short": "Buscar",

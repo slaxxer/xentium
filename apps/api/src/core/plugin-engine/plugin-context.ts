@@ -230,8 +230,9 @@ export class PluginContextImpl implements PluginContext {
   async registerNavItem(item: NavItemDeclaration): Promise<void> {
     // Check if this plugin's nav item already exists
     const existing = await prisma.navItem.findFirst({
-      where: { pluginId: this.pluginId, label: item.label },
+      where: { pluginId: this.pluginId, label: item.label, parentId: null },
     });
+    let parentId = existing?.id ?? null;
 
     if (!existing) {
       // Plugin links always append BELOW everything already in the nav —
@@ -239,7 +240,7 @@ export class PluginContextImpl implements PluginContext {
       // plugins keep their spot (newest last). The declared `item.position`
       // is deliberately not an absolute index; admins reorder in the ACP.
       const maxPos = await prisma.navItem.aggregate({ _max: { position: true } });
-      await prisma.navItem.create({
+      parentId = (await prisma.navItem.create({
         data: {
           label:       item.label,
           url:         item.url,
@@ -249,6 +250,20 @@ export class PluginContextImpl implements PluginContext {
           isSystem:    false,
           pluginId:    this.pluginId,
           openInNewTab: false,
+        },
+      })).id;
+    }
+    // Its dropdown: each child once, under the plugin's own link. One an admin moved
+    // elsewhere is found by plugin + label and left where it is.
+    for (const [n, child] of (item.children ?? []).entries()) {
+      if (!parentId) break;
+      const has = await prisma.navItem.findFirst({ where: { pluginId: this.pluginId, label: child.label, NOT: { id: parentId } } });
+      if (has) continue;
+      await prisma.navItem.create({
+        data: {
+          label: child.label, url: child.url, position: n + 1, parentId,
+          visibility: child.visibility ?? "public", isActive: true, isSystem: false,
+          pluginId: this.pluginId, openInNewTab: false,
         },
       });
     }

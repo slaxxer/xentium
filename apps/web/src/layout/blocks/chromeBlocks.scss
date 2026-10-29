@@ -496,6 +496,13 @@
     &:hover { background: var(--c-accent-soft); }
     &.active { color: var(--c-accent); background: var(--c-accent-soft); }
   }
+
+  /* A link from a dropdown, under its parent. */
+  a.pub-nav__sheet-sub {
+    padding: 9px 10px 9px 26px;
+    font-weight: 500;
+    color: var(--c-fg-muted);
+  }
 }
 
 /* Moderation, messages, admin: the bar's own buttons, in a row at the bottom. */

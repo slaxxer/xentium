@@ -294,7 +294,7 @@ export function createApp(): Express {
         select: {
           id: true, label: true, url: true, position: true,
           isActive: true, isSystem: true, openInNewTab: true, visibility: true,
-          placement: true,
+          placement: true, parentId: true,
         },
       });
       // Hide core section links whose feature flag is off (Home/Articles/Members).
@@ -306,7 +306,15 @@ export function createApp(): Express {
         const feature = urlFeature[i.url];
         return !feature || config.features[feature];
       });
-      res.json(visible);
+      // Links under another (its dropdown) ride on their parent as `children`, in
+      // position order; a child whose parent is hidden or gone is not shown.
+      const top = visible.filter((i) => !i.parentId);
+      const ids = new Set(top.map((i) => i.id));
+      res.json(top.map(({ parentId: _p, ...item }) => ({
+        ...item,
+        children: visible.filter((c) => c.parentId === item.id && ids.has(c.parentId))
+          .map(({ parentId: _c, ...child }) => child),
+      })));
     } catch (err) {
       next(err);
     }

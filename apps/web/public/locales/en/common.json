@@ -131,7 +131,8 @@
     "adminPanel": "Admin panel",
     "adminAttention": "Something in the admin panel needs your attention",
     "homeAria": "Go to the home page",
-    "menu": "Menu"
+    "menu": "Menu",
+    "openMenu": "Open the {{label}} menu"
   },
   "search": {
     "short": "Search",

@@ -3317,7 +3317,10 @@
       "public": "public",
       "members": "members",
       "groups": "groups"
-    }
+    },
+    "fieldParent": "Show under",
+    "parentNone": "In the bar",
+    "parentLocked": "Links sit under this one, so it stays in the bar."
   },
   "categories": {
     "title": "Article Categories",

@@ -113,6 +113,23 @@ function profileFieldData(d: ProfileFieldWrite) {
   };
 }
 
+/**
+ * A navbar link may sit under another (its dropdown), one level deep: the parent
+ * must exist, be a top-level navbar link, not be the item itself, and an item that
+ * already has links under it cannot itself move under another.
+ */
+async function assertNavParent(itemId: string | null, parentId: string): Promise<void> {
+  const invalid = (message: string) => new XentiumError({ code: XEC.API_VALIDATION, httpStatus: 422, message });
+  if (itemId && parentId === itemId) throw invalid("A link cannot sit under itself.");
+  const parent = await prisma.navItem.findUnique({ where: { id: parentId }, select: { parentId: true, placement: true } });
+  if (!parent) throw invalid("That parent link does not exist.");
+  if (parent.parentId) throw invalid("Dropdowns are one level deep: pick a link in the bar itself.");
+  if (parent.placement !== "navbar") throw invalid("Only navbar links have dropdowns.");
+  if (itemId && (await prisma.navItem.count({ where: { parentId: itemId } })) > 0) {
+    throw invalid("This link has links under it, so it stays in the bar.");
+  }
+}
+
 export const adminService = {
   // ── Dashboard ─────────────────────────────────────────────────────────────
 
@@ -1117,8 +1134,9 @@ export const adminService = {
   },
 
   async createNavItem(data: {
-    label: string; url: string; openInNewTab: boolean; visibility: string;
+    label: string; url: string; openInNewTab: boolean; visibility: string; parentId?: string | null;
   }) {
+    if (data.parentId) await assertNavParent(null, data.parentId);
     const max = await prisma.navItem.aggregate({ _max: { position: true } });
     return prisma.navItem.create({
       data: { ...data, position: (max._max.position ?? 0) + 1 },
@@ -1126,10 +1144,11 @@ export const adminService = {
   },
 
   async updateNavItem(id: string, data: Partial<{
-    label: string; url: string; isActive: boolean; openInNewTab: boolean; visibility: string;
+    label: string; url: string; isActive: boolean; openInNewTab: boolean; visibility: string; parentId: string | null;
   }>) {
     const item = await prisma.navItem.findUnique({ where: { id } });
     if (!item) throw XentiumError.notFound("Nav item not found");
+    if (data.parentId) await assertNavParent(id, data.parentId);
     return prisma.navItem.update({ where: { id }, data });
   },
 
@@ -1145,7 +1164,11 @@ export const adminService = {
     const item = await prisma.navItem.findUnique({ where: { id } });
     if (!item) return;
     if (item.isSystem) throw XentiumError.forbidden("Core nav links cannot be deleted — deactivate them instead");
-    await prisma.navItem.delete({ where: { id } });
+    // Its dropdown's links stay: they move up to the bar rather than vanish with it.
+    await prisma.$transaction([
+      prisma.navItem.updateMany({ where: { parentId: id }, data: { parentId: null } }),
+      prisma.navItem.delete({ where: { id } }),
+    ]);
   },
 
   /** ACP "reset to defaults": re-create any missing core links (Home,

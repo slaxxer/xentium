@@ -3190,7 +3190,10 @@
       "public": "öffentlich",
       "members": "Mitglieder",
       "groups": "Gruppen"
-    }
+    },
+    "fieldParent": "Anzeigen unter",
+    "parentNone": "In der Leiste",
+    "parentLocked": "Unter diesem Link liegen andere, deshalb bleibt er in der Leiste."
   },
   "categories": {
     "title": "Artikelkategorien",

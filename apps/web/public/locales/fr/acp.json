@@ -3190,7 +3190,10 @@
       "public": "public",
       "members": "membres",
       "groups": "groupes"
-    }
+    },
+    "fieldParent": "Afficher sous",
+    "parentNone": "Dans la barre",
+    "parentLocked": "Des liens sont placés sous celui-ci, il reste donc dans la barre."
   },
   "categories": {
     "title": "Catégories d'articles",

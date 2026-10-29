@@ -49,6 +49,11 @@ export interface NavItemDeclaration {
   icon?:       string;
   position?:   number;
   visibility?: "public" | "members";
+  /**
+   * Links in this item's dropdown (one level). Created once, like the item itself:
+   * an admin may rename, hide, reorder or move them in ACP → Navigation and that sticks.
+   */
+  children?:   Array<{ label: string; url: string; visibility?: "public" | "members" }>;
 }
 
 export interface AcpPageDeclaration {

@@ -239,6 +239,52 @@
     }
   }
 
+  /* A link with a dropdown (nav items with children): the label keeps its pill and
+     its own page; the caret beside it opens the list. */
+  &__has-menu {
+    position: relative;
+    display: flex;
+    align-items: center;
+
+    > a { padding-right: 6px; }
+  }
+
+  &__menu-caret {
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    margin-left: -2px;
+    border-radius: var(--radius-sm);
+    color: var(--nav-fg-muted);
+    font-size: var(--fs-2xs);
+    transition: color 0.15s, background 0.15s;
+
+    &:hover, &[aria-expanded="true"] { color: var(--nav-fg); background: var(--nav-active-bg); }
+  }
+
+  /* The dropdown under a nav link: the user menu's panel, opened below the link. */
+  &__dropdown--nav {
+    top: calc(100% + 6px);
+    left: 0;
+    right: auto;
+    padding: 6px 0;
+  }
+
+  /* Its items are links inside the links row: undo the row's pill styling. */
+  &__links &__dropdown-item {
+    display: flex;
+    padding: 10px 16px;
+    border-radius: 0;
+    font-family: inherit;
+    font-size: var(--fs-sm);
+    font-weight: 500;
+    color: var(--c-fg-muted);
+    background: none;
+
+    &:hover, &.active { color: var(--c-fg); background: var(--c-accent-soft); }
+  }
+
   &__spacer { flex: 1; }
 }
 
