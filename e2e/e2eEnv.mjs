@@ -12,6 +12,7 @@
  *   ports      web 5175, API 4300
  *   uploads    apps/api/var/e2e-uploads
  *   redis      keys under "xentium-e2e:", so the e2e worker never takes dev jobs
+ *   marketplace none (an address that refuses), so nothing live leaks in
  *
  * Both scripts/e2e.mjs (the reset) and playwright.config.ts (the stack it boots)
  * read from here, so they can't disagree about which database they mean.
@@ -97,5 +98,11 @@ export function e2eEnv() {
     REDIS_KEY_PREFIX: "xentium-e2e:",
     XT_WEB_PORT: String(E2E_WEB_PORT),
     XT_API_URL: `http://localhost:${E2E_API_PORT}`,
+    // No marketplace. The default is the live one, so the suite used to read
+    // whatever the team had announced that day: the alpha.20 announcement opened
+    // over the ACP and broke three tests that never touched it. Port 9 (discard)
+    // refuses at once, which the installer and the ACP already handle as
+    // "marketplace unreachable".
+    LICENSE_SERVER_URL: "http://127.0.0.1:9/api/v1",
   };
 }
