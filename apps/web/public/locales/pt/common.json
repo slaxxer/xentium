@@ -191,7 +191,8 @@
     },
     "updatesLabel": "Novidades:",
     "staffSignIn": "Acesso da equipa",
-    "autoRefreshNote": "Esta página volta sozinha assim que terminarmos, não é preciso recarregar."
+    "autoRefreshNote": "Esta página volta sozinha assim que terminarmos, não é preciso recarregar.",
+    "code": "Código de autenticação"
   },
   "themeChooser": {
     "open": "Escolher um tema",
@@ -751,5 +752,13 @@
     "max": "Até {{size}} cada",
     "tooLarge": "Maior que {{size}}",
     "failed": "O envio falhou. Tente de novo."
+  },
+  "stepUp": {
+    "title": "Confirme que é você",
+    "body": "Introduza o código de 6 dígitos da sua app de autenticação para continuar.",
+    "label": "Código de autenticação",
+    "confirm": "Confirmar",
+    "wrong": "Esse código não está certo. Experimente o atual.",
+    "used": "Esse código acabou de ser usado. Aguarde pelo próximo."
   }
 }

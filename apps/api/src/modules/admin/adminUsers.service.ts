@@ -237,7 +237,7 @@ export const adminUsersService = {
       select: {
         id: true, username: true, displayName: true, email: true, avatar: true,
         isActive: true, bannedUntil: true, createdAt: true, emailVerifiedAt: true,
-        postCount: true, articleCount: true, commentCount: true,
+        postCount: true, articleCount: true, commentCount: true, totpEnabledAt: true,
         groups: { include: groupInclude, orderBy: primaryGroupOrder },
         _count: { select: { articles: true, articleComments: true } },
       },
@@ -288,6 +288,7 @@ export const adminUsersService = {
       avatar:          resolveAvatar(user.avatar),
       isActive:        user.isActive,
       bannedUntil:     user.bannedUntil,
+      totpEnabledAt:   user.totpEnabledAt,
       createdAt:       user.createdAt,
       emailVerifiedAt: user.emailVerifiedAt,
       postCount:       user.postCount,

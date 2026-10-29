@@ -191,7 +191,8 @@
     },
     "updatesLabel": "Actualités :",
     "staffSignIn": "Connexion équipe",
-    "autoRefreshNote": "Cette page se recharge d'elle-même dès que nous avons terminé, inutile de l'actualiser."
+    "autoRefreshNote": "Cette page se recharge d'elle-même dès que nous avons terminé, inutile de l'actualiser.",
+    "code": "Code d’authentification"
   },
   "themeChooser": {
     "open": "Choisir un thème",
@@ -751,5 +752,13 @@
     "max": "Jusqu'à {{size}} chacun",
     "tooLarge": "Plus de {{size}}",
     "failed": "L'envoi a échoué. Réessayez."
+  },
+  "stepUp": {
+    "title": "Confirmez que c’est vous",
+    "body": "Saisissez le code à 6 chiffres de votre application d’authentification pour continuer.",
+    "label": "Code d’authentification",
+    "confirm": "Confirmer",
+    "wrong": "Ce code est incorrect. Essayez le code actuel.",
+    "used": "Ce code vient d’être utilisé. Attendez le suivant."
   }
 }

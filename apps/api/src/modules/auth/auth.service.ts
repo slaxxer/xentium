@@ -5,6 +5,7 @@ import { redis, rkey } from "../../infrastructure/redis.js";
 import { verifyPassword, hashPassword } from "./auth.password.js";
 import { verifyLegacyPassword, isLegacyScheme } from "./auth.legacyPassword.js";
 import { createSession } from "./auth.tokens.js";
+import { secondStepTicket } from "./auth.signin.js";
 import { revokeUserAccessTokens } from "./session-revocation.js";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
 import { authGuardRegistry } from "../../core/auth-guard-registry/auth-guard-registry.js";
@@ -153,6 +154,12 @@ export async function login(identifier: string, password: string, pin: string | 
         expiresAt: isPermanent ? null : user.bannedUntil.toISOString(),
       } as const;
     }
+  }
+
+  // Two-factor sign-in replaces the PIN: the code step finishes this sign-in
+  // through finishSignIn (auth guards, session), so nothing past here runs.
+  if (user.totpEnabledAt) {
+    return { requiresTotp: true, ticket: await secondStepTicket(user.id, "password", opts.persistent ?? true, "totp") } as const;
   }
 
   // PIN check: if user has PIN enabled, validate it

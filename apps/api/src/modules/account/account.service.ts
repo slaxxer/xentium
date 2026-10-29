@@ -255,6 +255,13 @@ export const accountService = {
       throw new XentiumError({ code: "XEC-AUTH-1001", httpStatus: 401, message: "Current password is incorrect" });
     }
 
+    if (user.totpEnabledAt) {
+      throw new XentiumError({
+        code: "XEC-AUTH-1076", httpStatus: 409,
+        message: "Two-factor sign-in is on, and it replaces the login PIN.",
+      });
+    }
+
     const pinHash = await hashPassword(pin);
     await prisma.user.update({
       where: { id: userId },

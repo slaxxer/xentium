@@ -39,6 +39,15 @@ in JavaScript, and it keeps the access token in memory only.
 | **Perm:`key`** | logged in **and** holding that permission (`requirePermission`) |
 | **Admin** | logged in **and** holding `admin.access` (`adminGuard`) |
 
+**Two-factor sign-in.** A group holding `account.twofactor.required` (Admin, by default)
+must turn on two-factor sign-in before any **Admin** route answers; until then they get
+`403 XEC-AUTH-1074`. A few ACP actions that hand out power, install code or connect the
+marketplace (group permissions, user groups and account changes, plugin upload, enable
+and delete, marketplace install and update, core updates, sign-in providers) also ask an
+account with two-factor sign-in on for a fresh code: they answer `403 XEC-AUTH-1075`
+until you repeat the request with the code in an `X-Xentium-OTP` header. One good code
+covers that sign-in for five minutes.
+
 ### Install guard
 
 Until the site is installed (`settings['site.id']` isn't set), every route **except**
@@ -126,8 +135,9 @@ per IP for guests and 600 a minute per signed-in session. All of them answer
 | GET | `/registration-status` | Public | Whether registration, invites or the beta gate are open. |
 | POST | `/register/send-code` | Public | Email a verification code to start registering. |
 | POST | `/register` | Public | Create an account (with the emailed code and optional profile fields). |
-| POST | `/login` | Public | `{ identifier, password, loginPin?, remember? }` → `{ accessToken }` (plus the refresh cookie). Can return `{ requiresPin: true }`. `remember: false` gives a browser-session cookie and a session that ends 12 hours after its last use. |
+| POST | `/login` | Public | `{ identifier, password, loginPin?, remember? }` → `{ accessToken }` (plus the refresh cookie). Can return `{ requiresPin: true }`, or `{ requiresTotp: true, ticket }` when two-factor sign-in is on. `remember: false` gives a browser-session cookie and a session that ends 12 hours after its last use. |
 | POST | `/login/pin` | Public | `{ ticket, pin }`: the PIN step after a sign-in link, passkey or provider. The ticket is single-use, lasts five minutes and burns after five wrong PINs. |
+| POST | `/login/2fa` | Public | `{ ticket, code }`: the authenticator-code step of any sign-in except a passkey (a password, link or provider answers `{ requiresTotp: true, ticket }`; a provider sends you to `/login/complete?totp=…`). `code` is the 6-digit code or a recovery code. Same ticket rules as the PIN; ten wrong codes in 15 minutes lock the account's codes for 15 minutes (`XEC-AUTH-1072`). |
 | POST | `/register/check-availability` | Public | `{ email?, username? }` → which are free. |
 | POST | `/register/check-invite` | Public | `{ code }` → `{ valid }`. |
 | GET | `/methods` | Public | `{ passkeys, magicLink, providers[] }`: which sign-in methods this site offers. |
@@ -166,7 +176,12 @@ All **Auth**.
 | DELETE | `/sessions/:sessionId` | Revoke one session. |
 | GET / PATCH | `/privacy` | Read or update privacy settings (JSON). |
 | GET / PATCH | `/profile-fields` | Read or update your custom field values (with per-field privacy). |
-| POST / DELETE | `/pin` | Set or turn off the login PIN. |
+| POST / DELETE | `/pin` | Set or turn off the login PIN. Refused while two-factor sign-in is on, which replaces it. |
+| GET | `/two-factor` | `{ enabled, enabledAt, recoveryCodesLeft, required }`. |
+| POST | `/two-factor/setup` | Start setup: `{ secret, uri }` (the `otpauth://` URI for the QR code). |
+| POST | `/two-factor/enable` | `{ code }` with the first code → `{ recoveryCodes }`, shown once. Signs out your other sessions and turns the PIN off. |
+| POST | `/two-factor/disable` | `{ code }` (a code or a recovery code). |
+| POST | `/two-factor/recovery-codes` | `{ code }` → ten new `recoveryCodes`; the old ones stop working. |
 | GET / PATCH | `/notifications` | Read or update notification preferences. |
 | GET / PATCH | `/badges` | Which of your badges are hidden on your profile: `{ hidden: badgeId[] }`. |
 
@@ -537,6 +552,7 @@ Everything below needs **Admin** (`admin.access`) unless a stricter permission i
 | PATCH | `/users/:id/active` | Activate / deactivate. |
 | POST | `/users/:id/ban` · DELETE `/users/:id/ban` | Ban / lift. |
 | POST | `/users/:id/force-logout` | Revoke every session. |
+| POST | `/users/:id/two-factor/reset` | Turn off someone else's two-factor sign-in (lost phone and recovery codes) and end their sessions. Asks for a code (step-up). |
 | POST | `/users/:id/password-reset` | Send a reset email. |
 | GET | `/dashboard/overview` | The ACP overview: needs-attention items, setup checklist, recent activity. |
 | GET | `/dashboard/analytics` | Charts for the dashboard: sign-ups, content and visits over time. |

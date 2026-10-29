@@ -17,6 +17,12 @@ export const pinStepSchema = z.object({
   ticket: z.string().min(16).max(128),
   pin:    z.string().regex(/^\d{4}$/),
 });
+/** A 6-digit authenticator code, or a recovery code (`abcde-fghjk`). */
+export const twoFactorCodeSchema = z.string().trim().min(6).max(20);
+export const totpStepSchema = z.object({
+  ticket: z.string().min(16).max(128),
+  code:   twoFactorCodeSchema,
+});
 export type LoginInput = z.infer<typeof loginSchema>;
 
 export const sendCodeSchema = z.object({

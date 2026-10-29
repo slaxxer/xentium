@@ -231,6 +231,9 @@ function StaffSignInDialog({ onClose, onSignedIn }: { onClose: () => void; onSig
   const [password, setPassword] = useState("");
   const [pin, setPin] = useState("");
   const [requiresPin, setRequiresPin] = useState(false);
+  // Two-factor sign-in: the password was right, the code finishes it.
+  const [totpTicket, setTotpTicket] = useState<string | null>(null);
+  const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -245,9 +248,21 @@ function StaffSignInDialog({ onClose, onSignedIn }: { onClose: () => void; onSig
     setError(null);
     setLoading(true);
     try {
+      type LoginRes = { accessToken?: string; requiresPin?: boolean; requiresTotp?: boolean; ticket?: string };
+      if (totpTicket) {
+        const done = await api.post<LoginRes>("/auth/login/2fa", { ticket: totpTicket, code });
+        await applyLogin(done.accessToken!);
+        onSignedIn();
+        return;
+      }
       const body: Record<string, unknown> = { email, password };
       if (requiresPin) body.loginPin = pin;
-      const res = await api.post<{ accessToken?: string; requiresPin?: boolean }>("/auth/login", body);
+      const res = await api.post<LoginRes>("/auth/login", body);
+      if (res.requiresTotp && res.ticket) {
+        setTotpTicket(res.ticket);
+        setLoading(false);
+        return;
+      }
       if (res.requiresPin) {
         setRequiresPin(true);
         setLoading(false);
@@ -257,6 +272,11 @@ function StaffSignInDialog({ onClose, onSignedIn }: { onClose: () => void; onSig
       onSignedIn();
     } catch (err) {
       setError(apiErrorMessage(err, t("maintenance.signInError")));
+      if (totpTicket) {
+        setCode("");
+        // The step is gone (too slow, or too many wrong codes): start again.
+        if ((err as { detail?: { error?: { code?: string } } }).detail?.error?.code === "XEC-AUTH-1073") setTotpTicket(null);
+      }
     } finally {
       setLoading(false);
     }
@@ -296,6 +316,16 @@ function StaffSignInDialog({ onClose, onSignedIn }: { onClose: () => void; onSig
                   value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
               </div>
             </div>
+            {totpTicket && (
+              <div className="mt-field">
+                <label htmlFor="mtCode">{t("maintenance.code")}</label>
+                <div className="mt-inputwrap">
+                  <FontAwesomeIcon className="ic" icon={faShieldHalved} />
+                  <input id="mtCode" autoComplete="one-time-code" required autoFocus maxLength={20}
+                    value={code} onChange={(e) => setCode(e.target.value.trim())} placeholder="000000" />
+                </div>
+              </div>
+            )}
             {requiresPin && (
               <div className="mt-field">
                 <label htmlFor="mtPin">{t("maintenance.pin")}</label>

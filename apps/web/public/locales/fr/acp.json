@@ -57,7 +57,10 @@
     "sections": "Sections",
     "expandPanel": "Déplier le panneau",
     "collapsePanel": "Replier le panneau",
-    "dockPanel": "Garder le panneau ouvert"
+    "dockPanel": "Garder le panneau ouvert",
+    "twoFactorTitle": "Activez la connexion en deux étapes",
+    "twoFactorBody": "Votre groupe doit utiliser la connexion en deux étapes pour ouvrir le panneau d’administration. Activez-la dans les paramètres de votre compte, puis revenez.",
+    "twoFactorAction": "Ouvrir les paramètres du compte"
   },
   "topbar": {
     "breadcrumbRoot": "Panneau d'administration",
@@ -1251,6 +1254,48 @@
         "desc": "Un filtre d'un plugin installé a arrêté cette action.",
         "cause": "Un plugin a enregistré une vérification (par exemple à l'inscription ou à l'enregistrement d'un contenu) qui a refusé cette saisie.",
         "fix": "Lisez le message affiché au membre ; il vient du plugin. Pour changer la règle, voyez les réglages de ce plugin ou désactivez-le."
+      },
+      "XEC-AUTH-1070": {
+        "msg": "Code en deux étapes incorrect",
+        "desc": "Le code d’authentification ou de récupération ne correspond pas.",
+        "cause": "Le code a été mal saisi, appartient à un autre compte, ou l’horloge du téléphone est très décalée.",
+        "fix": "Saisissez le code actuel de l’application. Si les codes ne correspondent jamais, vérifiez que l’heure du téléphone est réglée automatiquement."
+      },
+      "XEC-AUTH-1071": {
+        "msg": "Code en deux étapes déjà utilisé",
+        "desc": "Le code était correct, mais il a déjà été utilisé.",
+        "cause": "Chaque code ne fonctionne qu’une fois, et le même code a été saisi deux fois en 30 secondes.",
+        "fix": "Attendez le code suivant dans l’application."
+      },
+      "XEC-AUTH-1072": {
+        "msg": "Trop de codes en deux étapes",
+        "desc": "Trop de codes incorrects ont été saisis pour ce compte.",
+        "cause": "Dix codes incorrects en 15 minutes bloquent les vérifications en deux étapes du compte.",
+        "fix": "Attendez 15 minutes. Si le téléphone est perdu, un administrateur peut réinitialiser la connexion en deux étapes dans ACP → Utilisateurs."
+      },
+      "XEC-AUTH-1073": {
+        "msg": "Étape en deux étapes expirée",
+        "desc": "La connexion a attendu trop longtemps son code.",
+        "cause": "L’étape du code dure cinq minutes et cinq codes incorrects.",
+        "fix": "Reconnectez-vous."
+      },
+      "XEC-AUTH-1074": {
+        "msg": "Connexion en deux étapes requise",
+        "desc": "Ce compte doit utiliser la connexion en deux étapes avant que le panneau d’administration ne s’ouvre.",
+        "cause": "Un groupe du compte détient « Doit utiliser la connexion en deux étapes » (ACP → Permissions).",
+        "fix": "Activez la connexion en deux étapes dans Compte → Sécurité."
+      },
+      "XEC-AUTH-1075": {
+        "msg": "Confirmer avec un code",
+        "desc": "Cette action demande un nouveau code de l’application d’authentification.",
+        "cause": "Attribuer des permissions, installer du code et des actions similaires le redemandent, même connecté.",
+        "fix": "Saisissez le code quand il est demandé. Un code couvre cinq minutes."
+      },
+      "XEC-AUTH-1076": {
+        "msg": "État de la connexion en deux étapes",
+        "desc": "La connexion en deux étapes n’est pas dans l’état requis par cette demande.",
+        "cause": "Elle est déjà activée, déjà désactivée, ou sa configuration n’a pas été lancée.",
+        "fix": "Rechargez la page et réessayez."
       }
     },
     "memberPlaceholder": "Membre (facultatif)",
@@ -3433,7 +3478,13 @@
     "deviceCookies_other": "Cookies d'appareil · {{n}}",
     "copyFullId": "Copier l'ID complet",
     "showLess": "Afficher moins",
-    "onlineNow": "En ligne"
+    "onlineNow": "En ligne",
+    "twoFactorReset": "Réinitialiser la connexion en deux étapes",
+    "actTwoFactorSub": "Activée depuis le {{date}}. Pour quelqu’un qui a perdu son téléphone et ses codes de récupération.",
+    "twoFactorResetTitle": "Réinitialiser la connexion en deux étapes ?",
+    "twoFactorResetText": "Cela désactive la connexion en deux étapes de {{name}} et le déconnecte partout. Il se connecte avec son mot de passe et peut la réactiver. Ne le faites que si vous êtes sûr que c’est bien lui qui le demande.",
+    "twoFactorResetSelf": "Désactivez la vôtre dans les paramètres de votre compte.",
+    "toastTwoFactorReset": "Connexion en deux étapes réinitialisée pour {{name}}."
   },
   "styleEditor": {
     "fontSiteDefault": "Par défaut (Bricolage Grotesque + Figtree)",
@@ -4490,7 +4541,8 @@
       "magic_link": "Lien de connexion",
       "email_verify": "Vérification de l'e-mail",
       "email_change": "Changement d'e-mail",
-      "smtp_test": "Test SMTP"
+      "smtp_test": "Test SMTP",
+      "security_alert": "Alerte de sécurité"
     },
     "onThisPage": "Sur cette page",
     "server": {
@@ -6159,7 +6211,8 @@
       "plugin.enable": "Activer et désactiver des extensions",
       "system.tasks.manage": "Gérer les tâches planifiées",
       "emoji.manage": "Gérer les emojis",
-      "system.update": "Mettre à jour Xentium depuis l'ACP"
+      "system.update": "Mettre à jour Xentium depuis l'ACP",
+      "account.twofactor.required": "Doit utiliser la connexion en deux étapes"
     }
   },
   "emojis": {

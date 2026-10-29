@@ -57,7 +57,10 @@
     "sections": "Secciones",
     "expandPanel": "Expandir panel",
     "collapsePanel": "Contraer panel",
-    "dockPanel": "Mantener el panel abierto"
+    "dockPanel": "Mantener el panel abierto",
+    "twoFactorTitle": "Activa el inicio de sesión en dos pasos",
+    "twoFactorBody": "Tu grupo debe usar el inicio de sesión en dos pasos para abrir el panel de administración. Actívalo en los ajustes de tu cuenta y vuelve.",
+    "twoFactorAction": "Abrir ajustes de la cuenta"
   },
   "topbar": {
     "breadcrumbRoot": "Panel de administración",
@@ -1251,6 +1254,48 @@
         "desc": "Un filtro de un plugin instalado detuvo esta acción.",
         "cause": "Un plugin registró una comprobación (por ejemplo al registrarse o al guardar contenido) y rechazó esta entrada.",
         "fix": "Lee el mensaje que ve el miembro; viene del plugin. Para cambiar la regla, revisa los ajustes de ese plugin o desactívalo."
+      },
+      "XEC-AUTH-1070": {
+        "msg": "Código de dos pasos incorrecto",
+        "desc": "El código de autenticación o de recuperación no coincide.",
+        "cause": "El código se escribió mal, es de otra cuenta o el reloj del móvil va muy desfasado.",
+        "fix": "Introduce el código actual de la app. Si nunca coinciden, comprueba que la hora del móvil se ajusta automáticamente."
+      },
+      "XEC-AUTH-1071": {
+        "msg": "Código de dos pasos ya usado",
+        "desc": "El código era correcto, pero ya se había usado.",
+        "cause": "Cada código funciona una vez y se introdujo el mismo código dos veces en 30 segundos.",
+        "fix": "Espera al siguiente código en la app."
+      },
+      "XEC-AUTH-1072": {
+        "msg": "Demasiados códigos de dos pasos",
+        "desc": "Se introdujeron demasiados códigos incorrectos para esta cuenta.",
+        "cause": "Diez códigos incorrectos en 15 minutos bloquean la comprobación en dos pasos de la cuenta.",
+        "fix": "Espera 15 minutos. Si se perdió el móvil, un administrador puede restablecerlo en ACP → Usuarios."
+      },
+      "XEC-AUTH-1073": {
+        "msg": "Paso de dos pasos caducado",
+        "desc": "El inicio de sesión esperó demasiado su código.",
+        "cause": "El paso del código dura cinco minutos y cinco códigos incorrectos.",
+        "fix": "Vuelve a iniciar sesión."
+      },
+      "XEC-AUTH-1074": {
+        "msg": "Inicio de sesión en dos pasos obligatorio",
+        "desc": "Esta cuenta debe usar el inicio de sesión en dos pasos antes de que se abra el panel de administración.",
+        "cause": "Un grupo de la cuenta tiene «Debe usar el inicio de sesión en dos pasos» (ACP → Permisos).",
+        "fix": "Activa el inicio de sesión en dos pasos en Cuenta → Seguridad."
+      },
+      "XEC-AUTH-1075": {
+        "msg": "Confirmar con un código",
+        "desc": "Esta acción pide un código nuevo de la app de autenticación.",
+        "cause": "Conceder permisos, instalar código y acciones parecidas lo piden otra vez, aunque hayas iniciado sesión.",
+        "fix": "Introduce el código cuando se pida. Un código vale para cinco minutos."
+      },
+      "XEC-AUTH-1076": {
+        "msg": "Estado de dos pasos",
+        "desc": "El inicio de sesión en dos pasos no está en el estado que necesita esta petición.",
+        "cause": "Ya está activado, ya está desactivado o no se empezó a configurar.",
+        "fix": "Recarga la página y vuelve a intentarlo."
       }
     },
     "memberPlaceholder": "Miembro (opcional)",
@@ -3433,7 +3478,13 @@
     "deviceCookies_other": "Cookies de dispositivo · {{n}}",
     "copyFullId": "Copiar ID completo",
     "showLess": "Mostrar menos",
-    "onlineNow": "En línea"
+    "onlineNow": "En línea",
+    "twoFactorReset": "Restablecer el inicio de sesión en dos pasos",
+    "actTwoFactorSub": "Activado desde {{date}}. Para quien perdió el móvil y sus códigos de recuperación.",
+    "twoFactorResetTitle": "¿Restablecer el inicio de sesión en dos pasos?",
+    "twoFactorResetText": "Esto desactiva el inicio de sesión en dos pasos de {{name}} y cierra todas sus sesiones. Podrá iniciar sesión con su contraseña y volver a activarlo. Hazlo solo si estás seguro de que es esa persona quien lo pide.",
+    "twoFactorResetSelf": "Desactiva el tuyo en los ajustes de tu cuenta.",
+    "toastTwoFactorReset": "Inicio de sesión en dos pasos restablecido para {{name}}."
   },
   "styleEditor": {
     "fontSiteDefault": "Predeterminada (Bricolage Grotesque + Figtree)",
@@ -4490,7 +4541,8 @@
       "magic_link": "Enlace de inicio de sesión",
       "email_verify": "Verificar correo",
       "email_change": "Cambio de correo",
-      "smtp_test": "Prueba SMTP"
+      "smtp_test": "Prueba SMTP",
+      "security_alert": "Aviso de seguridad"
     },
     "onThisPage": "En esta página",
     "server": {
@@ -6159,7 +6211,8 @@
       "plugin.enable": "Activar y desactivar plugins",
       "system.tasks.manage": "Gestionar tareas programadas",
       "emoji.manage": "Gestionar emojis",
-      "system.update": "Actualizar Xentium desde el ACP"
+      "system.update": "Actualizar Xentium desde el ACP",
+      "account.twofactor.required": "Debe usar el inicio de sesión en dos pasos"
     }
   },
   "emojis": {

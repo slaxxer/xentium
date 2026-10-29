@@ -217,7 +217,30 @@
     "stateOff": "Off",
     "deviceCount_one": "1 device",
     "deviceCount_other": "{{count}} devices",
-    "footNote": "Nothing on this page is saved automatically — each action asks for your password where it matters."
+    "footNote": "Nothing on this page is saved automatically — each action asks for your password where it matters.",
+    "tfa": {
+      "title": "Two-factor sign-in",
+      "offDesc": "Ask for a code from an authenticator app, such as Google Authenticator, every time you sign in. It replaces the login PIN.",
+      "onDesc": "On since {{date}}. Signing in asks for a code from your authenticator app. Recovery codes left: {{left}}.",
+      "requiredHint": "Your account has staff access, so two-factor sign-in is required before the admin panel opens.",
+      "turnOn": "Turn on",
+      "turnOff": "Turn off",
+      "newCodes": "New recovery codes",
+      "step1": "Install an authenticator app on your phone, such as Google Authenticator, 1Password or Authy.",
+      "step2": "Scan the QR code with it. Can't scan it? Enter this key instead:",
+      "step3": "Type the 6-digit code the app shows.",
+      "qrAlt": "QR code for your authenticator app",
+      "codeLabel": "Code from your app",
+      "codeOrRecovery": "Code from your app, or a recovery code",
+      "codesOnce": "Save these recovery codes somewhere safe. Each one signs you in once if you lose your phone. This is the only time they are shown.",
+      "copy": "Copy",
+      "download": "Download",
+      "saved": "I've saved them",
+      "copied": "Recovery codes copied.",
+      "enabled": "Two-factor sign-in is on.",
+      "disabled": "Two-factor sign-in is off.",
+      "failed": "That didn't work. Try again."
+    }
   },
   "pageSub": "Your profile, your security, and what this site is allowed to tell people about you.",
   "viewProfile": "View my profile",
@@ -233,7 +256,8 @@
       "notifications": "notifications email in-app followers mentions likes progression badges",
       "preferences": "theme dark light language font badges motion compact autoplay appearance",
       "privacy": "privacy birthday visibility wall comments followers following blocked"
-    }
+    },
+    "tfaOn": "Two-factor on"
   },
   "save": {
     "unsaved_one": "1 unsaved change",

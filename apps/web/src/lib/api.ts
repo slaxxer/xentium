@@ -1,6 +1,7 @@
 import { authStore, type AuthUser } from "./authStore";
 import { applyServerLocale, uiLocale } from "./i18n";
 import { fatalErrorStore } from "./fatalError";
+import { requestStepUpCode } from "./stepUp";
 
 // The /auth/me endpoint returns groups as the UserGroup join table:
 // [{ group: { id, name, key } }]. Flatten to [{ id, name, key }].
@@ -79,8 +80,13 @@ async function tryRefresh(): Promise<string | null> {
   return _refreshing;
 }
 
-async function request<T>(method: string, path: string, body?: unknown, retry = true): Promise<T> {
+/** Wrong codes one step-up prompt absorbs before the request gives up. */
+const STEP_UP_TRIES = 3;
+const STEP_UP_RETRYABLE = new Set(["XEC-AUTH-1070", "XEC-AUTH-1071"]);
+
+async function request<T>(method: string, path: string, body?: unknown, retry = true, otp?: string, otpTries = 0): Promise<T> {
   const headers: Record<string, string> = {};
+  if (otp) headers["X-Xentium-OTP"] = otp;
   const isFormData = typeof FormData !== "undefined" && body instanceof FormData;
   if (body !== undefined && !isFormData) headers["Content-Type"] = "application/json";
   if (authStore.token) headers["Authorization"] = `Bearer ${authStore.token}`;
@@ -97,7 +103,7 @@ async function request<T>(method: string, path: string, body?: unknown, retry = 
 
   if (res.status === 401 && retry && authStore.token) {
     const newToken = await tryRefresh();
-    if (newToken) return request(method, path, body, false);
+    if (newToken) return request(method, path, body, false, otp, otpTries);
   }
 
   if (!res.ok) {
@@ -110,6 +116,15 @@ async function request<T>(method: string, path: string, body?: unknown, retry = 
     // Canonical shape: { error: { code, message, details, severity } }. The only
     // flat-string `error` left is the pre-install installer/setup surface.
     const errObj = (detail as any)?.error;
+
+    // The action wants a fresh authenticator code: ask, then send the same request
+    // again with it. A wrong or spent code asks again (with why), up to a few times.
+    const askAgain = otp && STEP_UP_RETRYABLE.has(errObj?.code) && otpTries < STEP_UP_TRIES;
+    if (errObj?.code === "XEC-AUTH-1075" || askAgain) {
+      const code = await requestStepUpCode(askAgain ? (errObj?.code ?? null) : null);
+      if (code) return request(method, path, body, retry, code, otpTries + 1);
+    }
+
     const err = new Error(errObj?.message ?? (typeof errObj === "string" ? errObj : `http_${res.status}`));
     (err as any).status = res.status;
     (err as any).detail = detail;

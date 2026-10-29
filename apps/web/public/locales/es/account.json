@@ -217,7 +217,30 @@
     "stateOff": "Inactivo",
     "deviceCount_one": "1 dispositivo",
     "deviceCount_other": "{{count}} dispositivos",
-    "footNote": "Nada de esta página se guarda solo: donde importa, cada acción pide tu contraseña."
+    "footNote": "Nada de esta página se guarda solo: donde importa, cada acción pide tu contraseña.",
+    "tfa": {
+      "title": "Inicio de sesión en dos pasos",
+      "offDesc": "Pide un código de una app de autenticación, como Google Authenticator, cada vez que inicias sesión. Sustituye al PIN de acceso.",
+      "onDesc": "Activado desde {{date}}. Al iniciar sesión se pide un código de tu app de autenticación. Códigos de recuperación restantes: {{left}}.",
+      "requiredHint": "Tu cuenta tiene acceso de equipo, así que el inicio de sesión en dos pasos es obligatorio para abrir el panel de administración.",
+      "turnOn": "Activar",
+      "turnOff": "Desactivar",
+      "newCodes": "Nuevos códigos de recuperación",
+      "step1": "Instala una app de autenticación en tu móvil, como Google Authenticator, 1Password o Authy.",
+      "step2": "Escanea con ella el código QR. ¿No puedes escanearlo? Introduce esta clave:",
+      "step3": "Introduce el código de 6 dígitos que muestra la app.",
+      "qrAlt": "Código QR para tu app de autenticación",
+      "codeLabel": "Código de tu app",
+      "codeOrRecovery": "Código de tu app o un código de recuperación",
+      "codesOnce": "Guarda estos códigos de recuperación en un lugar seguro. Cada uno te permite iniciar sesión una vez si pierdes el móvil. Solo se muestran esta vez.",
+      "copy": "Copiar",
+      "download": "Descargar",
+      "saved": "Ya los he guardado",
+      "copied": "Códigos de recuperación copiados.",
+      "enabled": "El inicio de sesión en dos pasos está activado.",
+      "disabled": "El inicio de sesión en dos pasos está desactivado.",
+      "failed": "No ha funcionado. Inténtalo de nuevo."
+    }
   },
   "pageSub": "Tu perfil, tu seguridad y lo que este sitio puede contar sobre ti.",
   "viewProfile": "Ver mi perfil",
@@ -233,7 +256,8 @@
       "notifications": "notificaciones correo en la app seguidores menciones me gusta progresión insignias",
       "preferences": "tema oscuro claro idioma tipografía insignias movimiento compacto reproducción aspecto",
       "privacy": "privacidad cumpleaños visibilidad muro comentarios seguidores bloqueados"
-    }
+    },
+    "tfaOn": "Dos pasos activado"
   },
   "save": {
     "unsaved_one": "1 cambio sin guardar",

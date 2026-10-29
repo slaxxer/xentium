@@ -217,7 +217,30 @@
     "stateOff": "Désactivé",
     "deviceCount_one": "1 appareil",
     "deviceCount_other": "{{count}} appareils",
-    "footNote": "Rien n'est enregistré automatiquement ici — là où cela compte, chaque action demande votre mot de passe."
+    "footNote": "Rien n'est enregistré automatiquement ici — là où cela compte, chaque action demande votre mot de passe.",
+    "tfa": {
+      "title": "Connexion en deux étapes",
+      "offDesc": "Demander un code d’une application d’authentification, comme Google Authenticator, à chaque connexion. Remplace le code PIN de connexion.",
+      "onDesc": "Activée depuis le {{date}}. La connexion demande un code de votre application d’authentification. Codes de récupération restants : {{left}}.",
+      "requiredHint": "Votre compte a un accès d’équipe : la connexion en deux étapes est obligatoire pour ouvrir le panneau d’administration.",
+      "turnOn": "Activer",
+      "turnOff": "Désactiver",
+      "newCodes": "Nouveaux codes de récupération",
+      "step1": "Installez une application d’authentification sur votre téléphone, comme Google Authenticator, 1Password ou Authy.",
+      "step2": "Scannez le QR code avec elle. Impossible de le scanner ? Saisissez plutôt cette clé :",
+      "step3": "Saisissez le code à 6 chiffres affiché par l’application.",
+      "qrAlt": "QR code pour votre application d’authentification",
+      "codeLabel": "Code de votre application",
+      "codeOrRecovery": "Code de votre application, ou un code de récupération",
+      "codesOnce": "Conservez ces codes de récupération en lieu sûr. Chacun vous connecte une fois si vous perdez votre téléphone. Ils ne sont affichés que cette fois.",
+      "copy": "Copier",
+      "download": "Télécharger",
+      "saved": "Je les ai enregistrés",
+      "copied": "Codes de récupération copiés.",
+      "enabled": "La connexion en deux étapes est activée.",
+      "disabled": "La connexion en deux étapes est désactivée.",
+      "failed": "Cela n’a pas fonctionné. Réessayez."
+    }
   },
   "pageSub": "Votre profil, votre sécurité, et ce que ce site a le droit de dire de vous.",
   "viewProfile": "Voir mon profil",
@@ -233,7 +256,8 @@
       "notifications": "notifications e-mail dans l'app abonnés mentions j'aime progression badges",
       "preferences": "thème sombre clair langue police badges mouvement compact lecture automatique apparence",
       "privacy": "confidentialité anniversaire visibilité mur commentaires abonnés bloqués"
-    }
+    },
+    "tfaOn": "Deux étapes activée"
   },
   "save": {
     "unsaved_one": "1 modification non enregistrée",

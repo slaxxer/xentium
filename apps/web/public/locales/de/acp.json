@@ -57,7 +57,10 @@
     "sections": "Bereiche",
     "expandPanel": "Leiste ausklappen",
     "collapsePanel": "Leiste einklappen",
-    "dockPanel": "Leiste offen lassen"
+    "dockPanel": "Leiste offen lassen",
+    "twoFactorTitle": "Zwei-Faktor-Anmeldung einschalten",
+    "twoFactorBody": "Deine Gruppe muss die Zwei-Faktor-Anmeldung nutzen, um den Adminbereich zu öffnen. Schalte sie in deinen Kontoeinstellungen ein und komm dann zurück.",
+    "twoFactorAction": "Kontoeinstellungen öffnen"
   },
   "topbar": {
     "breadcrumbRoot": "Admin-Bereich",
@@ -1251,6 +1254,48 @@
         "desc": "Ein Filter eines installierten Plugins hat diese Aktion gestoppt.",
         "cause": "Ein Plugin hat eine Prüfung registriert (etwa bei der Registrierung oder beim Speichern von Inhalten), die diese Eingabe abgelehnt hat.",
         "fix": "Lies die Meldung, die dem Mitglied gezeigt wird; sie stammt vom Plugin. Um die Regel zu ändern, sieh in die Einstellungen dieses Plugins oder deaktiviere es."
+      },
+      "XEC-AUTH-1070": {
+        "msg": "Falscher Zwei-Faktor-Code",
+        "desc": "Der Authenticator- oder Wiederherstellungscode passt nicht.",
+        "cause": "Der Code wurde vertippt, gehört zu einem anderen Konto, oder die Uhr des Handys geht stark falsch.",
+        "fix": "Gib den aktuellen Code aus der App ein. Passen die Codes nie, prüfe, ob die Uhrzeit des Handys automatisch gestellt wird."
+      },
+      "XEC-AUTH-1071": {
+        "msg": "Zwei-Faktor-Code schon verwendet",
+        "desc": "Der Code war richtig, wurde aber schon verwendet.",
+        "cause": "Jeder Code funktioniert nur einmal, und derselbe Code wurde innerhalb von 30 Sekunden zweimal eingegeben.",
+        "fix": "Warte auf den nächsten Code in der App."
+      },
+      "XEC-AUTH-1072": {
+        "msg": "Zu viele Zwei-Faktor-Codes",
+        "desc": "Für dieses Konto wurden zu viele falsche Codes eingegeben.",
+        "cause": "Zehn falsche Codes innerhalb von 15 Minuten sperren die Zwei-Faktor-Prüfung für das Konto.",
+        "fix": "Warte 15 Minuten. Ist das Handy verloren, kann ein Admin die Zwei-Faktor-Anmeldung unter ACP → Benutzer zurücksetzen."
+      },
+      "XEC-AUTH-1073": {
+        "msg": "Zwei-Faktor-Schritt abgelaufen",
+        "desc": "Die Anmeldung hat zu lange auf ihren Code gewartet.",
+        "cause": "Der Code-Schritt gilt fünf Minuten und fünf falsche Codes lang.",
+        "fix": "Melde dich erneut an."
+      },
+      "XEC-AUTH-1074": {
+        "msg": "Zwei-Faktor-Anmeldung erforderlich",
+        "desc": "Dieses Konto muss die Zwei-Faktor-Anmeldung nutzen, bevor sich der Adminbereich öffnet.",
+        "cause": "Eine Gruppe des Kontos hat „Muss die Zwei-Faktor-Anmeldung nutzen“ (ACP → Berechtigungen).",
+        "fix": "Schalte die Zwei-Faktor-Anmeldung unter Konto → Sicherheit ein."
+      },
+      "XEC-AUTH-1075": {
+        "msg": "Mit einem Code bestätigen",
+        "desc": "Diese Aktion fragt nach einem frischen Code aus der Authenticator-App.",
+        "cause": "Berechtigungen vergeben, Code installieren und ähnliche Aktionen fragen erneut, auch wenn man angemeldet ist.",
+        "fix": "Gib den Code ein, wenn danach gefragt wird. Ein Code gilt für fünf Minuten."
+      },
+      "XEC-AUTH-1076": {
+        "msg": "Zwei-Faktor-Status",
+        "desc": "Die Zwei-Faktor-Anmeldung ist nicht in dem Zustand, den diese Anfrage braucht.",
+        "cause": "Sie ist schon an, schon aus, oder die Einrichtung wurde nicht gestartet.",
+        "fix": "Lade die Seite neu und versuch es erneut."
       }
     },
     "memberPlaceholder": "Mitglied (optional)",
@@ -3433,7 +3478,13 @@
     "deviceCookies_other": "Geräte-Cookies · {{n}}",
     "copyFullId": "Vollständige ID kopieren",
     "showLess": "Weniger anzeigen",
-    "onlineNow": "Online"
+    "onlineNow": "Online",
+    "twoFactorReset": "Zwei-Faktor-Anmeldung zurücksetzen",
+    "actTwoFactorSub": "Aktiv seit {{date}}. Für jemanden, der Handy und Wiederherstellungscodes verloren hat.",
+    "twoFactorResetTitle": "Zwei-Faktor-Anmeldung zurücksetzen?",
+    "twoFactorResetText": "Damit wird die Zwei-Faktor-Anmeldung für {{name}} ausgeschaltet und das Konto überall abgemeldet. Die Anmeldung geht dann mit dem Passwort, und sie kann wieder eingeschaltet werden. Mach das nur, wenn du sicher bist, dass die Person wirklich selbst fragt.",
+    "twoFactorResetSelf": "Schalte deine eigene in deinen Kontoeinstellungen aus.",
+    "toastTwoFactorReset": "Zwei-Faktor-Anmeldung für {{name}} zurückgesetzt."
   },
   "styleEditor": {
     "fontSiteDefault": "Standard (Bricolage Grotesque + Figtree)",
@@ -4490,7 +4541,8 @@
       "magic_link": "Anmeldelink",
       "email_verify": "E-Mail bestätigen",
       "email_change": "E-Mail-Änderung",
-      "smtp_test": "SMTP-Test"
+      "smtp_test": "SMTP-Test",
+      "security_alert": "Sicherheitshinweis"
     },
     "onThisPage": "Auf dieser Seite",
     "server": {
@@ -6159,7 +6211,8 @@
       "plugin.enable": "Plugins aktivieren & deaktivieren",
       "system.tasks.manage": "Geplante Aufgaben verwalten",
       "emoji.manage": "Emojis verwalten",
-      "system.update": "Xentium im ACP aktualisieren"
+      "system.update": "Xentium im ACP aktualisieren",
+      "account.twofactor.required": "Muss die Zwei-Faktor-Anmeldung nutzen"
     }
   },
   "emojis": {

@@ -14,6 +14,7 @@ const PERM_META: Record<string, { label: string; domain: string }> = {
   "user.manage":                { label: "Manage user accounts",               domain: "Users" },
   "user.ban":                   { label: "Ban users",                          domain: "Users" },
   "group.manage":               { label: "Manage groups & permissions",        domain: "Users" },
+  "account.twofactor.required": { label: "Must use two-factor sign-in",        domain: "Users" },
   "progression.manage":         { label: "Manage the progression system",      domain: "Users" },
   "badge.manage":               { label: "Edit the badge catalogue",           domain: "Users" },
   "badge.assign":               { label: "Award badges to members",            domain: "Users" },

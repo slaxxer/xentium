@@ -186,7 +186,8 @@
     },
     "updatesLabel": "Neuigkeiten:",
     "staffSignIn": "Team-Anmeldung",
-    "autoRefreshNote": "Diese Seite lädt sich von selbst neu, sobald wir fertig sind. Du musst nichts tun."
+    "autoRefreshNote": "Diese Seite lädt sich von selbst neu, sobald wir fertig sind. Du musst nichts tun.",
+    "code": "Authenticator-Code"
   },
   "themeChooser": {
     "open": "Theme wählen",
@@ -741,5 +742,13 @@
     "max": "Bis zu {{size}} je Datei",
     "tooLarge": "Größer als {{size}}",
     "failed": "Das Hochladen ist fehlgeschlagen. Versuch es noch einmal."
+  },
+  "stepUp": {
+    "title": "Bestätige, dass du es bist",
+    "body": "Gib den 6-stelligen Code aus deiner Authenticator-App ein, um fortzufahren.",
+    "label": "Authenticator-Code",
+    "confirm": "Bestätigen",
+    "wrong": "Dieser Code stimmt nicht. Versuch den aktuellen.",
+    "used": "Dieser Code wurde gerade schon verwendet. Warte auf den nächsten."
   }
 }

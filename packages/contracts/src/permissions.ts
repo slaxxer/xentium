@@ -72,6 +72,11 @@ export const CorePermissions = {
   // Custom emojis the editor offers (ACP → Content → Emojis). Admin-only by default.
   EMOJI_MANAGE: "emoji.manage",
 
+  // Not a capability but a duty: a member of a group holding it must turn on
+  // two-factor sign-in before the ACP opens to them, and is asked to on every page
+  // until they do. Admins hold it by default.
+  ACCOUNT_TWO_FACTOR_REQUIRED: "account.twofactor.required",
+
   // Plugins
   PLUGIN_INSTALL: "plugin.install",
   PLUGIN_ENABLE: "plugin.enable",

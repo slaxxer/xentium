@@ -62,6 +62,20 @@ function AcpAuthGate({ children }: { children: React.ReactNode }) {
     );
   }
 
+  // ACP → Permissions makes two-factor sign-in a duty for this account and it is not
+  // on yet: every /api/admin route refuses (XEC-AUTH-1074), so say why up front.
+  if (user.twoFactor?.required && !user.twoFactor.enabled) {
+    return (
+      <div className="acp-forbidden">
+        <h2>{t("sidebar.twoFactorTitle")}</h2>
+        <p>{t("sidebar.twoFactorBody")}</p>
+        <Button variant="primary" onClick={() => navigate("/account?tab=security")}>
+          {t("sidebar.twoFactorAction")}
+        </Button>
+      </div>
+    );
+  }
+
   return <>{children}</>;
 }
 

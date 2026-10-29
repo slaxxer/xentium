@@ -72,6 +72,8 @@ interface UserDetail {
   bannedUntil: string | null;
   createdAt: string;
   emailVerifiedAt: string | null;
+  /** Two-factor sign-in on since — null = off. */
+  totpEnabledAt: string | null;
   postCount: number;
   articleCount: number;
   commentCount: number;
@@ -424,6 +426,12 @@ export function UserDetailPage() {
     onError: fail,
   });
 
+  const resetTwoFactorMutation = useMutation({
+    mutationFn: () => api.post(`/admin/users/${id}/two-factor/reset`, {}),
+    onSuccess: () => { refresh(); toast.success(t("userDetail.toastTwoFactorReset", { name: user?.username })); },
+    onError: fail,
+  });
+
   const confirm = (title: string, body: string, confirmText: string, danger = false) =>
     openDialog({ kind: "confirm", icon: danger ? "warning" : "question", title, body, confirmText, cancelText: t("userDetail.cancel"), danger });
 
@@ -446,6 +454,11 @@ export function UserDetailPage() {
   async function handleForceLogout() {
     if (await confirm(t("userDetail.logoutTitle"), t("userDetail.logoutText", { name: user?.username }), t("userDetail.logout"))) {
       forceLogoutMutation.mutate();
+    }
+  }
+  async function handleResetTwoFactor() {
+    if (await confirm(t("userDetail.twoFactorResetTitle"), t("userDetail.twoFactorResetText", { name: user?.username }), t("userDetail.twoFactorReset"), true)) {
+      resetTwoFactorMutation.mutate();
     }
   }
   async function handleResetPassword() {
@@ -618,6 +631,11 @@ export function UserDetailPage() {
             <ActionRow icon={faRightFromBracket} tone="neutral" label={t("userDetail.logoutEverywhere")}
               sub={t("userDetail.actLogoutSub", { count: user.activeSessions })}
               onClick={handleForceLogout} disabled={protectedTarget || forceLogoutMutation.isPending} lockedTitle={protectedReason} />
+            {user.totpEnabledAt && (
+              <ActionRow icon={faShieldHalved} tone="warn" label={t("userDetail.twoFactorReset")}
+                sub={t("userDetail.actTwoFactorSub", { date: siteTime.date(user.totpEnabledAt) })}
+                onClick={handleResetTwoFactor} disabled={isSelf || resetTwoFactorMutation.isPending} lockedTitle={t("userDetail.twoFactorResetSelf")} />
+            )}
             {isBanned ? (
               <ActionRow icon={faShield} tone="ok" label={t("userDetail.liftBan")} sub={banSub}
                 onClick={handleLiftBan} disabled={liftBanMutation.isPending} />

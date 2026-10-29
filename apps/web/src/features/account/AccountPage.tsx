@@ -70,10 +70,11 @@ export function AccountPage() {
     const on = Object.values(p.inApp).filter(Boolean).length
              + Object.values(p.email).filter(Boolean).length;
     return {
-      security:      user?.loginPinEnabled ? t("account:nav.pinOn") : t("account:nav.pinOff"),
+      security:      user?.twoFactor?.enabled ? t("account:nav.tfaOn")
+        : user?.loginPinEnabled ? t("account:nav.pinOn") : t("account:nav.pinOff"),
       notifications: notifs.data ? t("account:nav.onCount", { count: on }) : "",
     } as Partial<Record<Tab, string>>;
-  }, [notifs.data, user?.loginPinEnabled, t]);
+  }, [notifs.data, user?.loginPinEnabled, user?.twoFactor?.enabled, t]);
 
   /** Searching the nav searches what each section CONTAINS, not just its name. */
   const shown = useMemo(() => {

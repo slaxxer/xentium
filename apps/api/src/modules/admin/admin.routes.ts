@@ -11,6 +11,8 @@ import { adminProvidersHandler, adminProviderUpdateHandler } from "../auth/auth.
 import { permissionsRouter } from "../permissions/permissions.routes.js";
 import { adminProgressionRouter } from "../progression/progression.routes.js";
 import { scheduledTaskRouter } from "../scheduled-tasks/scheduled-task.routes.js";
+import { requireStepUp } from "../auth/twoFactor.service.js";
+import { twoFactorController } from "../auth/twoFactor.controller.js";
 import { adminLayoutRouter } from "../layouts/layout.routes.js";
 import { themeRouter } from "../themes/theme.routes.js";
 import { adminEmailRouter } from "../email/email.routes.js";
@@ -49,14 +51,15 @@ adminRouter.get("/users", adminGuard, adminController.listUsers);
 adminRouter.post("/users", adminGuard, adminController.createUser);
 adminRouter.get("/users/:id", adminGuard, adminController.getUserDetail);
 adminRouter.get("/users/:id/login-events", adminGuard, adminController.listUserLoginEvents);
-adminRouter.put("/users/:id/groups", adminGuard, adminController.setUserGroups);
-adminRouter.patch("/users/:id/groups", adminGuard, adminController.patchUserGroups);
+adminRouter.put("/users/:id/groups", adminGuard, requireStepUp, adminController.setUserGroups);
+adminRouter.patch("/users/:id/groups", adminGuard, requireStepUp, adminController.patchUserGroups);
 adminRouter.patch("/users/:id/active", adminGuard, adminController.setUserActive);
 adminRouter.post("/users/:id/ban",     adminGuard, adminController.banUser);
 adminRouter.delete("/users/:id/ban",   adminGuard, adminController.liftBan);
 adminRouter.post("/users/:id/force-logout",    adminGuard, adminController.forceLogoutUser);
 adminRouter.post("/users/:id/password-reset",  adminGuard, adminController.sendPasswordReset);
-adminRouter.patch("/users/:id/account",        adminGuard, adminController.updateUserAccount);
+adminRouter.patch("/users/:id/account",        adminGuard, requireStepUp, adminController.updateUserAccount);
+adminRouter.post("/users/:id/two-factor/reset", adminGuard, requireStepUp, twoFactorController.adminReset);
 
 // Profile fields
 adminRouter.get("/profile-fields", adminGuard, adminController.listProfileFields);
@@ -152,7 +155,7 @@ if (isDev) {
 adminRouter.get("/migration-history", adminGuard, adminController.listMigrationHistory);
 // Sign-in providers (Google, GitHub, Discord) and the passkey relying party.
 adminRouter.get("/auth-providers", adminGuard, adminProvidersHandler);
-adminRouter.patch("/auth-providers/:provider", adminGuard, adminProviderUpdateHandler);
+adminRouter.patch("/auth-providers/:provider", adminGuard, requireStepUp, adminProviderUpdateHandler);
 
 // Scheduled tasks (cron jobs)
 adminRouter.get("/jobs",            adminGuard, adminController.listJobs);
@@ -204,11 +207,11 @@ adminRouter.post("/marketplace/updates/check", adminGuard, updateCheckLimiter, a
 adminRouter.post("/marketplace/updates/core/acknowledge", adminGuard, adminController.acknowledgeCoreUpdate);
 // One-click core update: the API only writes a request for the updater on the server.
 adminRouter.get("/core-update/run", adminGuard, adminController.coreUpdateRunView);
-adminRouter.post("/core-update/run", requirePermission(CorePermissions.SYSTEM_UPDATE), adminController.coreUpdateRunStart);
-adminRouter.post("/core-update/rollback", requirePermission(CorePermissions.SYSTEM_UPDATE), adminController.coreUpdateRunRollback);
+adminRouter.post("/core-update/run", requirePermission(CorePermissions.SYSTEM_UPDATE), requireStepUp, adminController.coreUpdateRunStart);
+adminRouter.post("/core-update/rollback", requirePermission(CorePermissions.SYSTEM_UPDATE), requireStepUp, adminController.coreUpdateRunRollback);
 // Aggregated admin-attention signals for the frontend navbar ACP badge.
 adminRouter.get("/status-summary",             adminGuard, adminController.getStatusSummary);
-adminRouter.post("/marketplace/connection",    adminGuard, adminController.connectMarketplace);
+adminRouter.post("/marketplace/connection",    adminGuard, requireStepUp, adminController.connectMarketplace);
 // The one-click handshake: start one, then poll it while the admin approves in
 // the marketplace tab. The typed connect code above still works and is the
 // fallback for anyone who cannot open a browser tab from this machine.
@@ -218,9 +221,9 @@ adminRouter.delete("/marketplace/connection",  adminGuard, adminController.disco
 // The authenticated download gate — proves account + per-domain ownership.
 adminRouter.post("/marketplace/authorize",     adminGuard, marketplaceArtifactLimiter, adminController.authorizeMarketplaceDownload);
 // Direct install (§16.2): authorize → server-side fetch + sha256 verify → normal intake.
-adminRouter.post("/marketplace/install",       adminGuard, marketplaceArtifactLimiter, adminController.installFromMarketplace);
+adminRouter.post("/marketplace/install",       adminGuard, requireStepUp, marketplaceArtifactLimiter, adminController.installFromMarketplace);
 // Update-in-place (§16.2): same chokepoint, engine swaps the newer artifact in.
-adminRouter.post("/marketplace/update",        adminGuard, marketplaceArtifactLimiter, adminController.updateFromMarketplace);
+adminRouter.post("/marketplace/update",        adminGuard, requireStepUp, marketplaceArtifactLimiter, adminController.updateFromMarketplace);
 
 // Sub-routers
 adminRouter.use("/groups",       groupsRouter);

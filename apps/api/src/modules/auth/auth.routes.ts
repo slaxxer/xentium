@@ -1,6 +1,6 @@
 import { Router } from "express";
 import {
-  loginHandler, pinStepHandler, checkInviteHandler, magicLinkRequestHandler, magicLinkConsumeHandler, legalConsentHandler, refreshHandler, logoutHandler, meHandler,
+  loginHandler, pinStepHandler, totpStepHandler, checkInviteHandler, magicLinkRequestHandler, magicLinkConsumeHandler, legalConsentHandler, refreshHandler, logoutHandler, meHandler,
   registerHandler, sendCodeHandler, checkAvailabilityHandler, registrationStatusHandler,
   requestPasswordResetHandler, confirmPasswordResetHandler,
 } from "./auth.controller.js";
@@ -34,6 +34,7 @@ authRouter.post("/register/send-code", codeLimiter, sendCodeHandler);
 authRouter.post("/register", registerLimiter, registerHandler);
 authRouter.post("/login", loginLimiter, loginHandler);
 authRouter.post("/login/pin", loginLimiter, pinStepHandler);
+authRouter.post("/login/2fa", loginLimiter, totpStepHandler);
 authRouter.post("/magic-link", magicLimiter, magicLinkRequestHandler);
 authRouter.post("/magic-link/consume", loginLimiter, magicLinkConsumeHandler);
 

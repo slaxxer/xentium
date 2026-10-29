@@ -57,7 +57,10 @@
     "sections": "Sections",
     "expandPanel": "Expand panel",
     "collapsePanel": "Collapse panel",
-    "dockPanel": "Keep panel open"
+    "dockPanel": "Keep panel open",
+    "twoFactorTitle": "Turn on two-factor sign-in",
+    "twoFactorBody": "Your group must use two-factor sign-in to open the admin panel. Turn it on in your account settings, then come back.",
+    "twoFactorAction": "Open account settings"
   },
   "topbar": {
     "breadcrumbRoot": "Admin Panel",
@@ -1251,6 +1254,48 @@
         "desc": "An installed plugin's filter stopped this action.",
         "cause": "A plugin registered a check (for example on sign-up or on saving content) and it refused this input.",
         "fix": "Read the message shown to the member; it comes from the plugin. To change the rule, see that plugin's settings, or disable it."
+      },
+      "XEC-AUTH-1070": {
+        "msg": "Wrong Two-factor Code",
+        "desc": "The authenticator or recovery code did not match.",
+        "cause": "The code was mistyped, belongs to another account, or the phone's clock is far off.",
+        "fix": "Type the current code from the app. If codes never match, check the phone's time is set automatically."
+      },
+      "XEC-AUTH-1071": {
+        "msg": "Two-factor Code Already Used",
+        "desc": "That code was right, but it was already used.",
+        "cause": "Each code works once, and the same code was typed twice within 30 seconds.",
+        "fix": "Wait for the next code in the app."
+      },
+      "XEC-AUTH-1072": {
+        "msg": "Too Many Two-factor Codes",
+        "desc": "Too many wrong codes were typed for this account.",
+        "cause": "Ten wrong codes within 15 minutes lock two-factor checks for the account.",
+        "fix": "Wait 15 minutes. An admin can reset two-factor sign-in in ACP → Users if the phone is lost."
+      },
+      "XEC-AUTH-1073": {
+        "msg": "Two-factor Step Expired",
+        "desc": "The sign-in waited too long for its code.",
+        "cause": "The code step lasts five minutes and five wrong codes.",
+        "fix": "Sign in again."
+      },
+      "XEC-AUTH-1074": {
+        "msg": "Two-factor Sign-in Required",
+        "desc": "This account must use two-factor sign-in before the admin panel opens.",
+        "cause": "A group the account is in holds \"Must use two-factor sign-in\" (ACP → Permissions).",
+        "fix": "Turn on two-factor sign-in in Account → Security."
+      },
+      "XEC-AUTH-1075": {
+        "msg": "Confirm With a Code",
+        "desc": "This action asks for a fresh code from the authenticator app.",
+        "cause": "Handing out permissions, installing code and similar actions ask again, even when signed in.",
+        "fix": "Enter the code when asked. One code covers five minutes."
+      },
+      "XEC-AUTH-1076": {
+        "msg": "Two-factor State",
+        "desc": "Two-factor sign-in is not in the state this request needs.",
+        "cause": "It is already on, already off, or its setup was not started.",
+        "fix": "Reload the page and try again."
       }
     },
     "memberPlaceholder": "Member (optional)",
@@ -3560,7 +3605,13 @@
     "deviceCookies_other": "Device cookies · {{n}}",
     "copyFullId": "Copy full ID",
     "showLess": "Show less",
-    "onlineNow": "Online"
+    "onlineNow": "Online",
+    "twoFactorReset": "Reset two-factor sign-in",
+    "actTwoFactorSub": "On since {{date}}. For someone who lost their phone and their recovery codes.",
+    "twoFactorResetTitle": "Reset two-factor sign-in?",
+    "twoFactorResetText": "This turns off two-factor sign-in for {{name}} and signs them out everywhere. They sign in with their password and can turn it on again. Only do this when you are sure it is really them asking.",
+    "twoFactorResetSelf": "Turn your own off in your account settings.",
+    "toastTwoFactorReset": "Two-factor sign-in reset for {{name}}."
   },
   "styleEditor": {
     "fontSiteDefault": "Site default (Bricolage Grotesque + Figtree)",
@@ -4617,7 +4668,8 @@
       "magic_link": "Sign-in link",
       "email_verify": "Verify email",
       "email_change": "Email change",
-      "smtp_test": "SMTP test"
+      "smtp_test": "SMTP test",
+      "security_alert": "Security alert"
     },
     "onThisPage": "On this page",
     "server": {
@@ -6159,7 +6211,8 @@
       "plugin.enable": "Enable & disable plugins",
       "system.tasks.manage": "Manage scheduled tasks",
       "emoji.manage": "Manage emojis",
-      "system.update": "Update Xentium from the ACP"
+      "system.update": "Update Xentium from the ACP",
+      "account.twofactor.required": "Must use two-factor sign-in"
     }
   },
   "emojis": {

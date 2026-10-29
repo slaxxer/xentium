@@ -71,7 +71,8 @@
     },
     "updatesLabel": "Updates:",
     "staffSignIn": "Staff sign-in",
-    "autoRefreshNote": "This page brings itself back the moment we're done — no need to reload."
+    "autoRefreshNote": "This page brings itself back the moment we're done — no need to reload.",
+    "code": "Authenticator code"
   },
   "footer": {
     "whosOnline": "Who's online",
@@ -741,5 +742,13 @@
     "max": "Up to {{size}} each",
     "tooLarge": "Larger than {{size}}",
     "failed": "The upload failed. Try again."
+  },
+  "stepUp": {
+    "title": "Confirm it's you",
+    "body": "Enter the 6-digit code from your authenticator app to continue.",
+    "label": "Authenticator code",
+    "confirm": "Confirm",
+    "wrong": "That code is not right. Try the current one.",
+    "used": "That code was just used. Wait for the next one."
   }
 }

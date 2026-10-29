@@ -9,6 +9,7 @@ import { XentiumError } from "../../shared/errors/XentiumError.js";
 import { XEC } from "../../shared/errors/xec.js";
 import { getFreshSetting } from "../../shared/utils/settings.js";
 import { pluginService } from "./plugin.service.js";
+import { requireStepUp } from "../auth/twoFactor.service.js";
 
 export const pluginManagementRouter: Router = Router();
 
@@ -53,7 +54,7 @@ pluginManagementRouter.post("/validate", requireAuth, adminGuard, uploadGuard, u
 });
 
 // Upload and install
-pluginManagementRouter.post("/upload", requireAuth, adminGuard, uploadGuard, uploadLimiter, upload.single("file"), async (req, res, next) => {
+pluginManagementRouter.post("/upload", requireAuth, adminGuard, requireStepUp, uploadGuard, uploadLimiter, upload.single("file"), async (req, res, next) => {
   try {
     if (!req.file) return res.status(400).json({ message: "No file uploaded" });
     const manifest = await pluginService.install(req.file.buffer, req.userId!);
@@ -81,7 +82,7 @@ pluginManagementRouter.post("/upload", requireAuth, adminGuard, uploadGuard, upl
 });
 
 // Enable
-pluginManagementRouter.post("/:id/enable", requireAuth, adminGuard, async (req, res, next) => {
+pluginManagementRouter.post("/:id/enable", requireAuth, adminGuard, requireStepUp, async (req, res, next) => {
   try {
     const { id } = z.object({ id: z.string() }).parse(req.params);
     await pluginService.enable(id);
@@ -99,7 +100,7 @@ pluginManagementRouter.post("/:id/disable", requireAuth, adminGuard, async (req,
 });
 
 // Uninstall
-pluginManagementRouter.delete("/:id", requireAuth, adminGuard, async (req, res, next) => {
+pluginManagementRouter.delete("/:id", requireAuth, adminGuard, requireStepUp, async (req, res, next) => {
   try {
     const { id }         = z.object({ id: z.string() }).parse(req.params);
     const { removeData } = z.object({ removeData: z.coerce.boolean().default(false) }).parse(req.query);

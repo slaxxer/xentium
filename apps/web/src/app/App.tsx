@@ -1,10 +1,12 @@
 import i18n from "i18next";
 import { LegalConsentGate } from "../features/auth/LegalConsentGate";
+import { TwoFactorPrompt } from "../features/auth/TwoFactorPrompt";
 import { QueryClient, QueryClientProvider, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Suspense, lazy, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { RouterProvider, createBrowserRouter, Outlet, Navigate, useLocation } from "react-router-dom";
 import { ToastHost } from "../components/ToastHost";
 import { DialogHost } from "../components/DialogHost";
+import { StepUpHost } from "../components/StepUpHost";
 import { AppLayout } from "../layouts/AppLayout";
 import { RequireSignIn } from "../layouts/RequireSignIn";
 import { ProfilePage } from "../features/profiles/ProfilePage";
@@ -191,7 +193,7 @@ function AppGuard() {
   if (INSTALL_PATHS.has(pathname)) return null;
 
   if (isLoading) return <Loading />;
-  if ((error as any)?.status === 410 || data?.installed) return <><HeadManager /><LegalConsentGate /><Outlet /></>;
+  if ((error as any)?.status === 410 || data?.installed) return <><HeadManager /><LegalConsentGate /><TwoFactorPrompt /><Outlet /></>;
   return <Navigate to="/install" replace />;
 }
 
@@ -483,6 +485,7 @@ export default function App() {
       {/* Own feedback primitives: toast stack + confirm/alert dialogs (no swal) */}
       <ToastHost />
       <DialogHost />
+      <StepUpHost />
       {/* WoltLab-style fatal halt — overlays everything when the API returns 5xx */}
       <FatalErrorOverlay />
     </QueryClientProvider>
