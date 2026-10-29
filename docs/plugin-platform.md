@@ -225,6 +225,33 @@ Each change is announced as an event: `<your id>.<name>.created`, `.updated`, `.
 Your own routes (`ctx.registerRoutes`) answer first, so you can replace any of these
 endpoints for something special and leave the rest to core.
 
+## Your own database client
+
+A small plugin is fine with resources and a few SQL queries through `host.prisma`. A
+plugin the size of an application (a shop, a file base) is easier to get right with a
+typed client of its own: Prisma, Drizzle, Kysely or plain `pg`. Run it on `host.pg`,
+the site's own connection pool (a node-postgres `Pool`), so your plugin shares core's
+connections instead of opening more:
+
+```ts
+import type { Pool } from "pg";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaClient } from "./generated/prisma/client.js";   // generated from YOUR schema
+
+export function storeDb(host: PluginHost) {
+  return new PrismaClient({ adapter: new PrismaPg(host.pg as Pool) });
+}
+```
+
+Three rules:
+
+- **Your SQL migrations still create the tables.** The client's schema only describes
+  them, with every model mapped to your prefixed table (`@@map("mg_photos")`). Never run
+  the client's own migration commands against a site.
+- **Keep the two in step.** Change a migration, change the schema in the same commit.
+- **Don't close the pool.** It belongs to the site. `host.pg` is missing on a core older
+  than 1.0.0, so check for it if you support one.
+
 ## Settings
 
 Declare your settings as a schema. Core stores them, fills in defaults, checks every save and

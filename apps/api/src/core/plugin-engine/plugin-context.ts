@@ -4,7 +4,7 @@ import type { NotificationTypeDeclaration, PluginContext, PluginHost, PluginJobD
 import { CorePermissions, registerTemplate } from "@xentium/contracts";
 import { progressionCriteriaRegistry } from "../progression-registry/progression-criteria-registry.js";
 import { badgeCriteriaRegistry } from "../badge-registry/badge-criteria-registry.js";
-import { prisma } from "../../infrastructure/db.js";
+import { pool, prisma } from "../../infrastructure/db.js";
 import { pluginRouter } from "./plugin-router.js";
 import { acpPageRegistry } from "./acp-page-registry.js";
 import { securityScanRegistry } from "../security/security-scan-registry.js";
@@ -78,6 +78,7 @@ export async function removeFromGroup(userId: string, groupId: string): Promise<
 /** Host services shared by every plugin; the plugin's own (`jobs`) are added per context. */
 const host: Omit<PluginHost, "jobs" | "settings" | "files" | "limits" | "cache"> = {
   prisma,
+  pg: pool,
   zod: z,
   users: pluginUsers,
   time: pluginTime,

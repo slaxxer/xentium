@@ -97,6 +97,13 @@ export interface NotifyOptions {
 export interface PluginHost {
   /** The host's database client. */
   prisma: any;
+  /**
+   * The host's database connection pool (a node-postgres `Pool`), for a plugin that
+   * brings its own client: `new PrismaClient({ adapter: new PrismaPg(host.pg as Pool) })`,
+   * Drizzle, Kysely or plain `pg`. Shared with the host, so never `end()` it. Tables
+   * are still created only by the plugin's SQL migrations. Absent on an older host.
+   */
+  pg?: unknown;
   /** Job queue handles. Plugins enqueue; the host's worker processes. */
   queues: any;
   /** Validated host environment config. */
