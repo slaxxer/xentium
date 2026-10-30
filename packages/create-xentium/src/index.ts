@@ -14,7 +14,7 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { runChecks, worst, type Check } from "../../cli/src/checks.js";
 import { installRelease, resolveVersion, waitForHealth } from "../../cli/src/release.js";
-import { installUnits, runForeground, systemctl, unitNames, unitsInstalled } from "../../cli/src/service.js";
+import { installUnits, installUpdater, runForeground, systemctl, unitNames, unitsInstalled } from "../../cli/src/service.js";
 import { Site, mergeEnv } from "../../cli/src/site.js";
 import { exec } from "../../cli/src/release.js";
 import { color, error, heading, info, json, line, logo, note, printChecks, success, warning } from "../../cli/src/ui.js";
@@ -249,11 +249,16 @@ async function install(options: Options): Promise<number> {
   const wantsService = options.service
     && process.platform === "linux"
     && !(await unitsInstalled(units))
-    && await confirm("Install systemd units so Xentium starts on boot?", true);
+    && await confirm("Install systemd units so Xentium starts on boot, and admins can update it from the ACP?", true);
 
   if (wantsService) {
     if (await installUnits(site, units)) {
       await site.patchConfig({ service: units });
+      // The same step as `xentium install-service`: without the updater the ACP's
+      // update button never works on a fresh site.
+      if (!(await installUpdater(site, units))) {
+        warning("The updater was not installed, so updates run from this terminal only (`xentium install-service` adds it later).");
+      }
       systemctl("start", units);
       if (await waitForHealth(port)) {
         finish(site, url, version, docker, true);
