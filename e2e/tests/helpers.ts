@@ -85,15 +85,26 @@ export async function nextAdminCode(): Promise<string> {
   return codeAt(state.secret, step);
 }
 
+/**
+ * The admin's API token, reused while it is young: every fresh sign-in needs an
+ * unused authenticator code, and running out of them means waiting up to 30 s
+ * per sign-in, which a test with an API and a UI sign-in cannot afford.
+ */
+const ADMIN_TOKEN_TTL_MS = 10 * 60_000;
+let adminToken: { token: string; at: number } | null = null;
+
 /** Log in via the API and return the access token (Bearer for API-level calls). */
 export async function apiLogin(request: APIRequestContext, email: string, password: string): Promise<string> {
+  if (email === ADMIN.email && adminToken && Date.now() - adminToken.at < ADMIN_TOKEN_TTL_MS) return adminToken.token;
   const res = await request.post("/api/auth/login", { data: { email, password } });
   expect(res.ok(), `login failed for ${email}: ${res.status()}`).toBeTruthy();
   const json = await res.json();
   if (!json.requiresTotp) return json.accessToken as string;
   const step = await request.post("/api/auth/login/2fa", { data: { ticket: json.ticket, code: await nextAdminCode() } });
   expect(step.ok(), `two-factor step failed for ${email}: ${step.status()}`).toBeTruthy();
-  return (await step.json()).accessToken as string;
+  const token = (await step.json()).accessToken as string;
+  if (email === ADMIN.email) adminToken = { token, at: Date.now() };
+  return token;
 }
 
 /** Register a user straight through the API (dev email-code bypass). Idempotent
