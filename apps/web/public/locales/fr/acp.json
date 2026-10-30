@@ -45,7 +45,9 @@
     "members": "Membres",
     "editor": "Éditeur",
     "groupSetup": "Configuration",
-    "groupLogs": "Journaux"
+    "groupLogs": "Journaux",
+    "waiting_one": "{{count}} en attente",
+    "waiting_other": "{{count}} en attente"
   },
   "sidebar": {
     "adminPanel": "Panneau d'administration",

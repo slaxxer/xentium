@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { FontAwesomeIcon } from "../components/Icon";
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { slotRegistry } from "../plugins/slotRegistry";
+import { useShownFor } from "../plugins/useShownFor";
 import {
   faGear,
   faChevronDown,
@@ -85,6 +86,9 @@ export function UserDropdown({ user }: { user: NonNullable<ReturnType<typeof use
   const menuRef = useRef<HTMLDivElement>(null);
   // Self badge in the nav respects the user's badge-visibility choice.
   const primaryGroup = topGroups(user.visibleGroups, (g) => g.displayOrder, 1)[0];
+  // Plugin entries that only some members get (`shownFor`), asked once per member.
+  const menuItems = slotRegistry.getUserMenuItems();
+  const menuAsked = useShownFor(menuItems, user.id);
 
   useEffect(() => {
     if (!open) return;
@@ -164,7 +168,7 @@ export function UserDropdown({ user }: { user: NonNullable<ReturnType<typeof use
             {t("nav.accountSettings")}
           </Link>
           {/* Plugin entries (Membership, …): plain links styled like core's own. */}
-          {slotRegistry.getUserMenuItems().map((item) => (
+          {menuItems.filter(menuAsked.shown).map((item) => (
             <Link key={item.id} to={item.to} className="pub-nav__dropdown-item" onClick={() => setOpen(false)}>
               {item.icon ? <FontAwesomeIcon icon={item.icon as IconDefinition} /> : null}
               {item.label}

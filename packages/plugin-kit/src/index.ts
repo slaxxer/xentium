@@ -162,7 +162,8 @@ export interface PluginHost {
      * the name and badge colour you give), its id returned after that. Once it exists
      * it is the admin's: renamed or recoloured in ACP → Groups and never overwritten.
      */
-    ensure: (spec: { key: string; name: string; badgeColor?: string; nameGlow?: boolean; displayOrder?: number }) => Promise<string>;
+    /** `permissions` are granted when the group is CREATED, never again (the group is the admin's after that). */
+    ensure: (spec: { key: string; name: string; badgeColor?: string; nameGlow?: boolean; displayOrder?: number; permissions?: string[] }) => Promise<string>;
   };
 }
 

@@ -403,8 +403,10 @@ await host.groups.add(userId, customers);
 await host.groups.remove(userId, customers);
 ```
 
-`ensure` creates a group your plugin needs the first time, with no permissions and the
-name and badge you give it, and returns its id after that. From then on the group is the
+`ensure` creates a group your plugin needs the first time, with the name and badge you
+give it, and returns its id after that. Pass `permissions: ["my-plugin.publish"]` and the
+new group holds them; that happens once, when it is created, so an admin who takes one away
+later is never overruled. A group can't be made holding `admin.access`. From then on the group is the
 admin's: they rename or recolour it in ACP → Groups and `ensure` never overwrites it. Its
 badge and name colour show wherever core draws group badges. `add` refuses any group that
 holds `admin.access`: a plugin never makes someone an administrator.
@@ -478,7 +480,14 @@ plugin is disabled.
 **Only on some profiles.** A profile tab or stat can say whether it belongs on a profile:
 give it `shownFor: (userId) => Promise<boolean>` and it appears only where that answers
 true (a publisher's listings, say, and not on everyone else's profile). Without it, every
-profile has it.
+profile has it. Account tabs and member menu items take the same `shownFor`, asked about the
+signed-in member: an "Invoices" tab only for someone who has invoices. An entry is hidden
+until it answers, and an account tab opened by its link waits for the answer.
+
+**A count in the ACP menu.** `registerAcpBadge({ id, path, count })` puts a number beside
+one of your ACP pages (the `path` you gave `registerAcpPage`) while `count()` answers more
+than zero, and a dot on your section's icon in the rail. It is asked every minute while the
+ACP is open, so keep it cheap, and answer 0 for an admin it doesn't concern.
 
 **Your field on the sign-up form.** `registerRegistrationField` puts a field of yours on the
 sign-up form. Its value travels as `addons["<your id>"]` to your `registration.validate`

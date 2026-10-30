@@ -54,6 +54,23 @@ describe("plugin host: groups", () => {
     expect((await prisma.group.findUniqueOrThrow({ where: { id } })).name).toBe("Kunde");
   });
 
+  it("grants permissions when it creates a group, and never again", async () => {
+    const perm = await prisma.permission.upsert({ where: { key: "hostgrp.publish" }, update: {}, create: { key: "hostgrp.publish", label: "probe" } });
+    const id = await ensureGroup({ key: `${P}_publisher`, name: "Publisher", permissions: ["hostgrp.publish", "hostgrp.nope"] });
+    expect(await prisma.groupPermission.count({ where: { groupId: id, permissionId: perm.id } })).toBe(1);
+
+    // The admin takes it away; ensuring again does not hand it back.
+    await prisma.groupPermission.deleteMany({ where: { groupId: id } });
+    await ensureGroup({ key: `${P}_publisher`, name: "Publisher", permissions: ["hostgrp.publish"] });
+    expect(await prisma.groupPermission.count({ where: { groupId: id } })).toBe(0);
+    await prisma.permission.delete({ where: { id: perm.id } });
+  });
+
+  it("never creates a group holding admin access", async () => {
+    await expect(ensureGroup({ key: `${P}_sneaky`, name: "Sneaky", permissions: ["admin.access"] })).rejects.toMatchObject({ httpStatus: 403 });
+    expect(await prisma.group.count({ where: { key: `${P}_sneaky` } })).toBe(0);
+  });
+
   it("refuses a key that is not one", async () => {
     await expect(ensureGroup({ key: "Not A Key!", name: "x" })).rejects.toBeTruthy();
   });

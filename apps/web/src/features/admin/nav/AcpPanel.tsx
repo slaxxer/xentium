@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { AcpIcon, navIcon } from "../pages/acpIcons";
 import { activeChild, type NavItem } from "../useAcpNav";
 import { AcpSearch } from "./AcpSearch";
+import { useAcpBadgeCounts } from "./acpBadges";
 import { setAcpCollapsed } from "./acpChrome";
 
 /**
@@ -34,6 +35,7 @@ export function AcpPanel({ section, variant = "docked", canDock = true, showSear
 }) {
   const { t } = useTranslation("acp");
   const { pathname } = useLocation();
+  const counts = useAcpBadgeCounts();
 
   return (
     <div className={`acp-panel acp-panel--${variant}`}>
@@ -84,6 +86,7 @@ export function AcpPanel({ section, variant = "docked", canDock = true, showSear
                 word twice, so the rail cell is the whole control. */}
             {(section.children ?? []).map((child, i, all) => {
               const active = child === activeChild(all, pathname);
+              const count = counts.get(child.to) ?? 0;
               // A section may group its pages (System: Setup / Logs): a small heading
               // where the group changes.
               const heading = child.group && child.group !== all[i - 1]?.group ? child.group : null;
@@ -97,6 +100,7 @@ export function AcpPanel({ section, variant = "docked", canDock = true, showSear
                   onClick={onNavigate}
                 >
                   {t(child.label)}
+                  {count > 0 && <span className="acp-panel__count" aria-label={t("nav.waiting", { count })}>{count > 99 ? "99+" : count}</span>}
                 </Link>
                 </Fragment>
               );

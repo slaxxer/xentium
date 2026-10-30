@@ -78,6 +78,12 @@ export interface AccountTabSlot {
   order?: number;
   permission?: string;
   keywords?: string;
+  /**
+   * Whether this member gets the tab at all (a shop's Invoices for someone who never
+   * bought anything). Absent = everyone. Not listed until it answers; opened by its
+   * URL anyway, the tab waits for the answer instead of falling back to Profile.
+   */
+  shownFor?: (userId: string) => Promise<boolean>;
   component: ComponentType;
 }
 
@@ -203,6 +209,8 @@ export interface UserMenuItemSlot {
   icon?: unknown;
   /** Lower renders higher. */
   order?: number;
+  /** Whether this member gets the entry (same rule as an account tab's). Absent = everyone. */
+  shownFor?: (userId: string) => Promise<boolean>;
 }
 
 // ── Plugin-level metadata (icon, color, ACP position, notification prefixes) ──
@@ -297,6 +305,19 @@ export interface UserDetailPanelSlot {
 export interface IpEnrichmentSlot {
   id: string;
   component: ComponentType<{ ip: string }>;
+}
+
+// ── ACP badge (registered by plugins) ─────────────────────────────────────────
+/**
+ * A count beside one of the plugin's ACP pages (`path`, as registered with
+ * registerAcpPage): new applications, reports waiting. Shown when above zero, and
+ * the section's rail icon gets a dot. Polled while the ACP is open; `count` should
+ * be cheap and answer 0 for an admin it does not concern.
+ */
+export interface AcpBadgeSlot {
+  id: string;
+  path: string;
+  count(): Promise<number>;
 }
 
 // ── ModCanvas queue (registered by plugins) ───────────────────────────────────
@@ -429,6 +450,7 @@ class SlotRegistry {
   private searchTabs:        SearchTabSlot[]         = [];
   private modCanvasSections: ModCanvasSectionSlot[]  = [];
   private modQueues:         ModQueueSlot[]          = [];
+  private acpBadges:         AcpBadgeSlot[]          = [];
   private userDetailPanels:  UserDetailPanelSlot[]    = [];
   private ipEnrichments:     IpEnrichmentSlot[]       = [];
   private modCanvasUserPanels: ModCanvasUserPanelSlot[] = [];
@@ -480,6 +502,7 @@ class SlotRegistry {
   registerSearchTab(tab: SearchTabSlot)                     { this._own(tab.id);      this.searchTabs.push(tab); }
   registerModCanvasSection(section: ModCanvasSectionSlot)   { this._own(section.id);  this.modCanvasSections.push(section); }
   registerModQueue(queue: ModQueueSlot)                     { this._own(queue.id);    this.modQueues.push(queue); }
+  registerAcpBadge(slot: AcpBadgeSlot)                      { this._own(slot.id);     this.acpBadges.push(slot); }
   registerUserDetailPanel(panel: UserDetailPanelSlot)       { this._own(panel.id);    this.userDetailPanels.push(panel); }
   registerIpEnrichment(slot: IpEnrichmentSlot)              { this._own(slot.id);     this.ipEnrichments.push(slot); }
   registerModCanvasUserPanel(slot: ModCanvasUserPanelSlot)  { this._own(slot.id);     this.modCanvasUserPanels.push(slot); }
@@ -523,6 +546,7 @@ class SlotRegistry {
   }
   getModCanvasSections() { return [...this.modCanvasSections]; }
   getModQueues()         { return [...this.modQueues]; }
+  getAcpBadges()         { return [...this.acpBadges]; }
   getUserDetailPanels()  { return [...this.userDetailPanels].sort((a, b) => (a.order ?? 100) - (b.order ?? 100)); }
   getIpEnrichments()     { return [...this.ipEnrichments]; }
   getModCanvasUserPanels() { return [...this.modCanvasUserPanels].sort((a, b) => (a.order ?? 100) - (b.order ?? 100)); }

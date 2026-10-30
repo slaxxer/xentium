@@ -25,6 +25,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "../../hooks/useAuth";
 import { userCan } from "../../lib/authStore";
+import { useShownFor } from "../../plugins/useShownFor";
 import { slotRegistry } from "../../plugins/slotRegistry";
 import { api } from "../../lib/api";
 import { ProfileTab } from "./tabs/ProfileTab";
@@ -68,20 +69,25 @@ export function AccountPage() {
    * group headings. A plugin tab the member lacks the permission for is not listed
    * (and its URL falls back to Profile, like any unknown tab).
    */
+  const pluginTabs = slotRegistry.getAccountTabs().filter((s) => !s.permission || userCan(user, s.permission));
+  // Tabs that ask whether they belong to this member (`shownFor`).
+  const asked = useShownFor(pluginTabs, user?.id);
   const items = useMemo<RailItem[]>(() => [
     ...TABS.map((x) => ({
       id: x.id, icon: x.icon, label: t(`account:tabs.${x.id}`),
       hay: `${t(`account:tabs.${x.id}`)} ${t(`account:nav.keywords.${x.id}`)}`,
     })),
-    ...slotRegistry.getAccountTabs()
-      .filter((s) => !s.permission || userCan(user, s.permission))
+    ...pluginTabs
+      .filter(asked.shown)
       .map((s) => ({
         id: s.id, icon: (s.icon ?? faPuzzlePiece) as IconDefinition, label: s.label, group: s.group,
         hay: `${s.label} ${s.group ?? ""} ${s.keywords ?? ""}`, component: s.component,
       })),
-  ], [t, user]);
+  ], [t, user, asked]);
 
   const param = searchParams.get("tab");
+  // Opened by its URL while its `shownFor` is still answering: wait, don't fall back to Profile.
+  const waitingFor = !!param && pluginTabs.some((s) => s.id === param && asked.pending(s));
   const tab: string = param && items.some((x) => x.id === param) ? param : "profile";
   const setTab = (next: string) => setSearchParams(next === "profile" ? {} : { tab: next }, { replace: true });
   const PluginTab = items.find((x) => x.id === tab)?.component;
@@ -116,7 +122,7 @@ export function AccountPage() {
     return items.filter((x) => x.hay.toLowerCase().includes(q));
   }, [query, items]);
 
-  if (isLoading) return <div className="account-loading">{t("common:actions.loading")}</div>;
+  if (isLoading || waitingFor) return <div className="account-loading">{t("common:actions.loading")}</div>;
   if (!isAuthenticated) return <Navigate to="/" replace />;
 
   return (

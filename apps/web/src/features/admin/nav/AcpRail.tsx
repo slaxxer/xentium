@@ -8,6 +8,7 @@ import { type NavItem, navItemId } from "../useAcpNav";
 import { AcpUserMenu } from "./AcpUserMenu";
 import { AcpSearch } from "./AcpSearch";
 import { setAcpCollapsed } from "./acpChrome";
+import { sectionHasBadge, useAcpBadgeCounts } from "./acpBadges";
 
 /**
  * The 72px icon rail: one cell per top-level section, always visible.
@@ -35,6 +36,7 @@ export function AcpRail({ nav, activeId, flyoutId, collapsed, canDock, onPeek }:
   onPeek: (id: string | null) => void;
 }) {
   const { t } = useTranslation("acp");
+  const counts = useAcpBadgeCounts();
   const { theme, toggle } = useTheme();
   const navigate = useNavigate();
 
@@ -89,6 +91,7 @@ export function AcpRail({ nav, activeId, flyoutId, collapsed, canDock, onPeek }:
               }}
             >
               <span className="acp-rail__bar" />
+              {sectionHasBadge(item, counts) && <span className="acp-rail__dot" aria-hidden="true" />}
               {/* Outline at rest, filled when lit: the section you are in reads at a glance. */}
               {navIcon(item, lit)}
             </button>

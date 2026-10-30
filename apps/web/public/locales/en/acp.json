@@ -45,7 +45,9 @@
     "members": "Members",
     "editor": "Editor",
     "groupSetup": "Setup",
-    "groupLogs": "Logs"
+    "groupLogs": "Logs",
+    "waiting_one": "{{count}} waiting",
+    "waiting_other": "{{count}} waiting"
   },
   "sidebar": {
     "adminPanel": "Admin Panel",

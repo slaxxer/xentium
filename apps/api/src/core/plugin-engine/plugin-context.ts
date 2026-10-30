@@ -77,12 +77,18 @@ export async function addToGroup(userId: string, groupId: string): Promise<void>
  * A group a plugin needs (a store's "Customer"), created the first time and found
  * after that. Its name, badge colour and glow are only the starting point: from then on
  * the group is the admin's, renamed or recoloured in ACP → Groups, and never touched
- * again here. It is created holding no permissions.
+ * again here. It holds `permissions` when it is created (a "Publisher" group needs
+ * the right to publish to mean anything) and nothing else; keys that don't exist are
+ * skipped. An admin who later takes one away is never overruled.
  */
 export async function ensureGroup(spec: {
-  key: string; name: string; badgeColor?: string; nameGlow?: boolean; displayOrder?: number;
+  key: string; name: string; badgeColor?: string; nameGlow?: boolean; displayOrder?: number; permissions?: string[];
 }): Promise<string> {
   const key = z.string().regex(/^[a-z][a-z0-9_-]{1,40}$/, "A group key is lowercase letters, digits, - and _.").parse(spec.key);
+  // The same line addToGroup holds: a plugin never makes an admin group to put people in.
+  if (spec.permissions?.includes("admin.access")) {
+    throw new XentiumError({ code: XEC.API_FORBIDDEN, httpStatus: 403, message: "A plugin's group cannot hold admin access." });
+  }
   const existing = await prisma.group.findUnique({ where: { key }, select: { id: true } });
   if (existing) return existing.id;
   const color = spec.badgeColor && /^#[0-9a-f]{3,8}$/i.test(spec.badgeColor) ? spec.badgeColor : null;
@@ -96,6 +102,13 @@ export async function ensureGroup(spec: {
     },
     select: { id: true },
   });
+  if (spec.permissions?.length) {
+    const perms = await prisma.permission.findMany({ where: { key: { in: spec.permissions } }, select: { id: true } });
+    if (perms.length) {
+      await prisma.groupPermission.createMany({ data: perms.map((p) => ({ groupId: group.id, permissionId: p.id })), skipDuplicates: true });
+      await permissionCache.invalidateForGroup(group.id).catch(() => {});
+    }
+  }
   return group.id;
 }
 

@@ -45,7 +45,9 @@
     "members": "Mitglieder",
     "editor": "Editor",
     "groupSetup": "Einrichtung",
-    "groupLogs": "Protokolle"
+    "groupLogs": "Protokolle",
+    "waiting_one": "{{count}} wartet",
+    "waiting_other": "{{count}} warten"
   },
   "sidebar": {
     "adminPanel": "Admin-Bereich",

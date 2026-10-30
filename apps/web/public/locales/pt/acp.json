@@ -45,7 +45,9 @@
     "members": "Membros",
     "editor": "Editor",
     "groupSetup": "Configuração",
-    "groupLogs": "Registos"
+    "groupLogs": "Registos",
+    "waiting_one": "{{count}} pendente",
+    "waiting_other": "{{count}} pendentes"
   },
   "sidebar": {
     "adminPanel": "Painel de administração",
