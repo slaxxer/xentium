@@ -38,6 +38,11 @@
   --xt-header-actions-fg:    var(--usermenu-fg);
   --xt-header-actions-line:  var(--usermenu-line);
   --xt-header-shade:         linear-gradient(180deg, rgba(20, 22, 42, 0.10) 0%, rgba(20, 22, 42, 0.55) 100%);
+  /* The masthead content's colours: hairlines, the accent text, the main button. */
+  --xt-header-line:          rgba(255, 255, 255, 0.24);
+  --xt-header-accent:        var(--c-accent-soft);
+  --xt-header-btn-bg:        #ffffff;
+  --xt-header-btn-fg:        var(--masthead-from);
 
   position: relative;
   /* Below the sticky navbar (100): a band under the navbar scrolls UNDER it, never
@@ -111,6 +116,10 @@
     gap: var(--sp-6);
   }
 
+  /* Room above the logo row once the masthead holds content and grows past its
+     floor; a plain masthead is centred in its height and looks the same. */
+  &__inner { padding-block: var(--sp-6); }
+
   &--center &__inner { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); }
 
   &__brand {
@@ -125,6 +134,40 @@
     grid-column: 2;
     align-items: center;
     text-align: center;
+  }
+
+  /* ── the masthead's content, under the logo row: a hero, built from blocks ──
+     The page's tokens are re-pointed at the masthead's own, so core text blocks and
+     a plugin's blocks read light on the band without knowing they are in it. */
+  &__body {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
+    padding-block: var(--sp-4) var(--sp-8);
+    color: var(--xt-header-fg);
+    --c-fg: var(--xt-header-fg);
+    --c-fg-muted: var(--xt-header-fg-muted);
+    --c-fg-subtle: var(--xt-header-fg-muted);
+    --c-border: var(--xt-header-line);
+    --c-accent: var(--xt-header-accent);
+
+    /* A region in here is already inside the masthead's column. */
+    .xt-region { max-width: none; margin: 0; padding-inline: 0; }
+    .xt-eyebrow, .xt-heading__eyebrow { color: var(--xt-header-accent); }
+    .btn-primary { background: var(--xt-header-btn-bg); color: var(--xt-header-btn-fg); border-color: transparent; }
+    .btn-ghost { background: transparent; color: var(--xt-header-fg); border-color: var(--xt-header-line); }
+    .btn-ghost:hover { background: rgba(255, 255, 255, 0.08); }
+  }
+  /* The masthead centres its brand: its content follows. */
+  &--center &__body { align-items: center; text-align: center; }
+
+  &__pagehint {
+    padding: var(--sp-3) var(--sp-4);
+    border: 1px dashed var(--xt-header-line);
+    border-radius: var(--radius-md);
+    font-size: var(--fs-sm);
+    color: var(--xt-header-fg-muted);
   }
 
   &__tagline {
@@ -433,6 +476,9 @@
 :root {
   --xt-page-fg:                 var(--c-fg);
   --xt-page-fg-muted:           var(--c-fg-muted);
+  --xt-page-fg-subtle:          var(--c-fg-subtle);
+  --xt-page-border:             var(--c-border);
+  --xt-page-accent:             var(--c-accent);
   --xt-page-input-bg:           var(--input-bg);
   --xt-page-input-border-color: var(--input-border-color);
   --xt-page-input-fg:           var(--input-fg);

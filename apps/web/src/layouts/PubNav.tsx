@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useRef, useState, useCallback } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink, Link, useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -29,7 +29,7 @@ import { api } from "../lib/api";
 import { LayoutRegion } from "../layout/LayoutRenderer";
 import { useLayoutDocument } from "../layout/useLayout";
 import { usePageBand } from "../layout/siteFrame";
-import { HEADER_BAND_REGION } from "@xentium/contracts";
+import { HEADER_BAND_REGION, type BlockNode, type LayoutDocument } from "@xentium/contracts";
 import { RankBadge } from "../components/RankBadge";
 import { ModShield } from "../features/modcp/ModShield";
 import { SignInMenu } from "../features/auth/doorway/SignInMenu";
@@ -482,15 +482,25 @@ export function NavMobileMenu({ tools }: { tools?: React.ReactNode }) {
  *
  * The ACP topbar is deliberately NOT composable — see the amendment.
  */
+/** True when a SHOWN masthead holds the page's masthead block. */
+function mastheadDrawsPage(doc: LayoutDocument): boolean {
+  const walk = (nodes: BlockNode[]): boolean => nodes.some((n) =>
+    n.type === "header"
+      ? n.props?.showMasthead !== false && (n.children ?? []).some((c) => c.type === "mastheadPage")
+      : walk(n.children ?? []));
+  return walk(doc.regions.header ?? []);
+}
+
 export function PubNav() {
   const layout = useLayoutDocument("chrome.header");
-  // The page's own band (a hero), when its template declares one: under the
-  // header's blocks, full width, still the page's document.
+  // The page's own band (a hero), when its template declares one. A masthead with
+  // "This page's masthead" in it draws it there; otherwise it goes under the header.
   const band = usePageBand();
+  const inMasthead = useMemo(() => mastheadDrawsPage(layout), [layout]);
   return (
     <div className="pub-head">
       <LayoutRegion document={layout} region="header" />
-      {band && (
+      {band && !inMasthead && (
         <div className="xt-header-band">
           <LayoutRegion document={band.document} region={HEADER_BAND_REGION} context={band.context} />
         </div>

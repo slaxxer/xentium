@@ -3898,7 +3898,9 @@
       "branding": "Ausgemustert: jetzt die Footer-Leiste.",
       "articleCategories": "Kategorien mit Artikelanzahl. Ein Klick filtert die Übersicht.",
       "articleTrending": "Die meistgelikten und meistdiskutierten Artikel der letzten Tage.",
-      "articleTags": "Die meistgenutzten Tags. Ein Klick filtert die Übersicht."
+      "articleTags": "Die meistgenutzten Tags. Ein Klick filtert die Übersicht.",
+      "buttons": "Bis zu zwei Link-Schaltflächen, der Aufruf zum Handeln für ein Band oder einen Kopfbereich.",
+      "mastheadPage": "Wo der eigene Kopfbereich einer Seite (ein Hero) im Kopfbereich der Website erscheint."
     },
     "catalogueTitle": "Block zu {{region}} hinzufügen",
     "catalogueNote": "Blöcke stammen aus einem festen Katalog, daher kann ein Layout niemals Code ausführen. Nichts wird live, bevor du veröffentlichst.",
@@ -6044,6 +6046,35 @@
             "title": "Wie viele Tags"
           }
         }
+      },
+      "buttons": {
+        "label": "Schaltflächen",
+        "props": {
+          "primaryLabel": {
+            "title": "Hauptschaltfläche"
+          },
+          "primaryHref": {
+            "title": "Hauptschaltfläche führt zu",
+            "description": "Ein Pfad wie /forum oder eine vollständige URL."
+          },
+          "secondaryLabel": {
+            "title": "Zweite Schaltfläche",
+            "description": "Leer lassen für eine Schaltfläche."
+          },
+          "secondaryHref": {
+            "title": "Zweite Schaltfläche führt zu"
+          },
+          "align": {
+            "title": "Ausrichtung",
+            "enum": {
+              "start": "Links",
+              "center": "Mitte"
+            }
+          }
+        }
+      },
+      "mastheadPage": {
+        "label": "Kopfbereich dieser Seite"
       }
     },
     "jobs": {

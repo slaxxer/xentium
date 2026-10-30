@@ -205,9 +205,10 @@ describe("the site chrome", () => {
     expect(band.props.height).toBe(200);
     expect(band.props.showLogo).toBe(false);
     expect(band.props.showTagline).toBe(true);
-    expect(band.children?.map((c) => c.type)).toEqual(["logo", "userMenu"]);
+    // The page's own masthead sits under the logo; a page without one draws nothing there.
+    expect(band.children?.map((c) => c.type)).toEqual(["logo", "mastheadPage", "userMenu"]);
     // The icons are the account menu's own, drawn before the avatar.
-    expect(band.children![1]!.children!.map((c) => c.type)).toEqual([
+    expect(band.children!.find((c) => c.type === "userMenu")!.children!.map((c) => c.type)).toEqual([
       "modTool", "notifications", "headerWidgets", "adminLink", "search",
     ]);
     // The band shows; its account buttons are off, so the navbar draws them. Its

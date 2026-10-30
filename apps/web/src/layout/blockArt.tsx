@@ -44,6 +44,8 @@ const BY_TYPE: Record<string, BlockShape> = {
   adminLink: "chip",
   userMenu: "chip",
   headerWidgets: "chip",
+  mastheadPage: "stack",
+  buttons: "chip",
   heading: "text",
   eyebrow: "text",
   text: "text",

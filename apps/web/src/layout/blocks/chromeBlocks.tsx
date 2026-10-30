@@ -17,11 +17,12 @@
  *    the site looked like before the layout system touched it.
  */
 import { Children, isValidElement, type ReactNode } from "react";
-import { blockPropSchemas, blockTypesIn, type BlockNode, type LayoutDocument } from "@xentium/contracts";
+import { blockPropSchemas, blockTypesIn, HEADER_BAND_REGION, type BlockNode, type LayoutDocument } from "@xentium/contracts";
 import i18n from "i18next";
 import { registerBlock, type BlockProps } from "../blockRegistry";
 import { individuallyPlacedSlotIds } from "../slotBlocks";
-import { useRenderedDocument } from "../LayoutRenderer";
+import { LayoutRegion, useRenderedDocument } from "../LayoutRenderer";
+import { usePageBand } from "../siteFrame";
 import { slotRegistry } from "../../plugins/slotRegistry";
 import {
   NavLogo, NavPrimaryLinks, NavSearchBlock, NavMobileMenu,
@@ -75,6 +76,12 @@ const childNode = (child: ReactNode): BlockNode | undefined =>
 
 /** The masthead's account buttons — what "Buttons: Log in / account menu" switches. */
 const ACCOUNT_TYPES = new Set(["userMenu", "modTool", "notifications", "headerWidgets", "adminLink"]);
+/**
+ * What goes in the masthead's CONTENT, under the logo row: text, pictures, buttons,
+ * columns, and the page's own masthead. An allowlist, so anything a stored masthead
+ * already holds stays where it was (the action group).
+ */
+const BODY_TYPES = new Set(["eyebrow", "heading", "richText", "image", "spacer", "columns", "buttons", "mastheadPage"]);
 /** Carried pieces that move into the hamburger menu on narrow screens. */
 const MENU_TYPES = new Set(["search", "modTool", "headerWidgets", "adminLink"]);
 
@@ -105,9 +112,10 @@ function SiteHeaderBlock({ props, children }: BlockProps<{
   const all = Children.toArray(children);
   const logos = all.filter((c) => childNode(c)?.type === "logo");
   // Buttons off: the account buttons leave the masthead (the navbar draws them).
+  const body = all.filter((c) => BODY_TYPES.has(childNode(c)?.type ?? ""));
   const actions = all.filter((c) => {
     const type = childNode(c)?.type;
-    return type !== "logo" && !(props.showButtons === false && type && ACCOUNT_TYPES.has(type));
+    return type !== "logo" && !BODY_TYPES.has(type ?? "") && !(props.showButtons === false && type && ACCOUNT_TYPES.has(type));
   });
   // A header from before it was a container draws its own logo.
   const legacyLogo = logos.length === 0 && props.showLogo !== false;
@@ -130,6 +138,7 @@ function SiteHeaderBlock({ props, children }: BlockProps<{
           {tagline && <p className="xt-header__tagline">{tagline}</p>}
         </div>
         {actions.length > 0 && <div className="xt-header__actions">{actions}</div>}
+        {body.length > 0 && <div className="xt-header__body">{body}</div>}
       </div>
     </div>
   );
@@ -141,6 +150,26 @@ registerBlock({
   container: true,
   editorMeta: { surface: true, label: "Header", category: "structure", allowedTemplates: CHROME_HEADER },
   component: SiteHeaderBlock,
+});
+
+/**
+ * The page's own masthead: its `headerBand` region, drawn here inside the site's
+ * masthead. A page without one draws nothing, and the masthead is the site's as
+ * always. (A site header without this block gets the band under the header.)
+ */
+function MastheadPageBlock() {
+  const band = usePageBand();
+  if (!band) {
+    return isEditorPreview() ? <div className="xt-header__pagehint">{i18n.t("common:blockRender.mastheadPage")}</div> : null;
+  }
+  return <LayoutRegion document={band.document} region={HEADER_BAND_REGION} context={band.context} />;
+}
+
+registerBlock({
+  type:      "mastheadPage",
+  schema:    blockPropSchemas.mastheadPage,
+  editorMeta: { label: "This page's masthead", category: "structure", allowedTemplates: CHROME_HEADER, onlyInside: ["header"] },
+  component: MastheadPageBlock,
 });
 
 /** The chrome's `header` block, wherever it sits. */

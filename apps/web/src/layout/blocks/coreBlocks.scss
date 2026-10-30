@@ -732,3 +732,12 @@ html.xt-dragging [data-xt-region]:not([data-xt-block]) {
   white-space: pre-wrap;
   cursor: text;
 }
+
+/* ── buttons ─────────────────────────────────────────────────────────────── */
+.xt-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+
+  &--center { justify-content: center; }
+}

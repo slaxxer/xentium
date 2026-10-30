@@ -3898,7 +3898,9 @@
       "branding": "Retirado: ahora es la barra del pie.",
       "articleCategories": "Categorías con su número de artículos. Un clic filtra el índice.",
       "articleTrending": "Los artículos con más me gusta y comentarios de los últimos días.",
-      "articleTags": "Las etiquetas más usadas. Un clic filtra el índice."
+      "articleTags": "Las etiquetas más usadas. Un clic filtra el índice.",
+      "buttons": "Hasta dos botones de enlace, la llamada a la acción de una banda o una cabecera.",
+      "mastheadPage": "Dónde aparece el contenido de cabecera propio de una página (un hero) dentro de la cabecera del sitio."
     },
     "catalogueTitle": "Añadir un bloque a {{region}}",
     "catalogueNote": "Los bloques provienen de un catálogo fijo, así que un diseño nunca puede ejecutar código. Nada se publica hasta que lo publiques.",
@@ -6044,6 +6046,35 @@
             "title": "Cuántas etiquetas"
           }
         }
+      },
+      "buttons": {
+        "label": "Botones",
+        "props": {
+          "primaryLabel": {
+            "title": "Botón principal"
+          },
+          "primaryHref": {
+            "title": "El botón principal enlaza a",
+            "description": "Una ruta como /forum o una URL completa."
+          },
+          "secondaryLabel": {
+            "title": "Segundo botón",
+            "description": "Déjalo vacío para un solo botón."
+          },
+          "secondaryHref": {
+            "title": "El segundo botón enlaza a"
+          },
+          "align": {
+            "title": "Alineación",
+            "enum": {
+              "start": "Izquierda",
+              "center": "Centro"
+            }
+          }
+        }
+      },
+      "mastheadPage": {
+        "label": "Cabecera de esta página"
       }
     },
     "jobs": {

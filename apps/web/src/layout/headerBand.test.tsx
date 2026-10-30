@@ -8,6 +8,8 @@
  */
 import { afterEach, describe, expect, it } from "vitest";
 import { cleanup, render } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { HEADER_BAND_REGION, registerTemplate, type BlockNode, type LayoutDocument } from "@xentium/contracts";
 import { LayoutRegion, LayoutRenderer } from "./LayoutRenderer";
 import { usePageBand } from "./siteFrame";
@@ -67,5 +69,31 @@ describe("the page's header band", () => {
       </>,
     );
     expect(getByTestId("site-header").textContent).toBe("");
+  });
+});
+
+describe("the page's masthead inside the site masthead", () => {
+  it("draws the page's band inside the masthead, under the logo row, with its content", async () => {
+    await import("./blocks/chromeBlocks");
+    const header = {
+      templateKey: "chrome.header", schemaVersion: 1,
+      regions: { header: [{ id: "band", type: "header", props: { height: 0, showButtons: false }, children: [
+        { id: "logo", type: "logo", props: {} },
+        { id: "page", type: "mastheadPage", props: {} },
+        { id: "cta", type: "buttons", props: { primaryLabel: "Browse", primaryHref: "/store" } },
+      ] }] },
+    } as unknown as LayoutDocument;
+    const { container } = render(
+      <QueryClientProvider client={new QueryClient()}><MemoryRouter>
+        <LayoutRegion document={header} region="header" />
+        <LayoutRenderer templateKey="bandtest.page" document={doc({ headerBand: [heading("h", "Hero")], main: [heading("m", "Body")] })} />
+      </MemoryRouter></QueryClientProvider>,
+    );
+    const body = container.querySelector(".xt-header__body")!;
+    expect(body).not.toBeNull();
+    expect(body.textContent).toContain("Hero");
+    expect(body.querySelector("a.btn-primary")?.getAttribute("href")).toBe("/store");
+    // The logo row is untouched: the content is not in the action group.
+    expect(container.querySelector(".xt-header__actions")).toBeNull();
   });
 });

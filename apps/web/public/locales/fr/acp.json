@@ -3898,7 +3898,9 @@
       "branding": "Retiré : c’est désormais la barre du pied de page.",
       "articleCategories": "Les catégories avec leur nombre d'articles. Un clic filtre l'index.",
       "articleTrending": "Les articles les plus aimés et commentés des derniers jours.",
-      "articleTags": "Les tags les plus utilisés. Un clic filtre l'index."
+      "articleTags": "Les tags les plus utilisés. Un clic filtre l'index.",
+      "buttons": "Jusqu'à deux boutons de lien, l'appel à l'action d'une bande ou d'un bandeau.",
+      "mastheadPage": "Où le contenu de bandeau propre à une page (un hero) apparaît dans le bandeau du site."
     },
     "catalogueTitle": "Ajouter un bloc à {{region}}",
     "catalogueNote": "Les blocs proviennent d'un catalogue fixe : une mise en page ne peut jamais exécuter de code. Rien n'est en ligne tant que vous ne publiez pas.",
@@ -6044,6 +6046,35 @@
             "title": "Combien de tags"
           }
         }
+      },
+      "buttons": {
+        "label": "Boutons",
+        "props": {
+          "primaryLabel": {
+            "title": "Bouton principal"
+          },
+          "primaryHref": {
+            "title": "Le bouton principal mène à",
+            "description": "Un chemin comme /forum, ou une URL complète."
+          },
+          "secondaryLabel": {
+            "title": "Second bouton",
+            "description": "Laissez vide pour un seul bouton."
+          },
+          "secondaryHref": {
+            "title": "Le second bouton mène à"
+          },
+          "align": {
+            "title": "Alignement",
+            "enum": {
+              "start": "Gauche",
+              "center": "Centre"
+            }
+          }
+        }
+      },
+      "mastheadPage": {
+        "label": "Bandeau de cette page"
       }
     },
     "jobs": {

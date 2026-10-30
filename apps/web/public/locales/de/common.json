@@ -641,7 +641,8 @@
   "blockRender": {
     "failed": "Block „{{type}}“ konnte nicht angezeigt werden.",
     "unavailable": "Block „{{type}}“ ist nicht verfügbar.",
-    "mastheadHidden": "Kopfbereich ausgeblendet"
+    "mastheadHidden": "Kopfbereich ausgeblendet",
+    "mastheadPage": "Kopfbereich der Seite: eine Seite, die einen hat, zeigt ihn hier"
   },
   "themePreview": {
     "aside": "Seitenleiste",

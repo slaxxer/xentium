@@ -4025,7 +4025,9 @@
       "branding": "Retired: now the footer bar.",
       "articleCategories": "Categories with article counts. Clicking one filters the index.",
       "articleTrending": "The most liked and discussed articles of the last days.",
-      "articleTags": "The tags used most. Clicking one filters the index."
+      "articleTags": "The tags used most. Clicking one filters the index.",
+      "buttons": "Up to two link buttons, the call to action for a band or a masthead.",
+      "mastheadPage": "Where a page's own masthead content (a hero) appears inside the site's masthead."
     },
     "catalogueTitle": "Add a block to {{region}}",
     "catalogueNote": "Blocks come from a fixed catalogue, so a layout can never run code. Nothing goes live until you publish.",
@@ -6044,6 +6046,35 @@
             "title": "How many tags"
           }
         }
+      },
+      "buttons": {
+        "label": "Buttons",
+        "props": {
+          "primaryLabel": {
+            "title": "Main button"
+          },
+          "primaryHref": {
+            "title": "Main button links to",
+            "description": "A path like /forum, or a full URL."
+          },
+          "secondaryLabel": {
+            "title": "Second button",
+            "description": "Leave empty for one button."
+          },
+          "secondaryHref": {
+            "title": "Second button links to"
+          },
+          "align": {
+            "title": "Alignment",
+            "enum": {
+              "start": "Left",
+              "center": "Centre"
+            }
+          }
+        }
+      },
+      "mastheadPage": {
+        "label": "This page's masthead"
       }
     },
     "jobs": {

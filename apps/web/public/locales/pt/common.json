@@ -651,7 +651,8 @@
   "blockRender": {
     "failed": "Não foi possível exibir o bloco “{{type}}”.",
     "unavailable": "O bloco “{{type}}” não está disponível.",
-    "mastheadHidden": "Cabeçalho oculto"
+    "mastheadHidden": "Cabeçalho oculto",
+    "mastheadPage": "Cabeçalho da página: uma página que tenha um mostra-o aqui"
   },
   "themePreview": {
     "aside": "Lateral",

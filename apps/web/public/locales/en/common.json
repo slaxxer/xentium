@@ -641,7 +641,8 @@
   "blockRender": {
     "failed": "Block “{{type}}” failed to render.",
     "unavailable": "Block “{{type}}” is unavailable.",
-    "mastheadHidden": "Masthead hidden"
+    "mastheadHidden": "Masthead hidden",
+    "mastheadPage": "This page's masthead: a page that has one shows it here"
   },
   "themePreview": {
     "aside": "Aside",

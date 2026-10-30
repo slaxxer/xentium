@@ -3898,7 +3898,9 @@
       "branding": "Retirado: agora é a barra do rodapé.",
       "articleCategories": "Categorias com o número de artigos. Um clique filtra o índice.",
       "articleTrending": "Os artigos com mais gostos e comentários dos últimos dias.",
-      "articleTags": "As etiquetas mais usadas. Um clique filtra o índice."
+      "articleTags": "As etiquetas mais usadas. Um clique filtra o índice.",
+      "buttons": "Até dois botões de ligação, a chamada à ação de uma faixa ou de um cabeçalho.",
+      "mastheadPage": "Onde o conteúdo de cabeçalho próprio de uma página (um hero) aparece dentro do cabeçalho do site."
     },
     "catalogueTitle": "Adicionar um bloco a {{region}}",
     "catalogueNote": "Os blocos vêm de um catálogo fixo, por isso um layout nunca pode executar código. Nada fica online até publicares.",
@@ -6044,6 +6046,35 @@
             "title": "Quantas etiquetas"
           }
         }
+      },
+      "buttons": {
+        "label": "Botões",
+        "props": {
+          "primaryLabel": {
+            "title": "Botão principal"
+          },
+          "primaryHref": {
+            "title": "O botão principal leva a",
+            "description": "Um caminho como /forum, ou um URL completo."
+          },
+          "secondaryLabel": {
+            "title": "Segundo botão",
+            "description": "Deixe vazio para um só botão."
+          },
+          "secondaryHref": {
+            "title": "O segundo botão leva a"
+          },
+          "align": {
+            "title": "Alinhamento",
+            "enum": {
+              "start": "Esquerda",
+              "center": "Centro"
+            }
+          }
+        }
+      },
+      "mastheadPage": {
+        "label": "Cabeçalho desta página"
       }
     },
     "jobs": {

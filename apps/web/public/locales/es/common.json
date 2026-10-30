@@ -651,7 +651,8 @@
   "blockRender": {
     "failed": "No se pudo mostrar el bloque «{{type}}».",
     "unavailable": "El bloque «{{type}}» no está disponible.",
-    "mastheadHidden": "Cabecera oculta"
+    "mastheadHidden": "Cabecera oculta",
+    "mastheadPage": "Cabecera de la página: una página que tenga una la muestra aquí"
   },
   "themePreview": {
     "aside": "Lateral",

@@ -651,7 +651,8 @@
   "blockRender": {
     "failed": "Le bloc « {{type}} » n’a pas pu s’afficher.",
     "unavailable": "Le bloc « {{type}} » n’est pas disponible.",
-    "mastheadHidden": "Bandeau masqué"
+    "mastheadHidden": "Bandeau masqué",
+    "mastheadPage": "Bandeau de la page : une page qui en a un l'affiche ici"
   },
   "themePreview": {
     "aside": "Latéral",
