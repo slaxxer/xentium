@@ -9,7 +9,7 @@ import { XEC } from "../../shared/errors/xec.js";
 import { themeService } from "./theme.service.js";
 import { appearanceService } from "../appearance/appearance.service.js";
 import { layoutService } from "../layouts/layout.service.js";
-import { publishTheme, stageHistoryEntry, studioStatus, themeHistory } from "./themeStudio.js";
+import { publishTheme, stageHistoryEntry, stageThemeDefaults, studioStatus, themeHistory } from "./themeStudio.js";
 
 /**
  * `.xttheme` export / import (ADR-0005). Mounted under /api/admin so every
@@ -149,6 +149,13 @@ themeRouter.get("/studio/status", guard, async (req, res, next) => {
 themeRouter.post("/studio/publish", guard, async (req, res, next) => {
   try {
     res.json(await publishTheme(req.userId!, await resolveEditingKey(req.query.theme)));
+  } catch (err) { next(err); }
+});
+
+/** Stage the whole theme back to what it ships. Never goes live by itself: Publish does. */
+themeRouter.post("/studio/reset", guard, async (req, res, next) => {
+  try {
+    res.json(await stageThemeDefaults(req.userId!, await resolveEditingKey(req.query.theme)));
   } catch (err) { next(err); }
 });
 

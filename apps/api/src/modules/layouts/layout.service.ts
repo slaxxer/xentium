@@ -661,6 +661,11 @@ export const layoutService = {
 
   // ── What the theme ships (inheritance) ────────────────────────────────────
 
+  /** A template's built-in arrangement, as the code ships it. */
+  async codeDefaultFor(templateKey: TemplateKey): Promise<LayoutDocument> {
+    return codeDefault(templateKey);
+  },
+
   /** One theme's shipped documents, per template. Core ships none. */
   async getThemeLayer(themeKey: ThemeKey): Promise<Partial<Record<string, LayoutDocument>>> {
     return shippedDocs(themeKey);

@@ -11,7 +11,7 @@
  * the same "Colours & type" mode) and custom CSS (its own count). Branding is not
  * drafted.
  */
-import type { LayoutSelector, ScopedTokenSet, UserRef } from "@xentium/contracts";
+import { DEFAULT_VARIANT, type LayoutSelector, type ScopedTokenSet, type TemplateKey, type UserRef } from "@xentium/contracts";
 import { prisma } from "../../infrastructure/db.js";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
 import { XEC } from "../../shared/errors/xec.js";
@@ -190,4 +190,34 @@ export async function stageHistoryEntry(kind: HistoryEntry["kind"], id: string, 
   await appearanceService.saveDraftCustomCss(rev.customCss, key);
   await appearanceService.saveDraftFont(rev.font as { family?: string; weight?: string; size?: string }, key);
   await layoutService.stageSnapshot(rev.layouts as unknown as PublishedRowSnapshot[], userId, key);
+}
+
+/**
+ * Put a whole theme back to what it ships, as its DRAFT: every page and chrome layout
+ * the admin changed, the site frame, the colours, the font and the custom CSS. A theme
+ * goes back to its package; Core to the built-in defaults. Branding is site-wide and
+ * not part of a theme, so it stays.
+ *
+ * Staged rather than applied, like everything else in the Studio: the previews show
+ * it, one Publish puts it live, and that Publish is a History revision, so the version
+ * it replaced can be brought back. Resetting one template (the layout editor) or the
+ * colours (the Style Editor) on their own still apply at once.
+ */
+export async function stageThemeDefaults(userId: string, key: ThemeKey): Promise<StudioStatus> {
+  const [ownership, frameCustomised, shipped] = await Promise.all([
+    layoutService.getOwnership(key),
+    layoutService.isFrameCustomised(key),
+    layoutService.getThemeLayer(key),
+  ]);
+  for (const [templateKey, { customised }] of Object.entries(ownership)) {
+    if (!customised) continue;
+    const baseline = shipped[templateKey] ?? (await layoutService.codeDefaultFor(templateKey as TemplateKey));
+    await layoutService.saveDraft({ templateKey: templateKey as TemplateKey, variant: DEFAULT_VARIANT }, baseline, userId, undefined, key);
+  }
+  if (frameCustomised) await layoutService.revertFrameToTheme(userId, key);
+
+  await appearanceService.saveDraftTokens({}, userId, key);
+  await appearanceService.saveDraftCustomCss("", key);
+  await appearanceService.saveDraftFont({ family: "", weight: "", size: "" }, key);
+  return studioStatus(key);
 }

@@ -464,6 +464,11 @@ function StyleEditorInner({ themeKey, tab }: { themeKey: string | null; tab: Sty
       document.getElementById(CUSTOM_CSS_PREVIEW_ID)?.remove();
       await refreshTokenCss();
       setSavedSnap({ tokens: empty, fontFamily: "", fontSize: "16", fontWeight: "400" });
+      // The rest of the Studio reads the same tokens (the layout editor's Theme panel and
+      // its preview): without this they kept showing, and could stage again, the old ones.
+      qc.invalidateQueries({ queryKey: ["acp-tokens", themeKey] });
+      qc.invalidateQueries({ queryKey: ["acp-draft-status"] });
+      qc.invalidateQueries({ queryKey: ["studio-status"] });
       swalToast(t("styleEditor.toastReset"), "success");
     },
     onError: (e) => swalToast(apiErrorMessage(e)),

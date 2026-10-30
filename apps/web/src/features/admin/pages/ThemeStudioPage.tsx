@@ -20,17 +20,19 @@ import { useEffect, useState } from "react";
 import { Navigate, useLocation, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { faArrowUpFromBracket } from "@fortawesome/free-solid-svg-icons";
+import { faArrowUpFromBracket, faRotateLeft } from "@fortawesome/free-solid-svg-icons";
 import type { LayoutSelector } from "@xentium/contracts";
 import { FontAwesomeIcon } from "../../../components/Icon";
 import { api } from "../../../lib/api";
 import { apiErrorMessage } from "../../../lib/swal";
 import { toast } from "../../../lib/toast";
+import { openDialog } from "../../../lib/dialog";
 import { refreshTokenCss } from "../../../lib/liveStyle";
 import { useEditingTheme, withTheme } from "../../../lib/editingTheme";
 import { LayoutEditorPage } from "./LayoutEditorPage";
 import { StyleEditorPage, type StyleTab } from "./StyleEditorPage";
 import { STUDIO_MODES, type StudioMode } from "./studioLinks";
+import { useEditingThemeRow } from "./ThemeStyle";
 import "./acpSystem.scss";
 import "./ThemeStudioPage.scss";
 import { Button } from "../../../components/AcpControls";
@@ -113,6 +115,44 @@ export function ThemeStudioPage() {
     onError: (e) => toast.error(apiErrorMessage(e)),
   });
 
+  /**
+   * Bumped when the server replaced the draft wholesale (Reset theme). The editors read
+   * the draft once when they mount and stay mounted while hidden, so a copy taken before
+   * would linger, and its next autosave would write the old version straight back.
+   * Remounting them is the one way to be sure nothing stale survives.
+   */
+  const [epoch, setEpoch] = useState(0);
+  const { theme: editing, isCore } = useEditingThemeRow();
+
+  const resetTheme = useMutation({
+    mutationFn: () => api.post<StudioStatus>(withTheme("/admin/themes/studio/reset", key), {}),
+    onSuccess: (next) => {
+      qc.setQueryData(["studio-status", key], next);
+      // Everything either editor reads about this theme's drafts, DROPPED rather than
+      // invalidated: the editors remount below and seed themselves from the cache on
+      // their first render, so a stale entry would hand them the old version again.
+      for (const k of ["acp-layout-status", "acp-layout-all", "acp-layout", "acp-layout-templates",
+        "acp-draft-status", "acp-tokens", "acp-layout-frame"]) {
+        qc.removeQueries({ queryKey: [k] });
+      }
+      setEpoch((n) => n + 1);
+      toast.success(next.pending ? t("studio.resetStaged") : t("studio.resetNothing"));
+    },
+    onError: (e) => toast.error(apiErrorMessage(e)),
+  });
+
+  async function confirmResetTheme() {
+    const name = isCore ? t("studio.coreName") : editing?.name ?? "";
+    const ok = await openDialog({
+      kind: "confirm", icon: "warning", danger: true,
+      title: t("studio.resetTitle", { theme: name }),
+      body: isCore ? t("studio.resetBodyCore") : t("studio.resetBody", { theme: name }),
+      confirmText: t("studio.resetConfirm"),
+      cancelText: t("studio.resetCancel"),
+    });
+    if (ok) resetTheme.mutate();
+  }
+
   const layouts = status?.layouts.length ?? 0;
   const styles = status?.styleChanges ?? 0;
 
@@ -136,6 +176,13 @@ export function ThemeStudioPage() {
                 })
               : t("studio.upToDate")}
           </span>
+          <Button variant="ghost"
+            disabled={resetTheme.isPending}
+            title={t("studio.resetHint")}
+            onClick={() => void confirmResetTheme()}>
+            <FontAwesomeIcon icon={faRotateLeft} />
+            {t("studio.reset")}
+          </Button>
           <Button className="studio__go"
             disabled={publish.isPending || !status?.pending}
             title={t("studio.publishHint")}
@@ -158,8 +205,9 @@ export function ThemeStudioPage() {
         ))}
       </div>
 
-      {/* Keyed by theme so switching themes remounts both editors. */}
-      <div key={key ?? ""}>
+      {/* Keyed by theme so switching themes remounts both editors; and by the reset
+          epoch, so a reset does too. */}
+      <div key={`${key ?? ""}:${epoch}`}>
         {(layoutOpened || mode === "layout") && (
           <div hidden={mode !== "layout"}><LayoutEditorPage /></div>
         )}

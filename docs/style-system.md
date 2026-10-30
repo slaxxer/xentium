@@ -350,6 +350,11 @@ What the reset buttons do:
 | **Reset appearance** | clears your tokens, fonts and custom CSS **for this theme** and keeps the theme |
 | **Reset** on a template (Theme Studio, Layout mode) | removes your layout, so the page shows what the theme ships (Core: the built-in default) |
 | **Revert to theme** on a template | stages the theme's version as a draft you can preview and publish |
+| **Reset theme** (Theme Studio, next to Publish) | stages the whole theme as it ships: every page and header or footer layout you changed, the site layout, colours, font and custom CSS. You preview it and Publish; History keeps your version. Logo and branding stay |
+
+The template **Reset** only touches the template open in the picker, and **Reset
+appearance** only the colours, fonts and CSS, both straight away. To put a theme back
+the way it came, use **Reset theme**.
 
 ### Draft and publish
 
