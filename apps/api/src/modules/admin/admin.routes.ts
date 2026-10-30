@@ -211,6 +211,7 @@ adminRouter.post("/core-update/run", requirePermission(CorePermissions.SYSTEM_UP
 adminRouter.post("/core-update/rollback", requirePermission(CorePermissions.SYSTEM_UPDATE), requireStepUp, adminController.coreUpdateRunRollback);
 // Aggregated admin-attention signals for the frontend navbar ACP badge.
 adminRouter.get("/status-summary",             adminGuard, adminController.getStatusSummary);
+adminRouter.get("/system/metrics",             adminGuard, adminController.systemMetrics);
 adminRouter.post("/marketplace/connection",    adminGuard, requireStepUp, adminController.connectMarketplace);
 // The one-click handshake: start one, then poll it while the admin approves in
 // the marketplace tab. The typed connect code above still works and is the

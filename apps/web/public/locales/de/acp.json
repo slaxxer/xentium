@@ -536,9 +536,11 @@
       "cpu": "CPU",
       "memory": "Arbeitsspeicher",
       "queue": "Warteschlange",
-      "vcpu": "4 vCPU",
-      "memUsage": "{{used}} / 2048 MB",
-      "jobsPending": "{{count}} Aufgaben ausstehend"
+      "vcpu": "{{count}} vCPU",
+      "memUsage": "{{used}} / {{total}} MB",
+      "jobsPending": "{{count}} Aufgaben ausstehend",
+      "jobsRunning": "{{count}} laufen",
+      "jobsFailed": "{{count}} fehlgeschlagen"
     },
     "throughput": "Anfragedurchsatz",
     "reqPerSec": "{{count}} Anf./s",

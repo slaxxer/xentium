@@ -536,9 +536,11 @@
       "cpu": "Processeur",
       "memory": "Mémoire",
       "queue": "File d'attente",
-      "vcpu": "4 vCPU",
-      "memUsage": "{{used}} / 2048 Mo",
-      "jobsPending": "{{count}} tâches en attente"
+      "vcpu": "{{count}} vCPU",
+      "memUsage": "{{used}} / {{total}} Mo",
+      "jobsPending": "{{count}} tâches en attente",
+      "jobsRunning": "{{count}} en cours",
+      "jobsFailed": "{{count}} en échec"
     },
     "throughput": "Débit des requêtes",
     "reqPerSec": "{{count}} req/s",

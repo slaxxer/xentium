@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import pinoHttp from 'pino-http';
+import { requestMeter } from '../shared/metrics/systemMetrics.js';
 import path from 'node:path';
 import { env, isProd } from '../config/env.js';
 import { XENTIUM_VERSION } from '../config/version.js';
@@ -96,6 +97,8 @@ export function createApp(): Express {
   }));
   app.use(cookieParser(env.COOKIE_SECRET));
   app.use(pinoHttp({ transport: isProd ? undefined : { target: 'pino-pretty' } }));
+  // Request rate + latency for ACP → About (in memory, last 80 s).
+  app.use(requestMeter);
 
   // Coarse per-IP API limiter (§26). Prod-only; installer/health/meta exempt.
   app.use(globalApiLimiter);

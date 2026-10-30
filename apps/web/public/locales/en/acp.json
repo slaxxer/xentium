@@ -536,9 +536,11 @@
       "cpu": "CPU",
       "memory": "Memory",
       "queue": "Queue",
-      "vcpu": "4 vCPU",
-      "memUsage": "{{used}} / 2048 MB",
-      "jobsPending": "{{count}} jobs pending"
+      "vcpu": "{{count}} vCPU",
+      "memUsage": "{{used}} / {{total}} MB",
+      "jobsPending": "{{count}} jobs pending",
+      "jobsRunning": "{{count}} running",
+      "jobsFailed": "{{count}} failed"
     },
     "throughput": "Request throughput",
     "reqPerSec": "{{count}} req/s",

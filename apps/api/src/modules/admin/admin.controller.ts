@@ -22,6 +22,7 @@ import {
 } from "../../jobs/scheduledJobs.js";
 import { listPluginSchedules } from "../../core/plugin-platform/jobs.js";
 import { prisma } from "../../infrastructure/db.js";
+import { systemMetrics } from "../../shared/metrics/systemMetrics.js";
 
 const jobConfigSchema = z.object({
   enabled:     z.boolean(),
@@ -604,6 +605,11 @@ export const adminController = {
   acknowledgeCoreUpdate: (async (req, res) => {
     await marketplaceService.acknowledgeCoreUpdate(req.userId!);
     res.status(204).end();
+  }) as RequestHandler,
+
+  /** ACP → About → System health: host CPU and memory, queues, this process's requests. */
+  systemMetrics: (async (_req, res) => {
+    res.json(await systemMetrics());
   }) as RequestHandler,
 
   getStatusSummary: (async (req, res) => {

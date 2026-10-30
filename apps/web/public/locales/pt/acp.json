@@ -536,9 +536,11 @@
       "cpu": "CPU",
       "memory": "Memória",
       "queue": "Fila",
-      "vcpu": "4 vCPU",
-      "memUsage": "{{used}} / 2048 MB",
-      "jobsPending": "{{count}} tarefas pendentes"
+      "vcpu": "{{count}} vCPU",
+      "memUsage": "{{used}} / {{total}} MB",
+      "jobsPending": "{{count}} tarefas pendentes",
+      "jobsRunning": "{{count}} em execução",
+      "jobsFailed": "{{count}} falhadas"
     },
     "throughput": "Taxa de pedidos",
     "reqPerSec": "{{count}} ped./s",
