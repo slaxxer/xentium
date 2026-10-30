@@ -54,10 +54,13 @@ test("admin uploads, installs and enables a plugin", async ({ page, request }) =
     name: "e2e-hello-1.0.0.xtplugin", mimeType: "application/zip", buffer: testPlugin(),
   });
   await page.getByRole("button", { name: /Validate Plugin/ }).click();
-  await expect(page.getByText("e2e-hello")).toBeVisible({ timeout: 15_000 });
+  // The package's own name, from the validated manifest (the file name was on the page already).
+  const install = page.getByRole("button", { name: "Install Plugin" });
+  await expect(install).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByText("E2E Hello").first()).toBeVisible();
 
   // Install (its migration runs), then on to the Installed page.
-  await page.getByRole("button", { name: "Install Plugin" }).click();
+  await install.click();
   await expect(page.getByText("Plugin Installed")).toBeVisible({ timeout: 30_000 });
   await page.getByRole("button", { name: "Go to Installed" }).click();
 

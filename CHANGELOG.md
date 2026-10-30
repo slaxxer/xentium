@@ -49,6 +49,15 @@ can no longer reach it (see Upgrading).
   link is one button now, and the menu stays open while you move to it.
 - **In the ACP menu**, a section's overview and one of its pages could both look selected.
   Only the page you're on is marked now.
+- **ACP → About showed made-up system health.** CPU, memory, queue, request rate and
+  latency are measured on your server now, and uptime no longer shows long decimals.
+- **New installs can update from the ACP.** When you let the installer set up the
+  services, it now sets up the updater too (before, that needed `xentium install-service`).
+- **Error messages in your language.** Sign-in, two-factor, invite, add-on, licence, store
+  and email errors were shown in English; they're translated into all five languages now,
+  and so are the default "Yes", "Cancel" and "Error" texts in dialogs.
+- **Demo mode** also refuses core updates and rollbacks, and turning on two-factor sign-in
+  for the shared demo account.
 
 ## Upgrading
 
