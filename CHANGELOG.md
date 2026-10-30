@@ -37,9 +37,10 @@ can no longer reach it (see Upgrading).
 - **Reset theme** in Theme Studio puts the whole theme (layouts, colours, fonts, custom CSS
   and frame) back to what it ships, as a draft you can look at before you publish.
 - **For add-ons:** account tabs, user menu items, navbar dropdowns, headings in their ACP
-  section, their own group (created once, then yours to change), profile tabs and stats
-  only for the members they're about, a page band in the header, and a fresh-code check
-  before sensitive actions.
+  section, their own group (created once with the permissions it needs, then yours to
+  change), profile tabs, account tabs and menu items only for the members they're about, a
+  count beside their ACP pages, a page band in the header, and a fresh-code check before
+  sensitive actions.
 
 ### Fixed
 
