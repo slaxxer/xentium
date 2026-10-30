@@ -28,6 +28,8 @@ import { useRegistrationStatus } from "../hooks/useRegistrationStatus";
 import { api } from "../lib/api";
 import { LayoutRegion } from "../layout/LayoutRenderer";
 import { useLayoutDocument } from "../layout/useLayout";
+import { usePageBand } from "../layout/siteFrame";
+import { HEADER_BAND_REGION } from "@xentium/contracts";
 import { RankBadge } from "../components/RankBadge";
 import { ModShield } from "../features/modcp/ModShield";
 import { SignInMenu } from "../features/auth/doorway/SignInMenu";
@@ -482,9 +484,17 @@ export function NavMobileMenu({ tools }: { tools?: React.ReactNode }) {
  */
 export function PubNav() {
   const layout = useLayoutDocument("chrome.header");
+  // The page's own band (a hero), when its template declares one: under the
+  // header's blocks, full width, still the page's document.
+  const band = usePageBand();
   return (
     <div className="pub-head">
       <LayoutRegion document={layout} region="header" />
+      {band && (
+        <div className="xt-header-band">
+          <LayoutRegion document={band.document} region={HEADER_BAND_REGION} context={band.context} />
+        </div>
+      )}
     </div>
   );
 }

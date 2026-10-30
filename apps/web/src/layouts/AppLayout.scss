@@ -69,6 +69,13 @@
     display: contents;
   }
 
+  /* A page's own band (`headerBand`) is site chrome in the same sense: dissolved,
+     so a full-width section in it reaches the edges like a masthead does. */
+  > .xt-header-band,
+  > .xt-header-band > .xt-region--headerBand {
+    display: contents;
+  }
+
 }
 
 /* The logo block's own styles, at TOP LEVEL rather than nested inside `.pub-nav`.

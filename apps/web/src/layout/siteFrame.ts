@@ -18,6 +18,7 @@ import {
   parseSiteFrame,
   type FrameMode,
   PAGE_ATTR,
+  type LayoutDocument,
   type SiteFrame,
   type TemplateKey,
 } from "@xentium/contracts";
@@ -63,6 +64,42 @@ export function useRegisterPageTemplate(templateKey: TemplateKey): void {
 
 export function usePageTemplate(): TemplateKey | null {
   return useSyncExternalStore(subscribePage, pageSnapshot, pageSnapshot);
+}
+
+// ── The page's band in the site header ──────────────────────────────────────
+
+/** What the site header draws under its own blocks for the page on screen. */
+export interface PageBand {
+  document: LayoutDocument;
+  context?: unknown;
+}
+
+let pageBand: PageBand | null = null;
+const bandListeners = new Set<() => void>();
+
+const subscribeBand = (fn: () => void) => { bandListeners.add(fn); return () => { bandListeners.delete(fn); }; };
+const bandSnapshot = () => pageBand;
+
+/**
+ * Hand the page's `headerBand` region to the site header (`PubNav`), which sits
+ * outside the page in the tree. A LAYOUT effect for the same reason as the page
+ * mark: the band changes in the paint the page does.
+ */
+export function useRegisterPageBand(band: PageBand | null): void {
+  useLayoutEffect(() => {
+    if (!band) return;
+    pageBand = band;
+    for (const fn of bandListeners) fn();
+    return () => {
+      if (pageBand !== band) return;
+      pageBand = null;
+      for (const fn of bandListeners) fn();
+    };
+  }, [band]);
+}
+
+export function usePageBand(): PageBand | null {
+  return useSyncExternalStore(subscribeBand, bandSnapshot, bandSnapshot);
 }
 
 // ── The editor's unsaved frame (preview only) ──────────────────────────────

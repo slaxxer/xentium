@@ -22,6 +22,7 @@ import {
   Component,
   createContext,
   useContext,
+  useMemo,
   useState,
   useSyncExternalStore,
   type ReactNode,
@@ -36,6 +37,7 @@ import {
   blockTypeClass,
   variantClass,
   HEADING_FONT_STACKS,
+  HEADER_BAND_REGION,
   type AudienceView,
   type BlockNode,
   type BlockViewer,
@@ -47,7 +49,7 @@ import { authStore } from "../lib/authStore";
 import { getBlock } from "./blockRegistry";
 import { editingTemplate, isEditorPreview, isLayoutPreview, usePreviewAudience } from "./useLayout";
 import { IconSlotProvider } from "./iconSlots";
-import { useRegisterPageTemplate } from "./siteFrame";
+import { useRegisterPageBand, useRegisterPageTemplate } from "./siteFrame";
 import { EdgeArtLayer } from "./edgeArt";
 
 /**
@@ -514,7 +516,7 @@ export interface LayoutRendererProps {
 export function LayoutRenderer({ templateKey, context, document: raw, regions }: LayoutRendererProps) {
   // The site frame may differ per page, and this is where the shell learns which page.
   useRegisterPageTemplate(templateKey);
-  const { document: doc } = parseLayoutDocument(templateKey, raw ?? undefined);
+  const { document: doc } = useMemo(() => parseLayoutDocument(templateKey, raw ?? undefined), [templateKey, raw]);
   /**
    * Order comes from the TEMPLATE, never from the document's key order.
    *
@@ -526,6 +528,15 @@ export function LayoutRenderer({ templateKey, context, document: raw, regions }:
    * admin-editable, which is exactly why the template is the authority here.
    */
   const names = regions ?? regionsFor(templateKey);
+
+  /**
+   * The page's band is drawn by the SITE header, not here: handed over, and skipped
+   * below. Memoised on what it shows, so a re-render of the page does not re-run the
+   * header's effect for the same band.
+   */
+  const hasBand = names.includes(HEADER_BAND_REGION);
+  const band = useMemo(() => (hasBand ? { document: doc, context } : null), [hasBand, doc, context]);
+  useRegisterPageBand(band);
 
   /**
    * BODY and ASIDE are one row, not two bands.
@@ -548,6 +559,7 @@ export function LayoutRenderer({ templateKey, context, document: raw, regions }:
   return (
     <>
       {names.map((region) => {
+        if (region === HEADER_BAND_REGION) return null;   // the site header draws it
         if (row && region === "aside") return null;   // rendered inside the row
         if (row && region === "main") {
           return (

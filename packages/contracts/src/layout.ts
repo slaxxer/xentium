@@ -57,6 +57,16 @@ export type TemplateKey = CoreTemplateKey | (string & {});
 /** True for the site-wide chrome templates, which no route owns. */
 export const isChromeTemplate = (key: TemplateKey): boolean => key.startsWith('chrome.');
 
+/**
+ * A page's own band in the SITE header: a template that declares this region gets
+ * it drawn by the site header, under the header's own blocks (the navbar and any
+ * masthead), across the full width, instead of inside the page's body. It is still
+ * the PAGE's document: arranged with the page, themed with the page
+ * (`page.<template>`), and gone when the page is. A hero belongs here; a page
+ * without the region keeps the site header as it is.
+ */
+export const HEADER_BAND_REGION = 'headerBand';
+
 /** Regions the CORE templates expose. Plugin templates declare their own. */
 export const TEMPLATE_REGIONS = {
   /*
