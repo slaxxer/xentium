@@ -112,7 +112,8 @@
     "search": "Search",
     "decrease": "Decrease",
     "increase": "Increase",
-    "ok": "OK"
+    "ok": "OK",
+    "yes": "Yes"
   },
   "nav": {
     "home": "Home",
@@ -752,5 +753,9 @@
     "confirm": "Confirm",
     "wrong": "That code is not right. Try the current one.",
     "used": "That code was just used. Wait for the next one."
+  },
+  "feedback": {
+    "error": "Error",
+    "tryAgain": "Something went wrong. Please try again."
   }
 }

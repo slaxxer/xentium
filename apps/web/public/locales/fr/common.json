@@ -21,7 +21,8 @@
     "search": "Rechercher",
     "decrease": "Diminuer",
     "increase": "Augmenter",
-    "ok": "OK"
+    "ok": "OK",
+    "yes": "Oui"
   },
   "nav": {
     "home": "Accueil",
@@ -762,5 +763,9 @@
     "confirm": "Confirmer",
     "wrong": "Ce code est incorrect. Essayez le code actuel.",
     "used": "Ce code vient d’être utilisé. Attendez le suivant."
+  },
+  "feedback": {
+    "error": "Erreur",
+    "tryAgain": "Une erreur s'est produite. Veuillez réessayer."
   }
 }

@@ -21,7 +21,8 @@
     "search": "Pesquisar",
     "decrease": "Diminuir",
     "increase": "Aumentar",
-    "ok": "OK"
+    "ok": "OK",
+    "yes": "Sim"
   },
   "nav": {
     "home": "Início",
@@ -762,5 +763,9 @@
     "confirm": "Confirmar",
     "wrong": "Esse código não está certo. Experimente o atual.",
     "used": "Esse código acabou de ser usado. Aguarde pelo próximo."
+  },
+  "feedback": {
+    "error": "Erro",
+    "tryAgain": "Algo correu mal. Tente novamente."
   }
 }
