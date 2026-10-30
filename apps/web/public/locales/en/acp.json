@@ -6326,5 +6326,15 @@
     "subtitle": "Settings this add-on offers. Changes apply once you save.",
     "general": "General",
     "unavailable": "This add-on has no settings here, or it is turned off."
+  },
+  "twoFactorPolicy": {
+    "title": "Two-factor sign-in",
+    "desc": "Groups switched on here must use an authenticator app. Their members are asked to turn it on on every page, and the admin panel stays closed to them until they do. Everyone else can turn it on in their account.",
+    "required": "Required",
+    "optional": "Optional",
+    "members_one": "{{count}} member",
+    "members_other": "{{count}} members",
+    "toggle": "Require two-factor sign-in for {{group}}",
+    "lockoutWarning": "You haven't turned on two-factor sign-in yourself. After saving, the admin panel closes to you until you do (Account → Security)."
   }
 }

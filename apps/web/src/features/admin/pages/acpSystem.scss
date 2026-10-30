@@ -588,6 +588,22 @@
   &__icon { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; color: var(--c-fg); background: var(--c-card); border: 1px solid var(--c-border); }
   &__titles { flex: 1; min-width: 0; display: flex; flex-direction: column; strong { font-size: var(--fs-md); color: var(--c-fg); } }
 }
+/* Who must use two-factor sign-in (TwoFactorPolicyPanel.tsx) */
+.tfp { margin-bottom: 12px; }
+.tfp__rows { display: flex; flex-direction: column; }
+.tfp__row {
+  display: flex; align-items: center; gap: 12px; padding: 10px 0;
+  border-top: 1px solid var(--c-border);
+}
+.tfp__dot { flex: none; width: 10px; height: 10px; border-radius: 50%; }
+.tfp__name { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.tfp__state { font-size: var(--fs-sm); color: var(--c-fg-muted); }
+.tfp__warn {
+  display: flex; align-items: flex-start; gap: 8px; margin: 10px 0 0; padding: 10px 12px;
+  border-radius: var(--radius-md); background: var(--c-bg); border: 1px solid var(--c-warn);
+  font-size: var(--fs-sm); color: var(--c-fg);
+  > svg { margin-top: 3px; color: var(--c-warn); }
+}
 .sp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; @media (max-width: 760px) { grid-template-columns: 1fr; } }
 .sp-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; &--full { grid-column: 1 / -1; } }
 .sp-inline { display: flex; align-items: center; gap: 8px; min-width: 0; .inp { flex: 1; min-width: 0; } }

@@ -6326,5 +6326,15 @@
     "subtitle": "Los ajustes que ofrece este complemento. Los cambios se aplican al guardar.",
     "general": "General",
     "unavailable": "Este complemento no tiene ajustes aquí, o está desactivado."
+  },
+  "twoFactorPolicy": {
+    "title": "Inicio de sesión en dos pasos",
+    "desc": "Los grupos activados aquí deben usar una app de autenticación. A sus miembros se les pide activarlo en cada página, y el panel de administración permanece cerrado para ellos hasta que lo hagan. Los demás pueden activarlo en su cuenta.",
+    "required": "Obligatorio",
+    "optional": "Opcional",
+    "members_one": "{{count}} miembro",
+    "members_other": "{{count}} miembros",
+    "toggle": "Exigir inicio de sesión en dos pasos a {{group}}",
+    "lockoutWarning": "Aún no has activado el inicio de sesión en dos pasos. Tras guardar, el panel de administración se cerrará para ti hasta que lo hagas (Cuenta → Seguridad)."
   }
 }

@@ -6326,5 +6326,15 @@
     "subtitle": "As definições que este complemento oferece. As alterações aplicam-se ao guardar.",
     "general": "Geral",
     "unavailable": "Este complemento não tem definições aqui, ou está desligado."
+  },
+  "twoFactorPolicy": {
+    "title": "Início de sessão em dois passos",
+    "desc": "Os grupos ativados aqui têm de usar uma app de autenticação. Os seus membros são convidados a ativá-lo em cada página, e o painel de administração fica fechado para eles até o fazerem. Os restantes podem ativá-lo na sua conta.",
+    "required": "Obrigatório",
+    "optional": "Opcional",
+    "members_one": "{{count}} membro",
+    "members_other": "{{count}} membros",
+    "toggle": "Exigir início de sessão em dois passos para {{group}}",
+    "lockoutWarning": "Ainda não ativou o início de sessão em dois passos. Depois de guardar, o painel de administração fica fechado para si até o fazer (Conta → Segurança)."
   }
 }

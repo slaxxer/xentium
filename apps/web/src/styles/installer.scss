@@ -493,6 +493,18 @@
     .s   { font-size: var(--fs-sm); color: var(--text-secondary); }
   }
 
+  // ── Who must use two-factor sign-in (the admin step) ──────────────────────
+  .inst-tfa {
+    margin-top: 16px;
+    .hint { display: block; font-size: var(--fs-sm); color: var(--text-secondary); }
+  }
+  .inst-tfa__head { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; strong { font-size: var(--fs-md); } }
+  .inst-tfa__row {
+    display: flex; align-items: center; gap: 10px; padding: 8px 0;
+    font-weight: 600; font-size: var(--fs-md); cursor: pointer;
+    input { width: 16px; height: 16px; accent-color: var(--accent); }
+  }
+
   .inst-check {
     display: flex;
     align-items: center;

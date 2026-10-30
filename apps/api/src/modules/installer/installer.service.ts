@@ -1,7 +1,7 @@
 import { prisma } from "../../infrastructure/db.js";
 import { hashPassword } from "../auth/auth.password.js";
 import { createSession } from "../auth/auth.tokens.js";
-import { InstallStep, type InstallStatusDto } from "@xentium/contracts";
+import { CorePermissions, InstallStep, type InstallStatusDto } from "@xentium/contracts";
 import { XENTIUM_VERSION } from "../../config/version.js";
 import { environmentCheck } from "../../core/installer-engine/steps/environmentCheck.js";
 import { databaseCheck } from "../../core/installer-engine/steps/databaseCheck.js";
@@ -245,6 +245,11 @@ export const installerService = {
         update: {},
         create: { userId: u.id, groupId: admin.id },
       });
+      // Who must use two-factor sign-in: exactly the groups picked (a retry replaces it).
+      const duty = await tx.permission.findUniqueOrThrow({ where: { key: CorePermissions.ACCOUNT_TWO_FACTOR_REQUIRED } });
+      const groups = await tx.group.findMany({ where: { key: { in: input.twoFactorGroups ?? ["admin"] } }, select: { id: true } });
+      await tx.groupPermission.deleteMany({ where: { permissionId: duty.id } });
+      await tx.groupPermission.createMany({ data: groups.map((g) => ({ groupId: g.id, permissionId: duty.id })) });
       return u;
     });
     await advanceTo(InstallStep.FINALIZE);

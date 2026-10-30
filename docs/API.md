@@ -39,7 +39,8 @@ in JavaScript, and it keeps the access token in memory only.
 | **Perm:`key`** | logged in **and** holding that permission (`requirePermission`) |
 | **Admin** | logged in **and** holding `admin.access` (`adminGuard`) |
 
-**Two-factor sign-in.** A group holding `account.twofactor.required` (Admin, by default)
+**Two-factor sign-in.** A group holding `account.twofactor.required` (the groups picked in the installer, then
+ACP → Settings → Login; none on an upgraded site)
 must turn on two-factor sign-in before any **Admin** route answers; until then they get
 `403 XEC-AUTH-1074`. A few ACP actions that hand out power, install code or connect the
 marketplace (group permissions, user groups and account changes, plugin upload, enable

@@ -7,11 +7,21 @@ vi.mock("../../core/installer-engine/steps/runMigrations.js", () => ({
   runMigrations: vi.fn().mockResolvedValue(undefined),
 }));
 
+import { CorePermissions } from "@xentium/contracts";
 import { prisma } from "../../infrastructure/db.js";
 import { __resetInstalledCache } from "../../shared/middleware/installGuard.js";
 import { buildApp, resetDb, ADMIN, SITE } from "./installer.testkit.js";
 
 let app: Express;
+
+/** The keys of the groups that must use two-factor sign-in. */
+async function dutyGroups(): Promise<string[]> {
+  const rows = await prisma.groupPermission.findMany({
+    where: { permission: { key: CorePermissions.ACCOUNT_TWO_FACTOR_REQUIRED } },
+    select: { group: { select: { key: true } } },
+  });
+  return rows.map((r) => r.group.key ?? "").sort();
+}
 
 beforeAll(() => {
   app = buildApp();
@@ -51,7 +61,8 @@ describe("installer happy path", () => {
     const adminGroup = await prisma.group.findUniqueOrThrow({ where: { key: "admin" } });
     const adminPermCount = await prisma.groupPermission.count({ where: { groupId: adminGroup.id } });
     const totalPerms = await prisma.permission.count();
-    expect(adminPermCount).toBe(totalPerms); // admin holds every core permission
+    // Admin holds every core permission except the 2FA duty, which the admin step decides.
+    expect(adminPermCount).toBe(totalPerms - 1);
 
     // Step 4 — site config.
     const site = await request(app).post("/api/install/site").send(SITE);
@@ -84,6 +95,8 @@ describe("installer happy path", () => {
       where: { userId: user.id, groupId: adminGroup.id },
     });
     expect(membership).not.toBeNull();
+    // Nothing picked = the wizard's default: only Administrators must use 2FA.
+    expect(await dutyGroups()).toEqual(["admin"]);
 
     // Step 7 — finalize: keys, site id, completedAt.
     const fin = await request(app).post("/api/install/finalize").send({});
@@ -109,6 +122,29 @@ describe("installer happy path", () => {
     expect((await request(app).get("/api/protected")).status).toBe(200);
     // The whole wizard: seeding every permission and group plus an argon2 hash. Close
     // to vitest's 5 s default on a CI runner, where it timed out once.
+  }, 20_000);
+
+  it("makes two-factor sign-in a duty for exactly the groups picked", async () => {
+    await request(app).post("/api/install/database").send({});
+    await request(app).post("/api/install/site").send(SITE);
+    await request(app).post("/api/install/addons").send({ pluginIds: [] });
+    // Seeding alone gives nobody the duty: that is what an upgrade sees.
+    expect(await dutyGroups()).toEqual([]);
+
+    const picked = await request(app).post("/api/install/admin").send({ ...ADMIN, twoFactorGroups: ["supermod", "moderator"] });
+    expect(picked.status).toBe(200);
+    expect(await dutyGroups()).toEqual(["moderator", "supermod"]);
+
+    // A retry of the step replaces the choice; none at all is allowed.
+    await request(app).post("/api/install/admin").send({ ...ADMIN, twoFactorGroups: [] });
+    expect(await dutyGroups()).toEqual([]);
+
+    // Every core group may be picked, members included.
+    await request(app).post("/api/install/admin").send({ ...ADMIN, twoFactorGroups: ["admin", "supermod", "moderator", "member"] });
+    expect(await dutyGroups()).toEqual(["admin", "member", "moderator", "supermod"]);
+
+    const bad = await request(app).post("/api/install/admin").send({ ...ADMIN, twoFactorGroups: ["guest"] });
+    expect(bad.status).toBe(400);
   }, 20_000);
 
   it("refuses to mutate once already complete (assertNotComplete)", async () => {

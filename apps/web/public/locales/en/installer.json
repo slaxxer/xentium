@@ -199,7 +199,17 @@
       "good": "Good",
       "strong": "Strong"
     },
-    "username_placeholder": "Administrator"
+    "username_placeholder": "Administrator",
+    "tfa_title": "Two-factor sign-in",
+    "tfa_desc": "Which groups must use an authenticator app? Nothing ticked: everyone decides for themselves. You can change this later in ACP → Settings → Login.",
+    "tfa_groups": {
+      "admin": "Administrators",
+      "supermod": "Supermods",
+      "moderator": "Moderators",
+      "member": "Members"
+    },
+    "tfa_admin_note": "You'll be asked to set it up right after the install.",
+    "tfa_member_note": "Every member, including everyone who signs up later, will be asked to set it up."
   },
   "finalize": {
     "title": "Ready when you are",

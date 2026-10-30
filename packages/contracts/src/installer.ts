@@ -85,16 +85,22 @@ export interface SiteConfigInput {
   timezone: string;
 }
 
+/** The system groups the installer may make two-factor sign-in a duty for. */
+export const INSTALL_TWO_FACTOR_GROUPS = ["admin", "supermod", "moderator", "member"] as const;
+
 export const adminAccountSchema = z.object({
   email: z.string().email(),
   username: z.string().min(3).max(32).regex(/^[a-zA-Z0-9_]+$/),
   password: z.string().min(5).max(200),
+  /** Groups that must use two-factor sign-in; empty = everyone chooses for themselves. */
+  twoFactorGroups: z.array(z.enum(INSTALL_TWO_FACTOR_GROUPS)).max(INSTALL_TWO_FACTOR_GROUPS.length).default(["admin"]),
 });
 
 export interface AdminAccountInput {
   email: string;
   username: string;
   password: string;
+  twoFactorGroups?: (typeof INSTALL_TWO_FACTOR_GROUPS)[number][];
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

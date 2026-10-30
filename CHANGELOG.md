@@ -10,9 +10,10 @@ can no longer reach it (see Upgrading).
   (Google Authenticator, 1Password, Authy and others): scan the code, confirm it, and keep
   the ten recovery codes somewhere safe. While it's on, every sign-in except a passkey asks
   for a code, and it replaces the login PIN.
-- **Admins must use it.** A new permission, "Must use two-factor sign-in", is held by the
-  Admin group. Accounts that hold it are asked to turn two-factor on, and the ACP stays
-  closed to them until they do.
+- **You choose who must use it.** The install wizard asks which groups must use
+  two-factor sign-in (Administrators are ticked to start with), and ACP → Settings → Login
+  changes it per group later. Members of those groups are asked to turn it on, and the
+  ACP stays closed to them until they do. Everyone else can turn it on if they like.
 - **Sensitive changes ask for a fresh code:** handing out permissions and groups, changing
   someone's account, installing, enabling or deleting add-ons, store connections, core
   updates and sign-in providers. One code covers five minutes.
@@ -55,5 +56,6 @@ can no longer reach it (see Upgrading).
   install, update and license add-ons again.
 - If your `.env` sets `LICENSE_SERVER_URL` to `https://plugins.xentium.org/api/v1`, remove
   the line (or set it to `https://app.xentium.org/api/p/xentium-store/v1`).
-- Admins: turn on two-factor sign-in after updating, or the ACP stays closed to you.
+- Two-factor sign-in is optional for everyone after updating. To require it for your team,
+  turn it on yourself first (Account → Security), then pick the groups in ACP → Settings → Login.
 - One database migration for two-factor sign-in. It runs with the update.

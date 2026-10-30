@@ -199,7 +199,17 @@
       "good": "Buena",
       "strong": "Fuerte"
     },
-    "username_placeholder": "Administrador"
+    "username_placeholder": "Administrador",
+    "tfa_title": "Inicio de sesión en dos pasos",
+    "tfa_desc": "¿Qué grupos deben usar una app de autenticación? Sin marcar: cada persona decide. Puedes cambiarlo más tarde en ACP → Ajustes → Inicio de sesión.",
+    "tfa_groups": {
+      "admin": "Administradores",
+      "supermod": "Supermods",
+      "moderator": "Moderadores",
+      "member": "Miembros"
+    },
+    "tfa_admin_note": "Se te pedirá configurarlo justo después de la instalación.",
+    "tfa_member_note": "Se pedirá configurarlo a todos los miembros, incluidos los que se registren más tarde."
   },
   "finalize": {
     "title": "Cuando tú quieras",

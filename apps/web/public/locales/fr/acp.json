@@ -6326,5 +6326,15 @@
     "subtitle": "Les réglages proposés par cette extension. Les changements s'appliquent à l'enregistrement.",
     "general": "Général",
     "unavailable": "Cette extension n'a pas de réglages ici, ou elle est désactivée."
+  },
+  "twoFactorPolicy": {
+    "title": "Connexion à deux facteurs",
+    "desc": "Les groupes activés ici doivent utiliser une application d'authentification. Leurs membres sont invités à l'activer sur chaque page, et le panneau d'administration leur reste fermé tant qu'ils ne l'ont pas fait. Les autres peuvent l'activer dans leur compte.",
+    "required": "Obligatoire",
+    "optional": "Facultatif",
+    "members_one": "{{count}} membre",
+    "members_other": "{{count}} membres",
+    "toggle": "Exiger la connexion à deux facteurs pour {{group}}",
+    "lockoutWarning": "Vous n'avez pas encore activé la connexion à deux facteurs. Après l'enregistrement, le panneau d'administration vous sera fermé jusqu'à ce que vous le fassiez (Compte → Sécurité)."
   }
 }

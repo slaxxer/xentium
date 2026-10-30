@@ -6326,5 +6326,15 @@
     "subtitle": "Einstellungen, die dieses Add-on anbietet. Änderungen gelten, sobald du speicherst.",
     "general": "Allgemein",
     "unavailable": "Dieses Add-on hat hier keine Einstellungen, oder es ist ausgeschaltet."
+  },
+  "twoFactorPolicy": {
+    "title": "Zwei-Faktor-Anmeldung",
+    "desc": "Hier eingeschaltete Gruppen müssen eine Authenticator-App nutzen. Ihre Mitglieder werden auf jeder Seite gebeten, sie einzuschalten, und das Admin-Panel bleibt für sie geschlossen, bis sie es tun. Alle anderen können sie in ihrem Konto einschalten.",
+    "required": "Pflicht",
+    "optional": "Freiwillig",
+    "members_one": "{{count}} Mitglied",
+    "members_other": "{{count}} Mitglieder",
+    "toggle": "Zwei-Faktor-Anmeldung für {{group}} verlangen",
+    "lockoutWarning": "Du hast die Zwei-Faktor-Anmeldung selbst noch nicht eingeschaltet. Nach dem Speichern ist das Admin-Panel für dich geschlossen, bis du es tust (Konto → Sicherheit)."
   }
 }
