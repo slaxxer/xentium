@@ -40,6 +40,12 @@ export interface ProfileTabSlot {
   id: string;
   label: string;
   component: ComponentType<{ profileId: string; profileUsername: string; isOwn: boolean }>;
+  /**
+   * Whether this profile gets the tab at all (a publisher's listings on a member who
+   * publishes nothing would be an empty tab). Absent = every profile. Hidden until it
+   * answers, so a tab never appears and vanishes again.
+   */
+  shownFor?: (userId: string) => Promise<boolean>;
 }
 
 // ── Account settings section ──────────────────────────────────────────────────
@@ -244,6 +250,8 @@ export interface ProfileStatSlot {
   fetchValue: (userId: string) => Promise<number>;
   /** If provided, clicking the stat switches to this profile tab. */
   tabId?: string;
+  /** Whether this profile shows the stat at all. Absent = every profile. */
+  shownFor?: (userId: string) => Promise<boolean>;
 }
 
 // ── Profile action (registered by plugins, shown in /u/:username card action row) ─

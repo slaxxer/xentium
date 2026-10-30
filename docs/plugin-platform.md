@@ -395,6 +395,20 @@ date field's visibility allows the viewer (guests see fewer), and never someone 
 viewer or whom the viewer blocked. It is the only way your plugin should learn a birthday.
 `canSee` gives the same answer the profile page acts on.
 
+### Groups
+
+```ts
+const customers = await host.groups.ensure({ key: "customer", name: "Customer", badgeColor: "#c8a24a", nameGlow: true });
+await host.groups.add(userId, customers);
+await host.groups.remove(userId, customers);
+```
+
+`ensure` creates a group your plugin needs the first time, with no permissions and the
+name and badge you give it, and returns its id after that. From then on the group is the
+admin's: they rename or recolour it in ACP → Groups and `ensure` never overwrites it. Its
+badge and name colour show wherever core draws group badges. `add` refuses any group that
+holds `admin.access`: a plugin never makes someone an administrator.
+
 `host.time` works in the site's time zone from ACP → System Settings. When the site shows
 each visitor their own zone, there is no site zone on the server and these use UTC.
 
@@ -460,6 +474,11 @@ your UI into core's: profile tabs, Account and Privacy sections, ACP settings se
 header next to the notification bell, the member menu, and site-wide overlays. Call
 `registerPluginMeta({ pluginId })` first, so everything you register is removed when the
 plugin is disabled.
+
+**Only on some profiles.** A profile tab or stat can say whether it belongs on a profile:
+give it `shownFor: (userId) => Promise<boolean>` and it appears only where that answers
+true (a publisher's listings, say, and not on everyone else's profile). Without it, every
+profile has it.
 
 **Your field on the sign-up form.** `registerRegistrationField` puts a field of yours on the
 sign-up form. Its value travels as `addons["<your id>"]` to your `registration.validate`

@@ -157,6 +157,12 @@ export interface PluginHost {
   groups: {
     add: (userId: string, groupId: string) => Promise<void>;
     remove: (userId: string, groupId: string) => Promise<void>;
+    /**
+     * A group your plugin needs, by key: created the first time (with no permissions,
+     * the name and badge colour you give), its id returned after that. Once it exists
+     * it is the admin's: renamed or recoloured in ACP → Groups and never overwritten.
+     */
+    ensure: (spec: { key: string; name: string; badgeColor?: string; nameGlow?: boolean; displayOrder?: number }) => Promise<string>;
   };
 }
 

@@ -73,6 +73,32 @@ export async function addToGroup(userId: string, groupId: string): Promise<void>
   if (!had) emitGroupsChanged(userId, [], [groupId]);
 }
 
+/**
+ * A group a plugin needs (a store's "Customer"), created the first time and found
+ * after that. Its name, badge colour and glow are only the starting point: from then on
+ * the group is the admin's, renamed or recoloured in ACP → Groups, and never touched
+ * again here. It is created holding no permissions.
+ */
+export async function ensureGroup(spec: {
+  key: string; name: string; badgeColor?: string; nameGlow?: boolean; displayOrder?: number;
+}): Promise<string> {
+  const key = z.string().regex(/^[a-z][a-z0-9_-]{1,40}$/, "A group key is lowercase letters, digits, - and _.").parse(spec.key);
+  const existing = await prisma.group.findUnique({ where: { key }, select: { id: true } });
+  if (existing) return existing.id;
+  const color = spec.badgeColor && /^#[0-9a-f]{3,8}$/i.test(spec.badgeColor) ? spec.badgeColor : null;
+  const group = await prisma.group.create({
+    data: {
+      key, name: spec.name.slice(0, 60), isSystem: false, displayOrder: spec.displayOrder ?? 100,
+      // Not a ladder rung: the badge only.
+      ...(color || spec.nameGlow
+        ? { progression: { create: { isProgressionGroup: false, badgeColor: color, badgeTextShadow: !!spec.nameGlow } } }
+        : {}),
+    },
+    select: { id: true },
+  });
+  return group.id;
+}
+
 export async function removeFromGroup(userId: string, groupId: string): Promise<void> {
   const { count } = await prisma.userGroup.deleteMany({ where: { userId, groupId } });
   await permissionCache.invalidate(userId);
@@ -123,7 +149,7 @@ const host: Omit<PluginHost, "jobs" | "settings" | "files" | "limits" | "cache">
   // Ask instead of refuse: e.g. "may this member still reply to a closed thread?".
   permissions: { has: (userId: string, key: string) => hasPermission(userId, key as never) },
   utils:      { resolveAvatar, sanitizeRichText, cron: { resolveCron: resolveCronPattern, previewRuns }, encryptSecret, decryptSecret },
-  groups:     { add: addToGroup, remove: removeFromGroup },
+  groups:     { add: addToGroup, remove: removeFromGroup, ensure: ensureGroup },
   notificationService: {
     // Lazy import avoids a top-level circular dependency with the engine.
     dispatch: async (opts: any) => {
