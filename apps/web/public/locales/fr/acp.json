@@ -4005,11 +4005,13 @@
       "header": "En-tête",
       "main": "Corps",
       "aside": "Aside",
-      "footer": "Pied"
+      "footer": "Pied",
+      "headerBand": "Bandeau"
     },
     "pageRegion": {
       "main": "Corps",
-      "aside": "Colonne latérale"
+      "aside": "Colonne latérale",
+      "headerBand": "Bandeau"
     },
     "pageChromeHint": "Une page, c'est un corps et une colonne à côté. L'en-tête et le pied sont des modèles à part, identiques sur chaque page — cliquez sur l'un d'eux dans l'aperçu pour l'organiser.",
     "asideHint": "Se place à côté du corps, et en dessous sur un écran étroit.",

@@ -4005,11 +4005,13 @@
       "header": "Cabeçalho",
       "main": "Corpo",
       "aside": "Aside",
-      "footer": "Rodapé"
+      "footer": "Rodapé",
+      "headerBand": "Cabeçalho"
     },
     "pageRegion": {
       "main": "Corpo",
-      "aside": "Barra lateral"
+      "aside": "Barra lateral",
+      "headerBand": "Cabeçalho"
     },
     "pageChromeHint": "Uma página é um corpo e uma barra lateral. O cabeçalho e o rodapé são modelos próprios, iguais em todas as páginas — clique num deles na pré-visualização para o organizar.",
     "asideHint": "Fica ao lado do corpo e abaixo dele num ecrã estreito.",

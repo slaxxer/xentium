@@ -4005,11 +4005,13 @@
       "header": "Header",
       "main": "Body",
       "aside": "Aside",
-      "footer": "Footer"
+      "footer": "Footer",
+      "headerBand": "Kopfbereich"
     },
     "pageRegion": {
       "main": "Inhalt",
-      "aside": "Seitenleiste"
+      "aside": "Seitenleiste",
+      "headerBand": "Kopfbereich"
     },
     "pageChromeHint": "Eine Seite besteht aus Inhalt und einer Seitenleiste daneben. Header und Footer sind eigene Vorlagen und auf jeder Seite gleich — klicke einen in der Vorschau an, um ihn zu bearbeiten.",
     "asideHint": "Steht neben dem Inhalt, auf schmalen Bildschirmen darunter.",

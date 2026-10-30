@@ -4005,11 +4005,13 @@
       "header": "Cabecera",
       "main": "Cuerpo",
       "aside": "Aside",
-      "footer": "Pie"
+      "footer": "Pie",
+      "headerBand": "Cabecera"
     },
     "pageRegion": {
       "main": "Cuerpo",
-      "aside": "Barra lateral"
+      "aside": "Barra lateral",
+      "headerBand": "Cabecera"
     },
     "pageChromeHint": "Una página es un cuerpo y una barra lateral. El encabezado y el pie son plantillas propias, iguales en todas las páginas: haz clic en uno en la vista previa para organizarlo.",
     "asideHint": "Se sitúa junto al cuerpo, y debajo en pantallas estrechas.",

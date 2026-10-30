@@ -4132,11 +4132,13 @@
       "header": "Header",
       "main": "Body",
       "aside": "Aside",
-      "footer": "Footer"
+      "footer": "Footer",
+      "headerBand": "Masthead"
     },
     "pageRegion": {
       "main": "Body",
-      "aside": "Aside"
+      "aside": "Aside",
+      "headerBand": "Masthead"
     },
     "pageChromeHint": "A page is a body and a rail beside it. The header and footer are their own templates, the same on every page — click one in the preview to arrange it.",
     "asideHint": "Sits beside the body, and under it on a narrow screen.",
