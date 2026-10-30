@@ -5473,6 +5473,9 @@
           },
           "level": {
             "title": "Nível"
+          },
+          "lede": {
+            "title": "Texto por baixo"
           }
         }
       },

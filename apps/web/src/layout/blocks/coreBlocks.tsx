@@ -133,9 +133,10 @@ registerBlock({
 
 // ── Content ─────────────────────────────────────────────────────────────────
 
-function HeadingBlock({ props }: BlockProps<{ text: LocalizedText; eyebrow?: LocalizedText; level: 1 | 2 | 3; align: "start" | "center"; icon?: string }>) {
+function HeadingBlock({ props }: BlockProps<{ text: LocalizedText; eyebrow?: LocalizedText; lede?: LocalizedText; level: 1 | 2 | 3; align: "start" | "center"; icon?: string }>) {
   const text    = useText(props.text);
   const eyebrow = useText(props.eyebrow);
+  const lede    = useText(props.lede);
   const Tag = (`h${props.level}`) as "h1" | "h2" | "h3";
   return (
     <header className={`xt-heading xt-heading--${props.align}`}>
@@ -147,6 +148,7 @@ function HeadingBlock({ props }: BlockProps<{ text: LocalizedText; eyebrow?: Loc
         {/* Its own element in the editor only, so typing over it does not take the icon. */}
         {props.icon && isEditorPreview() ? <span {...inlineText("text")}>{text}</span> : text}
       </Tag>
+      {lede && <p className="xt-heading__lede" {...inlineText("lede")}>{lede}</p>}
     </header>
   );
 }

@@ -5473,6 +5473,9 @@
           },
           "level": {
             "title": "Level"
+          },
+          "lede": {
+            "title": "Text under it"
           }
         }
       },

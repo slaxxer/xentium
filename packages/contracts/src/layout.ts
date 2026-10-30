@@ -1205,6 +1205,8 @@ export const blockPropSchemas = {
   heading: z.object({
     text:    localizedTextSchema,
     eyebrow: localizedTextSchema.optional(),
+    /** A line of plain text under the title (a hero's intro). Translatable, unlike `richText`. */
+    lede:    localizedTextSchema.optional().meta({ title: 'Text under it' }),
     level:   z.union([z.literal(1), z.literal(2), z.literal(3)]).default(2),
     align:   z.enum(['start', 'center']).default('start'),
     /**
