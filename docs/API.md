@@ -125,7 +125,7 @@ per IP for guests and 600 a minute per signed-in session. All of them answer
 | POST | `/finalize` | Public | Run `migrate deploy` and the seed, write `site.id`, lock the installer. |
 | GET / POST | `/addons` | Public | The add-ons the wizard offers (free official plugins, and what a linked marketplace account owns) / save the pick for this step: `{ pluginIds }`. |
 | POST | `/addons/install` | Public | `{ pluginId, version }`: download and install one picked add-on. |
-| POST | `/marketplace/link` · GET `/marketplace/link/:linkId` | Public | Link a plugins.xentium.org account from the wizard: start (a code to confirm on the marketplace), then poll until it's confirmed. |
+| POST | `/marketplace/link` · GET `/marketplace/link/:linkId` | Public | Link a Xentium store account from the wizard: start (a code to confirm on the marketplace), then poll until it's confirmed. |
 | DELETE | `/marketplace/connection` | Public | Unlink that account again. |
 
 ## Auth: `/api/auth`

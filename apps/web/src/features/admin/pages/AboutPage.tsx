@@ -27,7 +27,7 @@ const RESOURCES: { key: string; icon: string; href: string }[] = [
   { key: "github",      icon: "github",    href: "https://github.com/slaxxer/xentium" },
   // Every release publishes its notes as a GitHub release (release.yml).
   { key: "changelog",   icon: "changelog", href: "https://github.com/slaxxer/xentium/releases" },
-  { key: "marketplace", icon: "bag",       href: "https://plugins.xentium.org/" },
+  { key: "marketplace", icon: "bag",       href: "https://app.xentium.org/store" },
 ];
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));

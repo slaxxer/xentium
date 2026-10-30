@@ -28,11 +28,11 @@ const schema = z.object({
   // injection). Unset → resolves to <REPO_ROOT>/apps/web/dist. When no build
   // exists (dev), the API skips web serving and Vite owns the frontend.
   WEB_DIST: z.string().optional(),
-  // The Xentium marketplace every install talks to. Defaults to the hosted one so
-  // a fresh install works out of the box; override per deployment to point at a
-  // different marketplace. The base INCLUDES the protocol version (`/api/v1`),
-  // which is also what every request signature covers — see protocol-client.
-  LICENSE_SERVER_URL:      z.string().url().default("https://plugins.xentium.org/api/v1"),
+  // The Xentium store every install talks to: the store plugin on app.xentium.org.
+  // Defaults to it so a fresh install works out of the box; override per deployment
+  // to point at a different store. The base INCLUDES the protocol version (`…/v1`),
+  // and the path is what every request signature covers — see protocol-client.
+  LICENSE_SERVER_URL:      z.string().url().default("https://app.xentium.org/api/p/xentium-store/v1"),
   // DEVELOPMENT ONLY. Overrides the bundled key for ENTITLEMENT verification, so a
   // local marketplace can issue them. It does NOT move what counts as Xentium
   // itself: announcements and plugin signatures verify against the bundled key in
@@ -40,9 +40,8 @@ const schema = z.object({
   LICENSE_PUBLIC_KEY:      z.string().optional(),
   // Where a HUMAN goes — the marketplace's storefront, for the links the ACP
   // shows an admin ("get a connect code", "free a seat"). Derived from
-  // LICENSE_SERVER_URL by dropping the `/api/vN` suffix, which is correct in
-  // production (nginx serves the SPA from the same origin) but not in dev,
-  // where the API and the storefront run on different ports.
+  // LICENSE_SERVER_URL by dropping the API suffix (`/api/p/<plugin>/vN`, or the
+  // older `/api/vN`), which is right when the store's pages are on the same origin.
   MARKETPLACE_WEB_URL:     z.string().url().optional(),
   REPO_ROOT: z.string().default(path.resolve(process.cwd(), "../..")),
   PRISMA_SCHEMA_PATH: z.string().default(path.resolve(process.cwd(), "prisma/schema.prisma")),

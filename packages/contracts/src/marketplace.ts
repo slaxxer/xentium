@@ -1,7 +1,7 @@
 // Marketplace contracts (ADR 0001). The download gate — where paid plugins are
 // actually protected.
 //
-// There is ONE marketplace, plugins.xentium.org. `MarketplaceSource` exists as a
+// There is ONE marketplace, the store on app.xentium.org. `MarketplaceSource` exists as a
 // seam so the licence engine can be tested without the network, not so an
 // instance can be pointed at someone else's shop — and it has exactly one real
 // implementation. Anything that carries an identity claim (an announcement, a

@@ -546,7 +546,7 @@ We write them in English and translate where we can; each admin sees their own l
 we have it, then the site's, then English. They can't be muted, because when
 there's a security problem we need them to reach every site.
 
-There is one marketplace, `plugins.xentium.org`, and an announcement is checked against the
+There is one marketplace, the store on `app.xentium.org`, and an announcement is checked against the
 key bundled in the build, never against `LICENSE_PUBLIC_KEY`. That env var can change which
 *licences* an instance accepts, for development against a local marketplace; it cannot change
 who an instance believes is Xentium.
@@ -983,7 +983,7 @@ CLI and the framework packages). You can use, change and redistribute it, commer
 too, as long as the licence notice stays with it.
 
 The official plugins and themes are not. The paid plugins and themes we sell on
-[plugins.xentium.org](https://plugins.xentium.org) are proprietary. Their source is not in
+[the Xentium store](https://app.xentium.org/store) are proprietary. Their source is not in
 this repository, and they are licensed per domain under the marketplace's terms. Buying one
 lets you run it on your licensed site; it doesn't let you share, resell or republish it.
 

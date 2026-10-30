@@ -59,7 +59,7 @@ export async function getMarketplacePublicKey(opts: { allowOverride?: boolean } 
 async function getPublicKey(allowOverride = true) {
   // LICENSE_PUBLIC_KEY (env) overrides the bundled ENTITLEMENT-verification key,
   // for development against a local marketplace. Normally unset, and the bundled
-  // key is used (packages/sdk/src/license-public-key.pem — plugins.xentium.org's
+  // key is used (packages/sdk/src/license-public-key.pem — the hosted store's
   // public half; see the marketplace repo's DEPLOY note). It cannot move what an
   // announcement or a package signature is checked against in production — see
   // getMarketplacePublicKey.
@@ -563,7 +563,7 @@ async function explainEnableRefusal(pluginId: string, pluginName: string): Promi
     return new XentiumError({
       code:       XEC.LICENSE_NOT_FOUND,
       httpStatus: 402,
-      message:    `Your marketplace account does not own "${pluginName}". It is available at ${marketplaceWebUrl(`/plugins/${pluginId}`)}.`,
+      message:    `Your marketplace account does not own "${pluginName}". It is available at ${marketplaceWebUrl(`/store/plugins/${pluginId}`)}.`,
     });
   }
 
@@ -573,7 +573,7 @@ async function explainEnableRefusal(pluginId: string, pluginName: string): Promi
     return new XentiumError({
       code:       XEC.LICENSE_CAP_REACHED,
       httpStatus: 402,
-      message:    `All ${licence.seats} seat${licence.seats === 1 ? "" : "s"} of your "${pluginName}" licence are in use on other installs. Free one at ${marketplaceWebUrl("/account/licences")} and enable it again.`,
+      message:    `All ${licence.seats} seat${licence.seats === 1 ? "" : "s"} of your "${pluginName}" licence are in use on other installs. Free one at ${marketplaceWebUrl("/account?tab=xentium-store.licences")} and enable it again.`,
     });
   }
 
@@ -581,7 +581,7 @@ async function explainEnableRefusal(pluginId: string, pluginName: string): Promi
     return new XentiumError({
       code:       XEC.LICENSE_EXPIRED,
       httpStatus: 402,
-      message:    `Your "${pluginName}" licence is ${licence.status}. Renew it at ${marketplaceWebUrl("/account/licences")} to enable the plugin again.`,
+      message:    `Your "${pluginName}" licence is ${licence.status}. Renew it at ${marketplaceWebUrl("/account?tab=xentium-store.licences")} to enable the plugin again.`,
     });
   }
 

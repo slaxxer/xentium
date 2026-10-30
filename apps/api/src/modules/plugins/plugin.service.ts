@@ -72,7 +72,7 @@ export const pluginService = {
     return rows.map((r) => ({
       ...r,
       loadError: pluginRegistry.getLoadError(r.id) ?? null,
-      storeUrl:  r.signatureTier ? marketplaceWebUrl(`/plugins/${encodeURIComponent(r.id)}`) : null,
+      storeUrl:  r.signatureTier ? marketplaceWebUrl(`/store/plugins/${encodeURIComponent(r.id)}`) : null,
     }));
   },
 };

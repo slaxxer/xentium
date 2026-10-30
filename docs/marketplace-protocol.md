@@ -15,8 +15,8 @@ tell you. Write the change down on both sides before you make it.**
 - **Instance side:** `apps/api/src/core/license-engine/protocol-client.ts` (transport),
   `marketplace-source.ts` (the conversations), `site-identity.ts` (who am I).
 - **Base URL:** `env.LICENSE_SERVER_URL`, **including the version prefix**
-  (`https://plugins.xentium.org/api/v1`). It's part of what every signature covers.
-- **One marketplace.** `plugins.xentium.org` is it. Core talks to a `MarketplaceSource`
+  (`https://app.xentium.org/api/p/xentium-store/v1`). It's part of what every signature covers.
+- **One marketplace.** The store on `app.xentium.org` is it. Core talks to a `MarketplaceSource`
   interface rather than reaching for a host directly, but that's a test seam — it's what
   lets the licence engine be exercised without the network — not an invitation to point an
   instance somewhere else. `LICENSE_SERVER_URL` exists so a developer can run against a
