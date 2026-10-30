@@ -246,29 +246,45 @@
     }
   }
 
-  /* A link with a dropdown (nav items with children): the label keeps its pill and
-     its own page; the caret beside it opens the list. */
+  /* A link with a dropdown (nav items with children): the label and its caret are
+     ONE pill. The label still goes to its own page; the caret opens the list. The
+     pill lights up as a whole: hovered, on its page (or a page under it), or open. */
   &__has-menu {
     position: relative;
     display: flex;
     align-items: center;
+    border-radius: var(--radius-md);
+    transition: background 0.15s;
 
-    > a { padding-right: 6px; }
+    &:hover,
+    &:has(> a.active),
+    &:has(> .pub-nav__menu-caret[aria-expanded="true"]) { background: var(--nav-active-bg); }
+  }
+  /* Its label and caret draw no pill of their own (more specific than `&__links a`). */
+  &__links &__has-menu > a {
+    padding-right: 4px;
+
+    &:hover, &.active { background: none; }
   }
 
   &__menu-caret {
     display: grid;
     place-items: center;
-    width: 22px;
-    height: 22px;
-    margin-left: -2px;
-    border-radius: var(--radius-sm);
+    align-self: stretch;
+    padding: 0 12px 0 4px;
+    border: 0;
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    background: none;
     color: var(--nav-fg-muted);
     font-size: var(--fs-2xs);
-    transition: color 0.15s, background 0.15s;
+    cursor: pointer;
+    transition: color 0.15s;
 
-    &:hover, &[aria-expanded="true"] { color: var(--nav-fg); background: var(--nav-active-bg); }
+    svg { transition: transform 0.15s; }
+    &:hover, &[aria-expanded="true"] { color: var(--nav-fg); }
+    &[aria-expanded="true"] svg { transform: rotate(180deg); }
   }
+  &__has-menu:has(> a.active) &__menu-caret { color: var(--nav-active); }
 
   /* The dropdown under a nav link: the user menu's panel, opened below the link. */
   &__dropdown--nav {
@@ -276,6 +292,17 @@
     left: 0;
     right: auto;
     padding: 6px 0;
+
+    /* Bridges the 6px gap above the panel, so moving the mouse from the link down
+       to the list never leaves the menu (which closed it before an item was reached). */
+    &::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 100%;
+      height: 8px;
+    }
   }
 
   /* Its items are links inside the links row: undo the row's pill styling. */

@@ -372,8 +372,15 @@ function NavDropdownLink({ item, label }: { item: NavItem; label: string }) {
   const { t } = useTranslation("common");
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLLIElement>(null);
+  const closing = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { pathname, search } = useLocation();
   useEffect(() => { setOpen(false); }, [pathname, search]);
+  /* Leaving closes after a moment, not at once: a mouse path that cuts a corner on
+     its way to an item must not close the list under it. */
+  const cancelClose = () => { if (closing.current) { clearTimeout(closing.current); closing.current = null; } };
+  const show = () => { cancelClose(); setOpen(true); };
+  const hide = () => { cancelClose(); closing.current = setTimeout(() => setOpen(false), 180); };
+  useEffect(() => cancelClose, []);
   useEffect(() => {
     if (!open) return;
     const onDown = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) setOpen(false); };
@@ -384,10 +391,14 @@ function NavDropdownLink({ item, label }: { item: NavItem; label: string }) {
   }, [open]);
 
   return (
-    <li ref={ref} className="pub-nav__has-menu" onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
+    <li ref={ref} className="pub-nav__has-menu" onMouseEnter={show} onMouseLeave={hide}>
       <NavLink to={item.url}>{label}</NavLink>
       <button type="button" className="pub-nav__menu-caret" aria-expanded={open} aria-haspopup="menu"
-        aria-label={t("nav.openMenu", { label })} onClick={() => setOpen((o) => !o)}>
+        aria-label={t("nav.openMenu", { label })}
+        // A mouse click or a tap only ever OPENS: hovering (or the tap's own
+        // mouseenter) has opened it already, and toggling would close it again.
+        // The keyboard (detail 0) toggles.
+        onClick={(e) => { cancelClose(); setOpen((o) => (e.detail === 0 ? !o : true)); }}>
         <FontAwesomeIcon icon={faChevronDown} />
       </button>
       {open && (
