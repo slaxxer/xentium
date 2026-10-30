@@ -869,12 +869,6 @@
         "cause": "Missing permission key for the requested resource.",
         "fix": "Ensure the user's group has the required permission assigned in ACP → Members → Permissions."
       },
-      "XEC-API-4031": {
-        "msg": "Disabled in the Demo",
-        "desc": "This install runs in demo mode, which refuses actions that would run code on the server, send mail, or lock other visitors out.",
-        "cause": "DEMO_MODE=true in the server's environment.",
-        "fix": "Nothing to fix on a demo. On your own install, leave DEMO_MODE unset."
-      },
       "XEC-API-4150": {
         "msg": "Compressed Request Refused",
         "desc": "The request body was sent compressed (gzip, deflate or Brotli). The API only accepts plain request bodies, so compressed data never reaches the decompressor.",

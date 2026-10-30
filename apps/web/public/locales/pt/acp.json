@@ -869,12 +869,6 @@
         "cause": "Falta a chave de permissão para o recurso solicitado.",
         "fix": "Garante que o grupo do utilizador tem a permissão necessária atribuída em ACP → Membros → Permissões."
       },
-      "XEC-API-4031": {
-        "msg": "Desativado na demo",
-        "desc": "Esta instalação funciona em modo demo, que recusa ações que executariam código no servidor, enviariam e-mail ou bloqueariam outros visitantes.",
-        "cause": "DEMO_MODE=true no ambiente do servidor.",
-        "fix": "Não há nada a corrigir numa demo. Na sua própria instalação, não defina DEMO_MODE."
-      },
       "XEC-API-4150": {
         "msg": "Pedido comprimido recusado",
         "desc": "O corpo do pedido foi enviado comprimido (gzip, deflate ou Brotli). A API só aceita corpos sem compressão, para que dados comprimidos nunca sejam descomprimidos.",

@@ -56,8 +56,6 @@ can no longer reach it (see Upgrading).
 - **Error messages in your language.** Sign-in, two-factor, invite, add-on, licence, store
   and email errors were shown in English; they're translated into all five languages now,
   and so are the default "Yes", "Cancel" and "Error" texts in dialogs.
-- **Demo mode** also refuses core updates and rollbacks, and turning on two-factor sign-in
-  for the shared demo account.
 
 ## Upgrading
 
@@ -68,3 +66,4 @@ can no longer reach it (see Upgrading).
 - Two-factor sign-in is optional for everyone after updating. To require it for your team,
   turn it on yourself first (Account → Security), then pick the groups in ACP → Settings → Login.
 - One database migration for two-factor sign-in. It runs with the update.
+- `DEMO_MODE` is gone. It existed for our own demo site; if your `.env` sets it, remove it.

@@ -869,12 +869,6 @@
         "cause": "Der Berechtigungsschlüssel für die angeforderte Ressource fehlt.",
         "fix": "Stelle sicher, dass die Gruppe des Benutzers die nötige Berechtigung unter ACP → Mitglieder → Berechtigungen zugewiesen hat."
       },
-      "XEC-API-4031": {
-        "msg": "In der Demo deaktiviert",
-        "desc": "Diese Installation läuft im Demo-Modus. Er verweigert Aktionen, die Code auf dem Server ausführen, E-Mails senden oder andere Besucher aussperren würden.",
-        "cause": "DEMO_MODE=true in der Serverumgebung.",
-        "fix": "In einer Demo gibt es nichts zu beheben. Auf deiner eigenen Installation lässt du DEMO_MODE weg."
-      },
       "XEC-API-4150": {
         "msg": "Komprimierte Anfrage abgelehnt",
         "desc": "Der Inhalt der Anfrage wurde komprimiert gesendet (gzip, deflate oder Brotli). Die API nimmt nur unkomprimierte Inhalte an, damit komprimierte Daten nie entpackt werden.",

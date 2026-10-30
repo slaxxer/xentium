@@ -869,12 +869,6 @@
         "cause": "Clé de permission manquante pour la ressource demandée.",
         "fix": "Vérifiez que le groupe de l'utilisateur dispose de la permission requise dans ACP → Membres → Permissions."
       },
-      "XEC-API-4031": {
-        "msg": "Désactivé dans la démo",
-        "desc": "Cette installation fonctionne en mode démo, qui refuse les actions qui exécuteraient du code sur le serveur, enverraient des e-mails ou bloqueraient les autres visiteurs.",
-        "cause": "DEMO_MODE=true dans l'environnement du serveur.",
-        "fix": "Rien à corriger sur une démo. Sur votre propre installation, laissez DEMO_MODE non défini."
-      },
       "XEC-API-4150": {
         "msg": "Requête compressée refusée",
         "desc": "Le corps de la requête a été envoyé compressé (gzip, deflate ou Brotli). L'API n'accepte que des corps non compressés, afin que des données compressées ne soient jamais décompressées.",
