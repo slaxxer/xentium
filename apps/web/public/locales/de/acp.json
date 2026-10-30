@@ -5410,6 +5410,14 @@
               "md": "Mittel",
               "lg": "Groß"
             }
+          },
+          "align": {
+            "title": "Spalten ausrichten",
+            "enum": {
+              "start": "Oben",
+              "center": "Mitte",
+              "end": "Unten"
+            }
           }
         }
       },

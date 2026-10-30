@@ -1151,6 +1151,8 @@ export const blockPropSchemas = {
    */
   columns: z.object({
     gap: z.enum(['sm', 'md', 'lg']).default('md'),
+    /** Where tracks of different heights line up: a hero's text beside a shorter panel. */
+    align: z.enum(['start', 'center', 'end']).default('start'),
   }),
 
   /**

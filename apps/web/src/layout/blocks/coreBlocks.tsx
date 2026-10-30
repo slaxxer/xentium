@@ -101,7 +101,7 @@ registerBlock({
     // tracks up to four, and a document can arrive from an imported theme.
     const tracks = Math.min(Math.max(Children.count(children), 1), 4);
     return (
-      <div className={`xt-columns xt-columns--${tracks} xt-columns--gap-${props.gap}`}>
+      <div className={`xt-columns xt-columns--${tracks} xt-columns--gap-${props.gap}${props.align && props.align !== "start" ? ` xt-columns--align-${props.align}` : ""}`}>
         {children}
       </div>
     );

@@ -5410,6 +5410,14 @@
               "md": "Médio",
               "lg": "Grande"
             }
+          },
+          "align": {
+            "title": "Alinhar colunas",
+            "enum": {
+              "start": "Topo",
+              "center": "Centro",
+              "end": "Fundo"
+            }
           }
         }
       },

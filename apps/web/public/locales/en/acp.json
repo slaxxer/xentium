@@ -5410,6 +5410,14 @@
               "md": "Medium",
               "lg": "Large"
             }
+          },
+          "align": {
+            "title": "Line up tracks",
+            "enum": {
+              "start": "Top",
+              "center": "Centre",
+              "end": "Bottom"
+            }
           }
         }
       },

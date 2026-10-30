@@ -5410,6 +5410,14 @@
               "md": "Mediana",
               "lg": "Grande"
             }
+          },
+          "align": {
+            "title": "Alinear columnas",
+            "enum": {
+              "start": "Arriba",
+              "center": "Centro",
+              "end": "Abajo"
+            }
           }
         }
       },

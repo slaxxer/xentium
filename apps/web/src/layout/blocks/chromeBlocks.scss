@@ -40,7 +40,9 @@
   --xt-header-shade:         linear-gradient(180deg, rgba(20, 22, 42, 0.10) 0%, rgba(20, 22, 42, 0.55) 100%);
   /* The masthead content's colours: hairlines, the accent text, the main button. */
   --xt-header-line:          rgba(255, 255, 255, 0.24);
-  --xt-header-accent:        var(--c-accent-soft);
+  /* A light tint of the site's accent, SOLID. Not --c-accent-soft: a theme may make
+     that a translucent wash (Xentium Dark does), which vanished on the band. */
+  --xt-header-accent:        color-mix(in srgb, var(--c-accent) 30%, #ffffff);
   --xt-header-btn-bg:        #ffffff;
   --xt-header-btn-fg:        var(--masthead-from);
 

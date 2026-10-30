@@ -236,6 +236,9 @@
   &--gap-md { gap: var(--sp-6); }
   &--gap-lg { gap: var(--sp-10); }
 
+  &--align-center { align-items: center; }
+  &--align-end    { align-items: flex-end; }
+
   /* Collapse stays INTRINSIC — never an admin knob. Wrapping happens on its own
      once a weighted track hits its floor, and below the phone breakpoint the row
      becomes a stack outright. This replaces a per-count media-query matrix, which
