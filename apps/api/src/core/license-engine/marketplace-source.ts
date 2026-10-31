@@ -114,6 +114,9 @@ export interface OwnedLicense {
     name:             string;
     vendor:           string;
     summary:          string | null;
+    /** The listing's icon-picker name and tint. Optional: an older store sends neither. */
+    icon?:            string | null;
+    accentColor?:     string | null;
     latestVersion:    string | null;
     latestReleasedAt: string | null;
   };

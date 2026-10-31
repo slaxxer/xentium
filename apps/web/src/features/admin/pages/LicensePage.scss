@@ -165,7 +165,9 @@
 
 .lic-row {
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) 120px 104px 128px 116px;
+  // The last two fit their widest German content: the state chip ("Update auf 1.0.10")
+  // and the 38px button ("Aktualisieren"), so neither runs into its neighbour.
+  grid-template-columns: minmax(200px, 1fr) 96px 112px 150px 168px;
   padding: 0 24px;
   align-items: center;
 }
@@ -197,6 +199,7 @@
 
 .lic-row__state { padding: 14px 6px; }
 .lic-row__action { padding: 14px 6px; display: flex; justify-content: flex-end; }
+.lic-row__action > button { white-space: nowrap; }
 
 .lic-chip {
   display: inline-flex; align-items: center; gap: 5px;
