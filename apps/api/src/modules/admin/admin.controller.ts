@@ -562,7 +562,10 @@ export const adminController = {
     // ACP used to filter the fetched page in memory, which made a plugin past
     // the first page unfindable by its own name.
     const opts = marketplaceListQuerySchema.parse(req.query);
-    res.json(await marketplaceService.listPlugins(opts));
+    // Listing texts in the admin's own language, as their ACP sends it on every call.
+    const locale = z.string().regex(/^[a-z]{2}(-[A-Za-z]{2,4})?$/).optional().catch(undefined)
+      .parse(req.header("x-xentium-locale"));
+    res.json(await marketplaceService.listPlugins({ ...opts, ...(locale ? { locale } : {}) }));
   }) as RequestHandler,
 
   getMarketplaceConnection: (async (_req, res) => {
