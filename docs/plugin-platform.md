@@ -486,8 +486,10 @@ until it answers, and an account tab opened by its link waits for the answer.
 
 **A count in the ACP menu.** `registerAcpBadge({ id, path, count })` puts a number beside
 one of your ACP pages (the `path` you gave `registerAcpPage`) while `count()` answers more
-than zero, and a dot on your section's icon in the rail. It is asked every minute while the
-ACP is open, so keep it cheap, and answer 0 for an admin it doesn't concern.
+than zero, a dot on your section's icon in the rail, and the same dot on the gear in the
+site's header, so an admin browsing the site sees it too. It is asked every minute while an
+admin has the site or the ACP open, so keep it cheap, and answer 0 for an admin it doesn't
+concern.
 
 **Your field on the sign-up form.** `registerRegistrationField` puts a field of yours on the
 sign-up form. Its value travels as `addons["<your id>"]` to your `registration.validate`
