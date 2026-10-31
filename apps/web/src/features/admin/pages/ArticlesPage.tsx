@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useSearchParams } from "react-router-dom";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
+import { faClockRotateLeft,
   faPlus, faMagnifyingGlass, faPen, faArrowUpRightFromSquare, faEllipsis, faEye, faThumbsUp, faComment,
   faThumbtack, faCommentSlash, faEyeSlash, faRotateLeft, faCheck, faTrashCan, faClock,
 } from "@fortawesome/free-solid-svg-icons";
@@ -22,6 +22,7 @@ import { userCan } from "../../../lib/authStore";
 import { useAuth } from "../../../hooks/useAuth";
 import { useDismiss } from "../nav/useDismiss";
 import { ArticleCategoriesView, flattenCategories, type CategoryNode } from "./ArticleCategoriesView";
+import { ArticleHistoryDialog } from "./ArticleHistoryDialog";
 // The overview tiles, filter box and chips are the Moderation Log's.
 import "./ModLogPage.scss";
 import "./ArticlesPage.scss";
@@ -326,6 +327,7 @@ function ArticleRow({ a, selected, can, busy, onSelect, onAct, onPublish, onDraf
 }) {
   const { t } = useTranslation("acp");
   const [menu, setMenu] = useState(false);
+  const [history, setHistory] = useState(false);
   const close = useCallback(() => setMenu(false), []);
   const ref = useDismiss<HTMLDivElement>(menu, close);
   const pick = (fn: () => void) => () => { setMenu(false); fn(); };
@@ -343,6 +345,7 @@ function ArticleRow({ a, selected, can, busy, onSelect, onAct, onPublish, onDraf
       run: () => onAct(() => api.post(`/articles/${a.id}/hidden`, { hidden: !a.hidden }), t(a.hidden ? "articles.toastShown" : "articles.toastHidden")) },
     !published && can(CorePermissions.ARTICLE_PUBLISH) && { icon: faCheck, label: t("articles.publish"), run: onPublish },
     a.status !== "draft" && can(CorePermissions.ARTICLE_EDIT_ANY) && { icon: faRotateLeft, label: t("articles.toDraft"), run: onDraft },
+    (can(CorePermissions.ARTICLE_REVISIONS_VIEW) || can(CorePermissions.ARTICLE_EDIT_ANY)) && { icon: faClockRotateLeft, label: t("articles.history.menu"), run: () => setHistory(true) },
   ].filter(Boolean) as { icon: typeof faPen; label: string; run: () => void }[];
 
   return (
@@ -405,6 +408,7 @@ function ArticleRow({ a, selected, can, busy, onSelect, onAct, onPublish, onDraf
           </div>
         )}
       </div>
+      {history && <ArticleHistoryDialog articleId={a.id} title={a.title} onClose={() => setHistory(false)} />}
     </div>
   );
 }

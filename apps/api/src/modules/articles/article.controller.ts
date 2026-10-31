@@ -7,7 +7,7 @@ import { articleService } from "./article.service.js";
 import { trackArticleView } from "./article.views.js";
 import { getSetting } from "../../shared/utils/settings.js";
 import {
-  articleIdParamSchema,
+  articleIdParamSchema, articleRevisionParamSchema,
   articleSlugParamSchema,
   createArticleSchema,
   listArticlesQuerySchema,
@@ -140,10 +140,16 @@ export const articlesController = {
     const { id } = articleIdParamSchema.parse(req.params);
     const viewerId = req.userId!;
     const perms = await viewerPerms(viewerId);
-    const canEditAny = perms.has(CorePermissions.ARTICLE_EDIT_ANY);
-    const revisions = await articleService.listRevisions(id, viewerId, canEditAny);
+    // Anyone's history: who may edit any article, or who holds the history right alone.
+    const canSeeAny = perms.has(CorePermissions.ARTICLE_EDIT_ANY) || perms.has(CorePermissions.ARTICLE_REVISIONS_VIEW);
+    const revisions = await articleService.listRevisions(id, viewerId, canSeeAny);
     res.json(revisions);
   }),
+
+  restoreRevision: (async (req, res) => {
+    const { id, revisionId } = articleRevisionParamSchema.parse(req.params);
+    res.json(await articleService.restoreRevision(id, revisionId, req.userId!));
+  }) as RequestHandler,
 
   registerView: (async (req, res) => {
     const { id } = articleIdParamSchema.parse(req.params);

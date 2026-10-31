@@ -567,6 +567,36 @@ export const articleService = {
     return articleRepository.listRevisions(articleId);
   },
 
+  /**
+   * Put an earlier version back: its title and body become the article's again,
+   * through the normal update (validation, embeds, a new version of its own). The
+   * current text is kept as a version first when it isn't one already, so a
+   * restore can itself be undone from the same list.
+   */
+  async restoreRevision(articleId: string, revisionId: string, viewerId: string): Promise<ArticleDetail> {
+    const revision = await prisma.articleRevision.findFirst({ where: { id: revisionId, articleId } });
+    if (!revision) {
+      throw new XentiumError({ code: XEC.ARTICLE_NOT_FOUND, httpStatus: 404, message: "Version not found" });
+    }
+    const article = await articleRepository.findById(articleId);
+    if (!article || article.deletedAt) {
+      throw new XentiumError({ code: XEC.ARTICLE_NOT_FOUND, httpStatus: 404, message: "Article not found" });
+    }
+    const newest = await prisma.articleRevision.findFirst({ where: { articleId }, orderBy: { createdAt: "desc" } });
+    const sameAsNewest = newest && newest.title === article.title
+      && JSON.stringify(newest.body) === JSON.stringify(article.body);
+    if (!sameAsNewest) {
+      await prisma.articleRevision.create({
+        data: { articleId, authorId: viewerId, title: article.title, body: article.body as Prisma.InputJsonValue },
+      });
+    }
+    // The restore permission is the authority here, whoever wrote the article.
+    return this.update(articleId, viewerId, true, {
+      title: revision.title,
+      body: revision.body as UpdateArticleInput["body"],
+    });
+  },
+
   async setFeaturedImage(
     articleId: string,
     relPath: string,

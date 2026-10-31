@@ -58,6 +58,12 @@ articlesRouter.post("/:id/unpublish", requireAuth, articlesController.unpublish)
 articlesRouter.delete("/:id", requireAuth, articlesController.remove);
 
 articlesRouter.get("/:id/revisions", requireAuth, articlesController.listRevisions);
+articlesRouter.post(
+  "/:id/revisions/:revisionId/restore",
+  requireAuth,
+  requirePermission(CorePermissions.ARTICLE_REVISIONS_RESTORE),
+  articlesController.restoreRevision,
+);
 
 // View tracking — public endpoint, deduped per IP server-side
 articlesRouter.post("/:id/view", articlesController.registerView);

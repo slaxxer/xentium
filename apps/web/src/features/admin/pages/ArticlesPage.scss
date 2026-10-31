@@ -294,3 +294,28 @@
     input { accent-color: var(--c-accent); }
   }
 }
+
+/* Version history (ArticleHistoryDialog.tsx) */
+.acp-modal.arh { width: min(720px, calc(100vw - 32px)); max-height: calc(100vh - 64px); display: flex; flex-direction: column; }
+.arh__title { display: flex; align-items: center; gap: 10px; margin: 0 0 6px; font-size: var(--fs-lg); }
+.arh__lede { margin: 0 0 16px; color: var(--c-fg-muted); font-size: var(--fs-sm); }
+.arh__list { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+.arh__empty { color: var(--c-fg-muted); font-size: var(--fs-sm); }
+.arh__row {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 12px 14px;
+  border: 1px solid var(--c-border); border-radius: var(--radius-md); background: var(--c-bg);
+  &.is-newest { border-color: var(--c-accent); }
+  > button { flex: none; }
+}
+.arh__text { flex: 1 1 260px; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.arh__meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: var(--fs-sm); color: var(--c-fg-muted); b { color: var(--c-fg); } }
+.arh__vtitle { font-weight: 600; color: var(--c-fg); }
+.arh__preview { font-size: var(--fs-sm); color: var(--c-fg-muted); overflow-wrap: anywhere; }
+/* The question takes its own line under the version, so the text keeps its width. */
+.arh__ask {
+  flex: 1 0 100%; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end;
+  padding-top: 10px; border-top: 1px solid var(--c-border);
+  span { font-size: var(--fs-sm); margin-right: auto; }
+}
+.arh__foot { display: flex; justify-content: flex-end; margin-top: 16px; }
+@media (max-width: 560px) { .arh__row { flex-direction: column; align-items: stretch; } }
