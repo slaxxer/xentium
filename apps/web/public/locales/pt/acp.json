@@ -2442,10 +2442,8 @@
     "rowInstalled": "Já instalado",
     "yes": "Sim",
     "no": "Não",
-    "yesUpdate": "Sim — atualização",
     "none": "Nenhuma",
     "migrationsCount": "{{count}} migração(ões)",
-    "alreadyWarning": "Este plugin já está instalado. A instalação será rejeitada — desinstale-o primeiro.",
     "installBtn": "Instalar plugin",
     "installing": "Instalando…",
     "back": "Voltar",
@@ -2466,7 +2464,14 @@
     "sideMarketLink": "Abrir o Marketplace",
     "disabledTitle": "Os envios manuais estão desativados",
     "disabledHint": "Os plugins são instalados pelo marketplace por padrão. Um administrador pode ativar os envios manuais de .xtplugin na página Instalados.",
-    "disabledGoMarketplace": "Explorar o marketplace"
+    "disabledGoMarketplace": "Explorar o marketplace",
+    "installedVersion": "Sim, v{{version}}",
+    "updateNote": "Está instalada a v{{from}}. Atualizar para a v{{to}} mantém os dados e as definições, executa só as migrações novas e deixa-o ligado ou desligado como está.",
+    "notNewer": "A v{{version}} está instalada e este pacote não é mais recente. As atualizações só vão para a frente.",
+    "updateBtn": "Atualizar para v{{version}}",
+    "updating": "A atualizar…",
+    "doneUpdatedTitle": "Plugin atualizado",
+    "doneUpdatedText": "A nova versão está instalada, com os dados mantidos."
   },
   "marketplace": {
     "notConnected": "Nenhuma conta do marketplace conectada. Conecte-a na página <0>Licença</0> para instalar plugins licenciados.",

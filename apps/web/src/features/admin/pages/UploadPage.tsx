@@ -33,6 +33,9 @@ interface ValidationResult {
   permissions:      string[];
   migrations:       string[];
   alreadyInstalled: boolean;
+  installedVersion: string | null;
+  /** Installed and this build is newer: the upload updates it. */
+  newer:            boolean | null;
 }
 
 function StatusRow({ label, value, ok }: { label: string; value: string; ok: boolean }) {
@@ -76,14 +79,16 @@ export function UploadPage() {
     },
   });
 
+  const [updated, setUpdated] = useState(false);
   const installMut = useMutation({
     mutationFn: () => {
       const fd = new FormData();
       fd.append("file", file!);
-      return withMinDelay(api.post("/plugins/upload", fd));
+      return withMinDelay(api.post<{ updated?: boolean }>("/plugins/upload", fd));
     },
-    onSuccess: () => {
+    onSuccess: (r: { updated?: boolean }) => {
       qc.invalidateQueries({ queryKey: ["acp-installed-plugins"] });
+      setUpdated(!!r?.updated);
       setStep(2);
     },
     onError: (e: any) => {
@@ -99,6 +104,7 @@ export function UploadPage() {
   };
 
   const busy = validateMut.isPending || installMut.isPending;
+  const tone = result?.newer ? "var(--c-accent)" : "var(--c-warn)";
   const processingLabel = validateMut.isPending
     ? t("upload.processingValidate")
     : t("upload.processingInstall");
@@ -217,19 +223,23 @@ export function UploadPage() {
             <StatusRow label={t("upload.rowLicense")}     value={result.licenseRequired ? t("upload.yes") : t("upload.no")} ok={!result.licenseRequired} />
             <StatusRow label={t("upload.rowPermissions")} value={result.permissions.length ? result.permissions.join(", ") : t("upload.none")} ok={true} />
             <StatusRow label={t("upload.rowMigrations")}  value={result.migrations.length ? t("upload.migrationsCount", { count: result.migrations.length }) : t("upload.none")} ok={true} />
-            <StatusRow label={t("upload.rowInstalled")}   value={result.alreadyInstalled ? t("upload.yesUpdate") : t("upload.no")} ok={!result.alreadyInstalled} />
+            <StatusRow label={t("upload.rowInstalled")}
+              value={result.alreadyInstalled ? t("upload.installedVersion", { version: result.installedVersion }) : t("upload.no")}
+              ok={!result.alreadyInstalled || !!result.newer} />
 
             {result.alreadyInstalled && (
-              <div style={{ marginTop:12, padding:"10px 14px", background:"color-mix(in srgb, var(--c-warn) 10%, transparent)", border:"1px solid color-mix(in srgb, var(--c-warn) 30%, transparent)", borderRadius:"var(--radius-sm)", fontSize:"var(--fs-sm)", color:"var(--c-warn)" }}>
-                {t("upload.alreadyWarning")}
+              <div style={{ marginTop:12, padding:"10px 14px", background:`color-mix(in srgb, ${tone} 10%, transparent)`, border:`1px solid color-mix(in srgb, ${tone} 30%, transparent)`, borderRadius:"var(--radius-sm)", fontSize:"var(--fs-sm)", color:tone }}>
+                {result.newer
+                  ? t("upload.updateNote", { from: result.installedVersion, to: result.version })
+                  : t("upload.notNewer", { version: result.installedVersion })}
               </div>
             )}
 
             <div style={{ marginTop:20, display:"flex", gap:8 }}>
-              <Button onClick={() => installMut.mutate()} disabled={installMut.isPending || result.alreadyInstalled}>
+              <Button onClick={() => installMut.mutate()} disabled={installMut.isPending || (result.alreadyInstalled && !result.newer)}>
                 {installMut.isPending
-                  ? <><span className="plugin-spinner plugin-spinner--sm" />{t("upload.installing")}</>
-                  : t("upload.installBtn")}
+                  ? <><span className="plugin-spinner plugin-spinner--sm" />{t(result.alreadyInstalled ? "upload.updating" : "upload.installing")}</>
+                  : result.alreadyInstalled ? t("upload.updateBtn", { version: result.version }) : t("upload.installBtn")}
               </Button>
               <Button variant="ghost" onClick={() => { setStep(0); setError(null); }}>{t("upload.back")}</Button>
             </div>
@@ -240,9 +250,9 @@ export function UploadPage() {
         {step === 2 && (
           <div style={{ textAlign:"center", padding:"20px 0" }}>
             <FontAwesomeIcon icon={faCheck} style={{ fontSize:"3rem", color:"var(--c-success)", marginBottom:16 }} />
-            <div style={{ fontSize:"var(--fs-lg)", fontWeight:800, color:"var(--c-fg)", marginBottom:8 }}>{t("upload.doneTitle")}</div>
+            <div style={{ fontSize:"var(--fs-lg)", fontWeight:800, color:"var(--c-fg)", marginBottom:8 }}>{t(updated ? "upload.doneUpdatedTitle" : "upload.doneTitle")}</div>
             <p style={{ fontSize:"var(--fs-md)", color:"var(--c-fg-muted)", marginBottom:24 }}>
-              {t("upload.doneText")}
+              {t(updated ? "upload.doneUpdatedText" : "upload.doneText")}
             </p>
             <Button onClick={() => navigate("/admin/installed")}>
               {t("upload.goInstalled")}
