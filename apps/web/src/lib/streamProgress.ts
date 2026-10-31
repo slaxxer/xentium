@@ -71,7 +71,13 @@ export async function runStreamedJob(
 
   try {
     const res = await apiStream(path, body);
-    if (!res.ok || !res.body) throw new Error(`http_${res.status}`);
+    if (!res.ok || !res.body) {
+      // Refused before it started (no permission, the code prompt dismissed): the
+      // server's own sentence, not "http_403".
+      const detail = await Promise.resolve().then(() => res.json()).catch(() => null) as { error?: { message?: string } } | null;
+      const message = detail?.error?.message;
+      throw new Error(message ?? `http_${res.status}`);
+    }
 
     const reader = res.body.getReader();
     const decoder = new TextDecoder();

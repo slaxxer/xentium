@@ -79,6 +79,28 @@
   }
   &__ic { display: inline-flex; opacity: .9; }
   &__chev { opacity: .6; }
+  // Some page in this section has an add-on count (the same rule as the rail's dot).
+  &__dot {
+    width: 8px;
+    height: 8px;
+    margin-left: -2px;
+    border-radius: 50%;
+    background: var(--c-danger);
+  }
+  // The count itself, beside its page in the dropdown and the context strip.
+  &__count {
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    border-radius: 999px;
+    display: inline-grid;
+    place-items: center;
+    font-size: var(--fs-2xs);
+    font-weight: 700;
+    line-height: 1;
+    background: var(--c-danger);
+    color: var(--c-on-accent, #fff);
+  }
   &__cell.is-open &__chev { transform: rotate(180deg); }
 
   &__drop {
@@ -138,6 +160,9 @@
   &__div { width: 1px; height: 18px; background: var(--c-border); }
   &__tabs { display: flex; align-items: center; gap: 2px; overflow-x: auto; flex: 1; }
   &__tab {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2);
     padding: 6px 12px;
     border-radius: var(--radius-sm);
     color: var(--c-fg-muted);

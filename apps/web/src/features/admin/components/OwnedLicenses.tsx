@@ -13,6 +13,8 @@ import { themeInstallMessage } from "../hooks/themeInstallResult";
 import { offerThemeSwitch, outcomeFromStream } from "../hooks/themeSwitchPrompt";
 import { siteTime } from "../../../lib/datetime";
 import { Button } from "../../../components/AcpControls";
+import { bundledIcon } from "../../../lib/iconCatalogue";
+import { parseIconToken } from "@xentium/contracts";
 
 /**
  * What this site's marketplace account owns, and where each licence stands here.
@@ -44,8 +46,17 @@ export interface OwnedLicense {
     name:          string;
     vendor:        string;
     summary:       string | null;
+    /** The listing's icon-picker name and tint; an older store sends neither. */
+    icon?:         string | null;
+    accentColor?:  string | null;
     latestVersion: string | null;
   };
+}
+
+/** The product's own icon when this site can draw it, else the kind's generic one. */
+export function productGlyph(p: OwnedLicense["product"]) {
+  const token = p.icon ? parseIconToken(p.icon) : null;
+  return (token && bundledIcon(token.name)) ?? (p.kind === "theme" ? faPalette : faPuzzlePiece);
 }
 
 const fmtDate = (iso: string) => siteTime.date(iso);
@@ -238,7 +249,8 @@ export function OwnedLicenses({
                 <div className="lic-row__product">
                   <FontAwesomeIcon
                     className="lic-row__kind"
-                    icon={l.product.kind === "theme" ? faPalette : faPuzzlePiece}
+                    icon={productGlyph(l.product)}
+                    style={l.product.accentColor ? { color: l.product.accentColor } : undefined}
                   />
                   <div style={{ minWidth: 0 }}>
                     <div className="lic-row__name">{l.product.name}</div>
@@ -274,15 +286,14 @@ export function OwnedLicenses({
                       <div className="lic-progress__phase">{progress!.phase}</div>
                     </div>
                   ) : (
-                    <button
-                      type="button"
-                      className={`${action.primary ? "btn-primary" : "btn-ghost"} btn-sm`}
+                    <Button
+                      variant={action.primary ? "primary" : "ghost"}
+                      icon={action.icon}
                       disabled={!!action.disabled || installMut.isPending || (action.primary && !l.product.latestVersion)}
                       onClick={action.run}
                     >
-                      <FontAwesomeIcon icon={action.icon} style={{ marginRight: 6 }} />
                       {action.label}
-                    </button>
+                    </Button>
                   )}
                 </div>
               </div>

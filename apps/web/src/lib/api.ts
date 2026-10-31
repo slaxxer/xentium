@@ -165,19 +165,34 @@ export async function apiStream(path: string, body: unknown): Promise<Response> 
   // server splits on. Setting the header ourselves would overwrite it with one
   // that has no boundary, and every field would arrive unparsed.
   const isForm = body instanceof FormData;
-  const build = (token: string | null): RequestInit => ({
+  const build = (token: string | null, otp?: string): RequestInit => ({
     method: "POST",
     headers: {
       ...(isForm ? {} : { "Content-Type": "application/json" }),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(otp ? { "X-Xentium-OTP": otp } : {}),
     },
     credentials: "include",
     body: isForm ? body : JSON.stringify(body),
   });
+  let otp: string | undefined;
   let res = await fetch(`${BASE}${path}`, build(authStore.token));
   if (res.status === 401 && authStore.token) {
     const newToken = await tryRefresh();
     if (newToken) res = await fetch(`${BASE}${path}`, build(newToken));
+  }
+  // The same step-up as `request`: installs and updates stream, but they are also
+  // the actions that want a fresh authenticator code. A refusal arrives as a plain
+  // JSON error before any streaming starts, so it can be read and the request sent
+  // again with the code.
+  for (let tries = 0; res.status === 403 && tries < STEP_UP_TRIES; tries++) {
+    const code = (await res.clone().json().catch(() => null) as { error?: { code?: string } } | null)?.error?.code;
+    const askAgain = !!otp && !!code && STEP_UP_RETRYABLE.has(code);
+    if (code !== "XEC-AUTH-1075" && !askAgain) break;
+    const entered = await requestStepUpCode(askAgain ? code! : null);
+    if (!entered) break;
+    otp = entered;
+    res = await fetch(`${BASE}${path}`, build(authStore.token, otp));
   }
   return res;
 }

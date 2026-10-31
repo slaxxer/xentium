@@ -403,6 +403,66 @@ shield. Return only what this moderator may act on; a failed fetch counts as emp
 `registerModCanvasSection` (a panel in a dialog) still works, but use a queue for
 lists of decisions.
 
+### Telling admins something is waiting (`slotRegistry.registerAcpBadge`)
+
+When one of your ACP pages has work waiting for an admin (an order to check, an
+application to decide), give that page a badge. While its count is above zero, admins see:
+
+- the number beside your page in the ACP menu, in the side menu and in the top menu's
+  dropdown and section tabs,
+- a dot on your section in the ACP, so they can find the page from anywhere in it,
+- a dot on the gear in the site's header, so they notice it while browsing the site.
+
+```ts
+import { slotRegistry } from "@web/plugins/slotRegistry";
+import { api } from "@web/lib/api";
+import { authStore, userCan } from "@web/lib/authStore";
+
+slotRegistry.registerAcpBadge?.({
+  id: "my-plugin.orders",
+  path: "/admin/my-plugin/orders",              // the path you gave registerAcpPage
+  count: async () => userCan(authStore.user, "myplugin.orders.manage")
+    ? (await api.get<{ count: number }>("/p/my-plugin/admin/orders/waiting")).count
+    : 0,
+});
+```
+
+```ts
+// server: one cheap count, behind the same permission as the page
+const { requireAuth, requirePermission } = ctx.host.middleware;
+router.get("/admin/orders/waiting", requireAuth, requirePermission("myplugin.orders.manage"),
+  async (_req, res) => {
+    const [{ n }] = await ctx.host.prisma.$queryRaw<{ n: number }[]>`
+      SELECT count(*)::int AS n FROM myplugin_orders WHERE status = 'pending'`;
+    res.json({ count: n });
+  });
+```
+
+A few rules make the badge worth trusting:
+
+- **Count only what needs an admin to act.** "New since you last looked" is not a badge;
+  it never goes away on its own and admins learn to ignore it.
+- **Make every item resolvable on that page.** The badge lasts as long as the count. If
+  something can wait forever (an order nobody pays), give the page a way to close it, or
+  the dot never clears.
+- **Keep `count()` cheap.** It's asked once a minute while an admin has the site or the
+  ACP open. Return a number from one query, not the list.
+- **Answer 0 for admins it doesn't concern**, and check the permission on the server
+  too: the badge is a hint, the endpoint is the access control. A `count()` that throws
+  counts as 0.
+- **Several badges on one page add up**, so you can count two kinds of work separately.
+
+Keep the `?.` in `registerAcpBadge?.(…)` if your plugin should still load on a
+pre-release core from before 1.0.0-rc.1, which had no ACP badges.
+
+**Which hook for which notice:**
+
+| Who has to do something | Use |
+|---|---|
+| An admin, on one of your ACP pages | `registerAcpBadge` |
+| A moderator, deciding items one by one | `registerModQueue` (the shield) |
+| One member, about their own things | `ctx.notify` (the bell, and email if they want it) |
+
 ## Errors and notifications
 
 ### `registerNecCodes(codes)`

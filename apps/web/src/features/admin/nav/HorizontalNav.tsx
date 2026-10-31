@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { AcpIcon, navIcon } from "../pages/acpIcons";
 import { XentiumMark } from "../../../components/XentiumMark";
 import { activeChild, childMatches, type NavItem } from "../useAcpNav";
+import { sectionHasBadge, useAcpBadgeCounts } from "./acpBadges";
 
 // Two-tier horizontal ACP nav (the redesign default). Tier 1 = brand + primary
 // menu (groups open a dropdown of their pages; leaf items navigate directly).
@@ -28,8 +29,16 @@ function isItemActive(item: NavItem, path: string): boolean {
   return !!item.children?.some((c) => childMatches(c, path));
 }
 
-function PrimaryCell({ item, active, openKey, setOpenKey }: {
+/** An add-on's count beside one of its pages (registerAcpBadge), as the side panel shows it. */
+function Count({ n }: { n: number }) {
+  const { t } = useTranslation("acp");
+  if (n <= 0) return null;
+  return <span className="hnav__count" aria-label={t("nav.waiting", { count: n })}>{n > 99 ? "99+" : n}</span>;
+}
+
+function PrimaryCell({ item, active, openKey, setOpenKey, counts }: {
   item: NavItem; active: boolean; openKey: string | null; setOpenKey: (k: string | null) => void;
+  counts: Map<string, number>;
 }) {
   const { t } = useTranslation("acp");
   const id = item.key ?? item.to ?? item.label;
@@ -42,6 +51,7 @@ function PrimaryCell({ item, active, openKey, setOpenKey }: {
       <Link to={item.to!} className={`hnav__item${active ? " is-section" : ""}`}>
         <span className="hnav__ic">{navIcon(item, active)}</span>
         <span className="hnav__lbl">{t(item.label)}</span>
+        {sectionHasBadge(item, counts) && <span className="hnav__dot" aria-hidden="true" />}
       </Link>
     );
   }
@@ -51,6 +61,7 @@ function PrimaryCell({ item, active, openKey, setOpenKey }: {
       <button type="button" className={`hnav__item${active ? " is-section" : ""}`} onClick={() => setOpenKey(isOpen ? null : id)}>
         <span className="hnav__ic">{navIcon(item, active)}</span>
         <span className="hnav__lbl">{t(item.label)}</span>
+        {sectionHasBadge(item, counts) && <span className="hnav__dot" aria-hidden="true" />}
         <AcpIcon name="chevron" size={13} className="hnav__chev" />
       </button>
       {isOpen && (
@@ -62,6 +73,7 @@ function PrimaryCell({ item, active, openKey, setOpenKey }: {
               <Link key={c.to} to={c.to} className={`hnav__dropitem${act ? " is-active" : ""}`} onClick={() => setOpenKey(null)}>
                 <span className="hnav__dropic">{navIcon(item)}</span>
                 <b>{t(c.label)}</b>
+                <Count n={counts.get(c.to) ?? 0} />
                 {act && <AcpIcon name="check" size={15} className="hnav__dropmark" />}
               </Link>
             );
@@ -76,6 +88,7 @@ export function HorizontalNav({ nav }: { nav: NavItem[] }) {
   const { t } = useTranslation("acp");
   const path = useLocation().pathname;
   const [openKey, setOpenKey] = useState<string | null>(null);
+  const counts = useAcpBadgeCounts();
 
   const section = nav.find((n) => isItemActive(n, path)) ?? nav[0];
 
@@ -98,6 +111,7 @@ export function HorizontalNav({ nav }: { nav: NavItem[] }) {
               active={section === item}
               openKey={openKey}
               setOpenKey={setOpenKey}
+              counts={counts}
             />
           ))}
         </nav>
@@ -116,6 +130,7 @@ export function HorizontalNav({ nav }: { nav: NavItem[] }) {
               return (
                 <Link key={c.to} to={c.to} className={`hctx__tab${act ? " is-active" : ""}`}>
                   {t(c.label)}
+                  <Count n={counts.get(c.to) ?? 0} />
                 </Link>
               );
             })}
