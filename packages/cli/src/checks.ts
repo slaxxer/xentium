@@ -411,13 +411,14 @@ export async function checkSystemd(): Promise<Check> {
     return warn("systemd", "Service manager", "systemctl not found — Xentium will run in the foreground");
   }
   if (process.getuid?.() === 0) return ok("systemd", "Service manager", "systemd (running as root)");
-  if (await run("sudo", ["-n", "true"])) return ok("systemd", "Service manager", "systemd, with passwordless sudo");
+  // `sudo -n true` prints nothing when it works, so success is "not null", not truthy.
+  if (await run("sudo", ["-n", "true"]) !== null) return ok("systemd", "Service manager", "systemd, with passwordless sudo");
   return warn("systemd", "Service manager", "systemd is there, but sudo will ask for a password when the units are installed");
 }
 
 export async function checkNginx(): Promise<Check> {
-  const version = await run("nginx", ["-v"]);
-  if (version) return ok("nginx", "nginx", "installed — we can write a site config for you");
+  // `nginx -v` writes its version to stderr: an empty stdout still means it ran.
+  if (await run("nginx", ["-v"]) !== null) return ok("nginx", "nginx", "installed — we can write a site config for you");
   return ok("nginx", "nginx", "not installed (optional; you can put any reverse proxy in front)");
 }
 
