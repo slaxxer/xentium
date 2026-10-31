@@ -49,6 +49,9 @@ export interface MarketplaceListQuery extends PaginatedRequest {
    *  Marketplace page opened on plugins for its whole life, and a missing
    *  parameter must not silently start mixing themes into that grid. */
   kind?: ProductKind;
+  /** The admin's language: the store answers with listing texts in it where it has
+   *  them, English otherwise. An older store ignores it. */
+  locale?: string;
 }
 
 /**
@@ -316,7 +319,7 @@ class XentiumMarketplaceSource implements MarketplaceSource {
    */
   async listPlugins(opts: MarketplaceListQuery): Promise<PaginatedResponse<MarketplaceListing>> {
     const page = await this.fetchCatalogPage({
-      page: opts.page, limit: opts.limit, q: opts.q, kind: opts.kind ?? "plugin",
+      page: opts.page, limit: opts.limit, q: opts.q, kind: opts.kind ?? "plugin", locale: opts.locale,
     });
     if (!page) {
       // Unreachable / not connected — the ACP browse list is simply blank
@@ -333,7 +336,7 @@ class XentiumMarketplaceSource implements MarketplaceSource {
    *  ACP browse list are the only two callers, and they want opposite halves of
    *  the catalogue — a default here is how theme ids would end up in the set the
    *  PLUGIN enable gate reads. */
-  private async fetchCatalogPage(q: { page: number; limit: number; q?: string; kind: ProductKind }): Promise<PaginatedResponse<MarketplaceListing> | null> {
+  private async fetchCatalogPage(q: { page: number; limit: number; q?: string; kind: ProductKind; locale?: string }): Promise<PaginatedResponse<MarketplaceListing> | null> {
     try {
       return await protocolFetch<PaginatedResponse<MarketplaceListing>>({
         method: "GET",
@@ -346,7 +349,7 @@ class XentiumMarketplaceSource implements MarketplaceSource {
         // `q` is forwarded, never filtered here. The ACP used to search the
         // FETCHED PAGE in memory, so a plugin on page 2 answered "no results"
         // for its own name — a worse bug than the truncation it rode along with.
-        query: { kind: q.kind, page: q.page, limit: q.limit, ...(q.q ? { q: q.q } : {}) },
+        query: { kind: q.kind, page: q.page, limit: q.limit, ...(q.q ? { q: q.q } : {}), ...(q.locale ? { locale: q.locale } : {}) },
       });
     } catch {
       return null;

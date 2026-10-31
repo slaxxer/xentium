@@ -917,6 +917,16 @@ export interface PluginContext extends BasePluginContext<PluginHost> {
    */
   registerSettings<S extends { _output: unknown }>(decl: PluginSettingsDeclaration<S>): PluginSettings<S["_output"]>;
 
+  /**
+   * Keep some of your routes reachable while the site is in maintenance: the ones
+   * machines call (other sites, a payment provider's webhook, a polled feed), which
+   * break rather than pause when closed. Prefixes of YOUR routes, e.g. `["/v1",
+   * "/webhooks"]` for `/api/p/<your id>/v1/…`; everything else stays closed to people
+   * as usual. Dropped on disable. Optional on cores before 1.0.0-rc.4: call it as
+   * `ctx.keepOpenDuringMaintenance?.([...])`.
+   */
+  keepOpenDuringMaintenance?(prefixes: string[]): void;
+
   /** Serve a table of yours through core's endpoints (see `PluginResourceDeclaration`). Await it in `onEnable`. */
   registerResource(decl: PluginResourceDeclaration): Promise<void>;
 

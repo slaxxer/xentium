@@ -2489,7 +2489,7 @@
     "goManage": "Installiert — verwalten",
     "install": "Installieren",
     "activateToInstall": "Zum Installieren Lizenz aktivieren",
-    "buy": "Kaufen → xentium.org",
+    "buy": "Kaufen",
     "installing": "Installiere…",
     "installSuccess": "{{name}} installiert — aktiviere es, wenn du bereit bist.",
     "installFailed": "Installation fehlgeschlagen: {{message}}",
@@ -2532,7 +2532,30 @@
     "preview": "Vorschau",
     "previewTitle": "{{name}} — Vorschau",
     "previewClose": "Schließen",
-    "previewNote": "Vom Marktplatz aus der verkauften Version gerendert — Aufbau und Farben stammen also vom Theme selbst. Blockinhalte sind Platzhalter: Was darin steht, sind deine Inhalte, gezeichnet von den Komponenten deiner Seite."
+    "previewNote": "Vom Marktplatz aus der verkauften Version gerendert — Aufbau und Farben stammen also vom Theme selbst. Blockinhalte sind Platzhalter: Was darin steht, sind deine Inhalte, gezeichnet von den Komponenten deiner Seite.",
+    "lede": "Offizielle Plugins und Themes für deine Community. Installierte Erweiterungen landen deaktiviert und werden unter „Installiert“ verwaltet.",
+    "licensedSummary": {
+      "plugin": "{{owned}} von {{total}} kostenpflichtigen Plugins lizenziert",
+      "theme": "{{owned}} von {{total}} kostenpflichtigen Themes lizenziert"
+    },
+    "showEntitlements": "Berechtigungen anzeigen",
+    "hideEntitlements": "Berechtigungen ausblenden",
+    "kindsLabel": "Plugins oder Themes",
+    "filterLabel": "Nach Status filtern",
+    "filter": {
+      "all": "Alle",
+      "enabled": "Aktiviert",
+      "available": "Verfügbar",
+      "free": "Kostenlos"
+    },
+    "licensed": "Lizenziert",
+    "enable": "Aktivieren",
+    "enabling": "Aktiviere…",
+    "enabledToast": "{{name}} ist aktiviert.",
+    "themeActive": "Aktives Theme",
+    "emptyTitle": "Nichts gefunden",
+    "emptyHint": "Anderen Suchbegriff oder Filter versuchen.",
+    "unreleased": "Noch keine Version"
   },
   "announcements": {
     "dialogNote": "Vom Xentium-Team gesendet. Mit OK wird sie für alle Admins von dieser Seite entfernt.",

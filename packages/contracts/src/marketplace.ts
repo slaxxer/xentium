@@ -35,6 +35,13 @@ export interface MarketplaceListing {
    */
   trustTier?:      "audited" | "reviewed" | "unvetted";
   category?:       string | null;
+  /** The listing's icon (an icon-picker name) and its tint, as the store shows them.
+   *  Optional: an older store sends neither. */
+  icon?:           string | null;
+  accentColor?:    string | null;
+  /** Where the listing lives in the store, for "Buy". Added by the instance, which
+   *  knows the store's address; absent from what the store itself sends. */
+  storeUrl?:       string;
   /**
    * Absolute URL of the listing's preview image, or null.
    *

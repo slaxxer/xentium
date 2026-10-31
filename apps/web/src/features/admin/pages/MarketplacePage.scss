@@ -1,0 +1,332 @@
+// ACP → Extensions → Marketplace (redesign 1b, 2026-10-31): a licence strip, one
+// toolbar (kind tabs, search, status filters), and a grid of cards that are all the
+// same height, with price on the left and the card's one action on the right of its
+// footer. Colours are tokens, so it follows the ACP's light and dark palettes.
+
+.mkt-lede {
+  margin: 8px 0 0;
+  max-width: 60ch;
+  font-size: var(--fs-sm);
+  color: var(--c-fg-muted);
+  text-wrap: pretty;
+}
+
+// ── Licence strip ────────────────────────────────────────────────────────────
+
+.mkt-lic {
+  margin-bottom: 24px;
+  overflow: hidden;
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+
+  &__row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 14px;
+    padding: 14px 16px 14px 18px;
+  }
+  &__icon {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-md);
+    background: var(--c-accent-soft);
+    color: var(--c-accent);
+    font-size: var(--fs-md);
+  }
+  &.is-off &__icon { background: var(--c-surface); color: var(--c-fg-muted); }
+  &__text { flex: 1; min-width: 200px; }
+  &__title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: var(--fs-md);
+    font-weight: 700;
+    color: var(--c-fg);
+  }
+  &__dot { width: 8px; height: 8px; border-radius: 50%; background: var(--c-success); }
+  &.is-off &__dot { background: var(--c-fg-subtle); }
+  &__sub { font-size: var(--fs-sm); color: var(--c-fg-muted); }
+  &__toggle svg { font-size: 11px; }
+  &__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 14px 18px 16px;
+    border-top: 1px solid var(--c-border);
+    background: var(--c-surface);
+  }
+  &__chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--c-border);
+    background: var(--card-bg);
+    font-size: var(--fs-xs);
+    font-weight: 600;
+    color: var(--c-fg);
+    svg { color: var(--c-success); font-size: 11px; }
+  }
+}
+
+// ── Toolbar ──────────────────────────────────────────────────────────────────
+
+.mkt-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+  &__grow { flex: 1; }
+}
+
+.mkt-kinds {
+  display: flex;
+  gap: 3px;
+  padding: 3px;
+  border-radius: var(--radius-md);
+  background: var(--c-surface);
+  button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 14px;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--c-fg-muted);
+    font: inherit;
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    cursor: pointer;
+    svg { font-size: 12px; }
+    &:hover { color: var(--c-fg); }
+    &.is-on { background: var(--card-bg); color: var(--c-accent); box-shadow: 0 0 0 1px var(--c-border); }
+  }
+  &__n { font-size: var(--fs-2xs); font-weight: 700; color: var(--c-fg-subtle); }
+}
+
+.mkt-search {
+  position: relative;
+  flex: 1;
+  min-width: 220px;
+  max-width: 380px;
+  display: flex;
+  align-items: center;
+  &__ic {
+    position: absolute;
+    left: 13px;
+    color: var(--c-fg-subtle);
+    font-size: var(--fs-sm);
+    pointer-events: none;
+  }
+  input {
+    width: 100%;
+    height: 40px;
+    padding: 0 12px 0 38px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--c-border);
+    background: var(--card-bg);
+    color: var(--c-fg);
+    font: inherit;
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    outline: none;
+    &:focus { border-color: var(--c-accent); box-shadow: 0 0 0 3px var(--c-accent-soft); }
+  }
+}
+
+.mkt-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 32px;
+    padding: 0 12px;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--c-border);
+    background: var(--card-bg);
+    color: var(--c-fg-muted);
+    font: inherit;
+    font-size: var(--fs-xs);
+    font-weight: 600;
+    cursor: pointer;
+    &:hover { color: var(--c-fg); }
+    &.is-on { background: var(--c-fg); border-color: var(--c-fg); color: var(--c-bg); }
+  }
+  &__n { font-size: var(--fs-2xs); font-weight: 700; opacity: .7; }
+}
+
+.mkt-note {
+  margin: -6px 0 18px;
+  max-width: 80ch;
+  font-size: var(--fs-sm);
+  color: var(--c-fg-subtle);
+  button {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--c-accent);
+    font: inherit;
+    font-weight: 700;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+}
+
+// ── Cards ────────────────────────────────────────────────────────────────────
+
+.mkt-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.mkt-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px;
+  overflow: hidden;
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  transition: box-shadow .15s;
+  &:hover { box-shadow: var(--shadow-card), 0 8px 24px color-mix(in srgb, var(--c-fg) 6%, transparent); }
+
+  // A theme leads with how it looks, full-bleed across the top of the card.
+  // ⚠ `max-width: none`: the app's global img rule caps images at 100%, which would
+  // clamp the bleed back to the padded box.
+  &__shot {
+    display: block;
+    width: calc(100% + 40px);
+    max-width: none;
+    margin: -20px -20px 0;
+    aspect-ratio: 16 / 10;
+    object-fit: cover;
+    background: var(--c-surface);
+    &.is-empty {
+      display: grid;
+      place-items: center;
+      border-bottom: 1px solid var(--c-border);
+      color: var(--c-fg-subtle);
+      font-size: 1.375rem;
+    }
+  }
+
+  &__head { display: flex; align-items: center; gap: 12px; }
+  &__icon {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    border-radius: var(--radius-md);
+    background: color-mix(in srgb, var(--mkt-tint, var(--c-accent)) 14%, transparent);
+    color: var(--mkt-tint, var(--c-accent));
+    font-size: var(--fs-lg);
+  }
+  &__titles { flex: 1; min-width: 0; }
+  &__name { font-size: var(--fs-md); font-weight: 700; line-height: 1.25; color: var(--c-fg); }
+  &__trust {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 2px;
+    font-size: var(--fs-2xs);
+    font-weight: 600;
+    color: var(--c-success);
+    &.is-unvetted { color: var(--c-fg-muted); }
+    svg { font-size: 11px; }
+  }
+  &__desc {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    min-height: calc(3 * 1.55em);
+    font-size: var(--fs-sm);
+    line-height: 1.55;
+    color: var(--c-fg-muted);
+  }
+  &__gaps {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    padding: 9px 11px;
+    border-radius: var(--radius-md);
+    background: color-mix(in srgb, var(--c-warn) 12%, transparent);
+    font-size: var(--fs-xs);
+    line-height: 1.5;
+    color: var(--c-fg);
+    > svg { margin-top: 2px; color: var(--c-warn); }
+    b { display: block; }
+    span { display: block; color: var(--c-fg-muted); word-break: break-word; }
+  }
+
+  &__foot {
+    margin-top: auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding-top: 14px;
+    border-top: 1px solid var(--c-border);
+  }
+  &__price { display: flex; flex-direction: column; line-height: 1.2; }
+  &__amount { font-size: var(--fs-md); font-weight: 800; color: var(--c-fg); }
+  &__per { font-size: var(--fs-xs); font-weight: 500; color: var(--c-fg-muted); }
+  &__label { font-size: var(--fs-sm); font-weight: 700; color: var(--c-fg); }
+  &__small { font-size: var(--fs-2xs); color: var(--c-fg-subtle); }
+  &__actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+  &__state {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 11px;
+    border-radius: var(--radius-pill);
+    background: color-mix(in srgb, var(--c-success) 12%, transparent);
+    color: var(--c-success);
+    font-size: var(--fs-xs);
+    font-weight: 700;
+    svg { font-size: 11px; }
+  }
+  &__busy {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 38px;
+    padding: 0 6px;
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    color: var(--c-accent);
+  }
+  &__muted { font-size: var(--fs-xs); color: var(--c-fg-subtle); }
+  // The install action is the soft accent button the design calls for.
+  .mkt-install { color: var(--c-accent); background: var(--c-accent-soft); border-color: color-mix(in srgb, var(--c-accent) 20%, transparent); }
+}
+
+.mkt-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 64px 20px;
+  border: 1px dashed var(--c-border);
+  border-radius: var(--radius-lg);
+  font-size: var(--fs-sm);
+  color: var(--c-fg-muted);
+  text-align: center;
+  > svg { font-size: 20px; color: var(--c-fg-subtle); }
+  &__title { font-size: var(--fs-md); font-weight: 700; color: var(--c-fg); }
+}

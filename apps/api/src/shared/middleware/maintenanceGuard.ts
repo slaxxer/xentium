@@ -2,6 +2,7 @@ import type { RequestHandler } from "express";
 import { XEC } from "@xentium/contracts";
 import { verifyAccess } from "../../modules/auth/auth.tokens.js";
 import { maintenanceService } from "../../modules/maintenance/maintenance.service.js";
+import { isOpenDuringMaintenance } from "../../modules/maintenance/maintenanceOpenPaths.js";
 
 // Endpoints that must stay reachable while in maintenance so the SPA can render
 // the maintenance screen and staff can sign in to bypass.
@@ -23,6 +24,8 @@ export const maintenanceGuard: RequestHandler = async (req, res, next) => {
     if (EXEMPT_PREFIXES.some((p) => req.path === p || req.path.startsWith(p + "/"))) {
       return next();
     }
+    // Routes a plugin keeps open for machines (other sites, webhooks).
+    if (isOpenDuringMaintenance(req.path)) return next();
 
     if (!(await maintenanceService.isEnabled())) return next();
 

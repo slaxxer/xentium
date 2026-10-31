@@ -15,6 +15,7 @@ import { logger } from "../../infrastructure/logging/logger.js";
 import { assertPluginEnableAllowed } from "../license-engine/license-engine.js";
 import { PluginContextImpl } from "./plugin-context.js";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
+import { clearMaintenanceOpen } from "../../modules/maintenance/maintenanceOpenPaths.js";
 import { XEC } from "../../shared/errors/xec.js";
 import { compareSemver } from "../../shared/utils/semver.js";
 import { acpPageRegistry } from "./acp-page-registry.js";
@@ -360,6 +361,7 @@ export async function enablePlugin(pluginId: string): Promise<void> {
 async function deregisterInProcess(pluginId: string): Promise<void> {
   acpPageRegistry.deregister(pluginId);
   pluginRouter.deregister(pluginId);
+  clearMaintenanceOpen(pluginId);
 
   const { homeFeedRegistry } = await import("../home-feed-registry/home-feed-registry.js");
   homeFeedRegistry.deregister(pluginId);

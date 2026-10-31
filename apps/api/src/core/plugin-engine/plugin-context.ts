@@ -27,6 +27,7 @@ import { logger } from "../../infrastructure/logging/logger.js";
 import { queues } from "../../infrastructure/queue.js";
 import { env } from "../../config/env.js";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
+import { keepOpenDuringMaintenance } from "../../modules/maintenance/maintenanceOpenPaths.js";
 import { XEC } from "../../shared/errors/xec.js";
 import { requireAuth } from "../../shared/middleware/requireAuth.js";
 import { optionalAuth } from "../../shared/middleware/optionalAuth.js";
@@ -234,6 +235,10 @@ export class PluginContextImpl implements PluginContext {
   registerRoutes(router: Router | PluginRouter): void {
     pluginRouter.register(this.pluginId, router as Router);
     logger.info({ pluginId: this.pluginId }, "Plugin routes registered");
+  }
+
+  keepOpenDuringMaintenance(prefixes: string[]): void {
+    keepOpenDuringMaintenance(this.pluginId, prefixes);
   }
 
   async registerPermissions(perms: PermissionDeclaration[]): Promise<void> {

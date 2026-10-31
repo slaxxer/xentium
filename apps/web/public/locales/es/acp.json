@@ -2489,7 +2489,7 @@
     "goManage": "Instalado — gestionar",
     "install": "Instalar",
     "activateToInstall": "Activa la licencia para instalar",
-    "buy": "Comprar → xentium.org",
+    "buy": "Comprar",
     "installing": "Instalando…",
     "installSuccess": "{{name}} instalado — actívalo cuando quieras.",
     "installFailed": "Error al instalar: {{message}}",
@@ -2532,7 +2532,30 @@
     "preview": "Vista previa",
     "previewTitle": "{{name}} — vista previa",
     "previewClose": "Cerrar",
-    "previewNote": "Renderizado por el marketplace a partir de la versión en venta, así que la disposición y los colores son los del propio tema. El interior de los bloques son marcadores: lo que va dentro es tu contenido, dibujado por los componentes de tu sitio."
+    "previewNote": "Renderizado por el marketplace a partir de la versión en venta, así que la disposición y los colores son los del propio tema. El interior de los bloques son marcadores: lo que va dentro es tu contenido, dibujado por los componentes de tu sitio.",
+    "lede": "Plugins y temas oficiales para tu comunidad. Las extensiones instaladas llegan desactivadas y se gestionan en Instalados.",
+    "licensedSummary": {
+      "plugin": "{{owned}} de {{total}} plugins de pago con licencia",
+      "theme": "{{owned}} de {{total}} temas de pago con licencia"
+    },
+    "showEntitlements": "Ver qué incluye",
+    "hideEntitlements": "Ocultar qué incluye",
+    "kindsLabel": "Plugins o temas",
+    "filterLabel": "Filtrar por estado",
+    "filter": {
+      "all": "Todos",
+      "enabled": "Activados",
+      "available": "Disponibles",
+      "free": "Gratis"
+    },
+    "licensed": "Con licencia",
+    "enable": "Activar",
+    "enabling": "Activando…",
+    "enabledToast": "{{name}} está activado.",
+    "themeActive": "Tema activo",
+    "emptyTitle": "No se encontró nada",
+    "emptyHint": "Prueba otro término de búsqueda u otro filtro.",
+    "unreleased": "Aún sin versión"
   },
   "announcements": {
     "dialogNote": "Enviado por el equipo de Xentium. Al pulsar OK se elimina de este sitio para todos los administradores.",
