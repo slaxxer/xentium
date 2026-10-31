@@ -486,8 +486,9 @@ until it answers, and an account tab opened by its link waits for the answer.
 
 **A count in the ACP menu.** `registerAcpBadge({ id, path, count })` puts a number beside
 one of your ACP pages (the `path` you gave `registerAcpPage`) while `count()` answers more
-than zero, a dot on your section's icon in the rail, and the same dot on the gear in the
-site's header, so an admin browsing the site sees it too. It is asked every minute while an
+than zero, in the side menu and the top menu alike, a dot on your section, and the same dot
+on the gear in the site's header, so an admin browsing the site sees it too. The rules and
+an example are in [plugin-registries.md](plugin-registries.md#telling-admins-something-is-waiting-slotregistryregisteracpbadge). It is asked every minute while an
 admin has the site or the ACP open, so keep it cheap, and answer 0 for an admin it doesn't
 concern.
 
