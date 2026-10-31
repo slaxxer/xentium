@@ -52,6 +52,25 @@ Use the host's `middleware` (`requireAuth`, `optionalAuth`, `requirePermission`)
 than parsing tokens yourself. `req.userId` is what the rest of the platform means by "the
 caller".
 
+### Staying reachable in maintenance (`ctx.keepOpenDuringMaintenance`)
+
+Maintenance mode closes the site to people: everything under `/api` answers "under
+maintenance" except to admins. That is right for pages and wrong for routes that
+machines call, like other sites asking a store this site runs, a payment provider's
+webhook, or a feed a reader polls. Those callers don't pause, they fail for as long as
+maintenance lasts. Name such routes and they stay open:
+
+```ts
+ctx.registerRoutes(router);
+// /api/p/<your id>/v1/… and /api/p/<your id>/webhooks/… answer during maintenance.
+ctx.keepOpenDuringMaintenance?.(["/v1", "/webhooks"]);
+```
+
+The prefixes are paths of your own routes (under `/api/p/<your id>`), up to 20, and `/`
+alone is refused: list what you mean. Everything else of yours stays closed with the rest
+of the site, and the list is dropped when your plugin is disabled. Keep the `?.` if your
+plugin should still load on a core from before 1.0.0-rc.4, which doesn't have it.
+
 ### `registerPermissions(perms)`
 
 ```ts
