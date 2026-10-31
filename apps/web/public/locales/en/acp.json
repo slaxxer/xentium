@@ -2489,7 +2489,7 @@
     "goManage": "Installed — Go to manage",
     "install": "Install",
     "activateToInstall": "Activate license to install",
-    "buy": "Buy → xentium.org",
+    "buy": "Buy",
     "installing": "Installing…",
     "installSuccess": "{{name}} installed — enable it when ready.",
     "installFailed": "Install failed: {{message}}",
@@ -2532,7 +2532,30 @@
     "preview": "Preview",
     "previewTitle": "{{name}} — preview",
     "previewClose": "Close",
-    "previewNote": "Rendered by the marketplace from the version on sale, so the arrangement and colours are this theme's own. Block interiors are placeholders — what goes inside them is your content, drawn by your site's own components."
+    "previewNote": "Rendered by the marketplace from the version on sale, so the arrangement and colours are this theme's own. Block interiors are placeholders — what goes inside them is your content, drawn by your site's own components.",
+    "lede": "Official plugins and themes for your community. Installed extensions arrive switched off and are managed under Installed.",
+    "licensedSummary": {
+      "plugin": "{{owned}} of {{total}} paid plugins licensed",
+      "theme": "{{owned}} of {{total}} paid themes licensed"
+    },
+    "showEntitlements": "Show what it covers",
+    "hideEntitlements": "Hide what it covers",
+    "kindsLabel": "Plugins or themes",
+    "filterLabel": "Filter by status",
+    "filter": {
+      "all": "All",
+      "enabled": "Enabled",
+      "available": "Available",
+      "free": "Free"
+    },
+    "licensed": "Licensed",
+    "enable": "Enable",
+    "enabling": "Enabling…",
+    "enabledToast": "{{name}} is enabled.",
+    "themeActive": "Active theme",
+    "emptyTitle": "Nothing found",
+    "emptyHint": "Try another search term or filter.",
+    "unreleased": "No version yet"
   },
   "announcements": {
     "dialogNote": "Sent by the Xentium team. Clicking OK removes it from this site for every admin.",

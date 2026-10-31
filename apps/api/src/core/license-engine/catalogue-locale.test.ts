@@ -26,12 +26,12 @@ const { marketplaceSource } = await import("./marketplace-source.js");
 
 describe("browsing the store from the ACP", () => {
   it("asks in the admin's language", async () => {
-    await marketplaceSource.listPlugins({ page: 1, limit: 24, kind: "plugin", locale: "de" });
+    await marketplaceSource.listPlugins({ page: 1, limit: 24, order: "desc", kind: "plugin", locale: "de" });
     expect(protocolFetch.mock.calls.at(-1)![0].query).toMatchObject({ kind: "plugin", locale: "de" });
   });
 
   it("sends no language when the ACP gave none", async () => {
-    await marketplaceSource.listPlugins({ page: 1, limit: 24, kind: "plugin" });
+    await marketplaceSource.listPlugins({ page: 1, limit: 24, order: "desc", kind: "plugin" });
     expect(protocolFetch.mock.calls.at(-1)![0].query).not.toHaveProperty("locale");
   });
 });

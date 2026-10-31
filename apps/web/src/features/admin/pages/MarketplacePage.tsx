@@ -5,11 +5,14 @@ import { useTranslation, Trans } from "react-i18next";
 import { FontAwesomeIcon } from "../../../components/Icon";
 import {
   faEnvelope, faMagnifyingGlass,
-  faChartBar, faShield, faKey, faCheck, faLock,
+  faChartBar, faShield, faKey, faCheck,
   faFlask, faPuzzlePiece, faShieldHalved, faPalette, faImage, faTriangleExclamation, faEye,
+  faDownload, faCircleNotch, faChevronDown, faChevronUp, faArrowUpRightFromSquare,
 } from "@fortawesome/free-solid-svg-icons";
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { api } from "../../../lib/api";
+import { toast } from "../../../lib/toast";
+import { apiErrorMessage } from "../../../lib/swal";
 import { Pager } from "../../../components/Pager";
 import { runStreamedJob } from "../../../lib/streamProgress";
 import { slotRegistry } from "../../../plugins/slotRegistry";
@@ -18,11 +21,17 @@ import { themeInstallMessage } from "../hooks/themeInstallResult";
 import { offerThemeSwitch, outcomeFromStream } from "../hooks/themeSwitchPrompt";
 import { ThemePreview } from "../components/ThemePreview";
 import { openPanelDialog } from "../../../lib/dialog";
-import { TrustBadge } from "../components/TrustBadge";
 import { ExtensionsUpdateBanner } from "../components/ExtensionsUpdateBanner";
 import { Button } from "../../../components/AcpControls";
+import { bundledIcon } from "../../../lib/iconCatalogue";
+import { parseIconToken } from "@xentium/contracts";
+import "./MarketplacePage.scss";
 
 type ProductKind = "plugin" | "theme";
+type Filter = "all" | "enabled" | "available" | "free";
+const FILTERS: Filter[] = ["all", "enabled", "available", "free"];
+/** What a card's footer offers, in one word. */
+type CardState = "enabled" | "installed" | "installable" | "busy" | "connect" | "buy" | "unreleased";
 
 interface MarketplacePlugin {
   id:              string;
@@ -51,6 +60,11 @@ interface MarketplacePlugin {
    *  Absolute — the marketplace serves them, on its own origin. */
   previewTemplates?: string[];
   previewUrlBase?:   string;
+  /** The listing's icon-picker name and tint, as the store shows them. */
+  icon?:             string | null;
+  accentColor?:      string | null;
+  /** Its page in the store, for "Buy". */
+  storeUrl?:         string;
 }
 
 // PaginatedResponse<MarketplaceListing> (ADR 0001)
@@ -94,6 +108,12 @@ const COLOR_MAP_FALLBACK: Record<string, string> = {
   "xentium-advanced-mod": "var(--c-danger)",
   "xentium-2fa":          "var(--c-warn)",
 };
+
+/** The listing's own icon when this site can draw it, else what the plugin registered. */
+function listingIcon(p: { id: string; kind: ProductKind; icon?: string | null }): IconDefinition {
+  const token = p.icon ? parseIconToken(p.icon) : null;
+  return (token && bundledIcon(token.name)) ?? (p.kind === "theme" ? faPalette : getPluginIcon(p.id));
+}
 
 function getPluginIcon(pluginId: string): IconDefinition {
   return (slotRegistry.getPluginMeta(pluginId)?.icon as IconDefinition | undefined)
@@ -194,10 +214,37 @@ export function MarketplacePage() {
     onError: () => {},
   });
 
+  // "Activate" on a card whose plugin is installed but switched off: the same call
+  // as the switch on the Installed page (it asks for a code when the site wants one).
+  const enableMutation = useMutation({
+    mutationFn: (p: MarketplacePlugin) => api.post(`/plugins/${encodeURIComponent(p.id)}/enable`, {}),
+    onSuccess: (_r, p) => {
+      toast.success(t("marketplace.enabledToast", { name: p.name }));
+      void queryClient.invalidateQueries({ queryKey: ["acp-installed-plugins"] });
+    },
+    onError: (e) => toast.error(apiErrorMessage(e)),
+  });
+
+  const [filter, setFilter] = useState<Filter>("all");
+  const [showGrants, setShowGrants] = useState(false);
+
+  // A page of 100: the status filters and their counts work on what was fetched, so
+  // a page has to hold the catalogue (it does, by a wide margin). The pager stays for
+  // the day it does not.
   const { data: market }    = useQuery<MarketplaceResponse>({
     queryKey: ["acp-marketplace", kind, page, debouncedSearch],
-    queryFn:  () => api.get(`/admin/marketplace/plugins?kind=${kind}&page=${page}${debouncedSearch ? `&q=${encodeURIComponent(debouncedSearch)}` : ""}`),
+    queryFn:  () => api.get(`/admin/marketplace/plugins?kind=${kind}&page=${page}&limit=100${debouncedSearch ? `&q=${encodeURIComponent(debouncedSearch)}` : ""}`),
     placeholderData: (prev) => prev,
+  });
+  // How many of each kind, for the tabs. One row each: only `meta.total` is read.
+  const { data: kindTotals } = useQuery({
+    queryKey: ["acp-marketplace-totals"],
+    queryFn: async () => {
+      const [pl, th] = await Promise.all((["plugin", "theme"] as const).map((k) =>
+        api.get<MarketplaceResponse>(`/admin/marketplace/plugins?kind=${k}&limit=1`)));
+      return { plugin: pl?.meta.total ?? 0, theme: th?.meta.total ?? 0 };
+    },
+    staleTime: 60_000,
   });
   // Only while the Themes tab is open: on the plugins tab it is a request whose
   // answer nothing on screen would use.
@@ -213,10 +260,50 @@ export function MarketplacePage() {
   const entitlements = license ? parseEntitlements(license.entitlementJwt) : [];
   const installedMap = Object.fromEntries((installed ?? []).map((p) => [p.id, p.status]));
 
-  // No client-side filter: the server already answered this exact query. The
-  // old in-memory filter searched only the fetched page, so a plugin on page 2
-  // reported "no results" for its own name.
-  const plugins = market?.data ?? [];
+  // No client-side SEARCH: the server already answered this exact query. The old
+  // in-memory search covered only the fetched page, so a plugin on page 2 reported
+  // "no results" for its own name. The status filters below are client-side and
+  // count what was fetched (a page holds the whole catalogue, see the query).
+  const listings = market?.data ?? [];
+
+  const model = (p: MarketplacePlugin) => {
+    const isTheme = p.kind === "theme";
+    // A site wears one theme, so "installed" is an identity check against the one
+    // manifest, not a lookup in the plugin map, which has no theme in it.
+    const instStatus = isTheme ? (theme?.manifest?.id === p.id ? "enabled" : undefined) : installedMap[p.id];
+    // Ownership from the marketplace wins when it answered; the local entitlement
+    // JWT is the offline fallback (a plugin bought two minutes ago is owned but not
+    // yet signed). ⚠ Keyed `<kind>.<id>`: hardcoding `plugin.` made every owned
+    // THEME read as unowned whenever the catalogue did not answer `owned`.
+    const entitled = p.owned ?? entitlements.includes(`${p.kind}.${p.id}`);
+    const paid = p.licenseRequired && p.priceCents > 0;
+    // A free plugin needs no entitlement: gating it offered "Buy" for something
+    // that costs nothing and installs fine.
+    const installable = (entitled || !p.licenseRequired) && !!p.latestVersion;
+    const busy = installMutation.isPending && installMutation.variables?.id === p.id;
+    const state: CardState =
+        instStatus === "enabled" ? "enabled"
+      : instStatus ? "installed"
+      : busy ? "busy"
+      : installable ? "installable"
+      : !p.latestVersion ? "unreleased"
+      : !conn?.connected ? "connect"
+      : "buy";
+    return { ...p, isTheme, instStatus, entitled, paid, state, free: !p.licenseRequired || p.priceCents === 0 };
+  };
+  const all = listings.map(model);
+  const matches = (c: ReturnType<typeof model>, f: Filter) =>
+    f === "all" || (f === "enabled" && c.state === "enabled") || (f === "available" && c.state !== "enabled") || (f === "free" && c.free);
+  const cards = all.filter((c) => matches(c, filter));
+
+  // The licence strip: how many of this kind's paid listings the site may install,
+  // and which ones (by name where the catalogue knows it).
+  const paidHere = all.filter((c) => c.paid);
+  const licensedHere = paidHere.filter((c) => c.entitled).length;
+  const nameOf = Object.fromEntries(all.map((c) => [`${c.kind}.${c.id}`, c.name]));
+  const grants = entitlements.map((id) => nameOf[id] ?? id.replace(/^(plugin|theme)\./, ""));
+
+  const price = (cents: number) => `$${(cents / 100).toFixed(0)}`;
 
   return (
     <div>
@@ -224,6 +311,7 @@ export function MarketplacePage() {
         <div className="acp-page-header__left">
           <div className="acp-page-sub">{t("nav.extensions")}</div>
           <h1 className="acp-page-title">{t("nav.marketplace")}</h1>
+          <p className="mkt-lede">{t("marketplace.lede")}</p>
         </div>
       </div>
 
@@ -241,239 +329,179 @@ export function MarketplacePage() {
         </div>
       )}
 
-      {/* License banner */}
-      <div style={{ background: license ? "var(--c-accent-soft)" : "var(--c-surface)", border:`1px solid ${license ? "var(--c-accent-glow)" : "var(--c-border)"}`, borderRadius:"var(--radius-md)", padding:"14px 20px", marginBottom:24, display:"flex", alignItems:"center", gap:12 }}>
-        <FontAwesomeIcon icon={faKey} style={{ fontSize:"var(--fs-lg)", color: license ? "var(--c-accent)" : "var(--c-fg-muted)" }} />
-        <div style={{ flex:1 }}>
-          {license ? (
-            <>
-              <div style={{ fontSize:"var(--fs-md)", fontWeight:700, color:"var(--c-fg)" }}>{t("marketplace.licenseActive")}</div>
-              <div style={{ fontSize:"var(--fs-sm)", color:"var(--c-fg-muted)" }}>
-                {entitlements.length ? t("marketplace.entitlementsList", { list: entitlements.map((e) => e.replace(/^(plugin|theme)\./, "")).join(", ") }) : t("marketplace.noEntitlements")}
-              </div>
-            </>
-          ) : (
-            <>
-              <div style={{ fontSize:"var(--fs-md)", fontWeight:700, color:"var(--c-fg)" }}>{t("marketplace.noLicense")}</div>
-              <div style={{ fontSize:"var(--fs-sm)", color:"var(--c-fg-muted)" }}>{t("marketplace.activateHint")}</div>
-            </>
+      {/* Licence strip: the state, how much of this half of the catalogue it covers,
+          and (folded away) exactly what it grants. */}
+      <section className={`mkt-lic${license ? "" : " is-off"}`}>
+        <div className="mkt-lic__row">
+          <div className="mkt-lic__icon"><FontAwesomeIcon icon={faKey} /></div>
+          <div className="mkt-lic__text">
+            <div className="mkt-lic__title"><span className="mkt-lic__dot" />{t(license ? "marketplace.licenseActive" : "marketplace.noLicense")}</div>
+            <div className="mkt-lic__sub">
+              {!license ? t("marketplace.activateHint")
+                : paidHere.length ? t(`marketplace.licensedSummary.${kind}`, { owned: licensedHere, total: paidHere.length })
+                : t("marketplace.noEntitlements")}
+            </div>
+          </div>
+          {license && grants.length > 0 && (
+            <Button variant="ghost" className="mkt-lic__toggle" aria-expanded={showGrants} onClick={() => setShowGrants((v) => !v)}>
+              {t(showGrants ? "marketplace.hideEntitlements" : "marketplace.showEntitlements")}
+              <FontAwesomeIcon icon={showGrants ? faChevronUp : faChevronDown} />
+            </Button>
           )}
+          <Button variant="ghost" onClick={() => navigate("/admin/license")}>
+            {license ? t("marketplace.manage") : t("marketplace.activate")}
+          </Button>
         </div>
-        <Button variant="ghost" onClick={() => navigate("/admin/license")}>
-          {license ? t("marketplace.manage") : t("marketplace.activate")}
-        </Button>
-      </div>
+        {license && showGrants && grants.length > 0 && (
+          <div className="mkt-lic__chips">
+            {grants.map((g) => <span key={g} className="mkt-lic__chip"><FontAwesomeIcon icon={faCheck} />{g}</span>)}
+          </div>
+        )}
+      </section>
 
-      {/* Two halves of one catalogue. The core's tab bar, not a bespoke control —
-          the ACP has exactly one of these and this page is not the exception. */}
-      <div className="acp-tab-bar" style={{ marginBottom: 20 }}>
-        {(["plugin", "theme"] as const).map((k) => (
-          <button
-            key={k}
-            type="button"
-            className={`acp-tab${kind === k ? " acp-tab--active" : ""}`}
-            onClick={() => setKind(k)}
-          >
-            <FontAwesomeIcon icon={k === "theme" ? faPalette : faPuzzlePiece} />{" "}
-            {t(`marketplace.tab.${k}`)}
-          </button>
-        ))}
-      </div>
-
-      <div style={{ display:"flex", gap:10, marginBottom:20 }}>
-        <input
-          className="acp-input"
-          placeholder={t(kind === "theme" ? "marketplace.searchThemesPlaceholder" : "marketplace.searchPlaceholder")}
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          style={{ width:280 }}
-        />
+      {/* One toolbar: which half of the catalogue, a server-side search, and the
+          status filters with what each would show. */}
+      <div className="mkt-bar">
+        <div className="mkt-kinds" role="tablist" aria-label={t("marketplace.kindsLabel")}>
+          {(["plugin", "theme"] as const).map((k) => (
+            <button key={k} type="button" role="tab" aria-selected={kind === k} className={kind === k ? "is-on" : ""} onClick={() => setKind(k)}>
+              <FontAwesomeIcon icon={k === "theme" ? faPalette : faPuzzlePiece} />
+              {t(`marketplace.tab.${k}`)}
+              {kindTotals && <span className="mkt-kinds__n">{kindTotals[k]}</span>}
+            </button>
+          ))}
+        </div>
+        <label className="mkt-search">
+          <FontAwesomeIcon icon={faMagnifyingGlass} className="mkt-search__ic" />
+          <input
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={t(kind === "theme" ? "marketplace.searchThemesPlaceholder" : "marketplace.searchPlaceholder")}
+            aria-label={t(kind === "theme" ? "marketplace.searchThemesPlaceholder" : "marketplace.searchPlaceholder")}
+          />
+        </label>
+        <span className="mkt-bar__grow" />
+        <div className="mkt-filters" role="tablist" aria-label={t("marketplace.filterLabel")}>
+          {FILTERS.map((f) => (
+            <button key={f} type="button" role="tab" aria-selected={filter === f} className={filter === f ? "is-on" : ""} onClick={() => setFilter(f)}>
+              {t(`marketplace.filter.${f}`)}<span className="mkt-filters__n">{all.filter((c) => matches(c, f)).length}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Said once above the grid rather than on every card: installing a theme
           applies it immediately, and the admin has somewhere to go to manage it. */}
       {kind === "theme" && (
-        <p style={{ fontSize:"var(--fs-sm)", color:"var(--c-fg-subtle)", margin:"-8px 0 18px", maxWidth:"80ch" }}>
+        <p className="mkt-note">
           {t("marketplace.themeDraftNote")}{" "}
-          <button type="button" onClick={() => navigate("/admin/themes")}
-            style={{ background:"none", border:"none", padding:0, color:"var(--c-accent)", fontWeight:700, textDecoration:"underline", cursor:"pointer", font:"inherit" }}>
-            {t("marketplace.themeGoManage")}
-          </button>
+          <button type="button" onClick={() => navigate("/admin/themes")}>{t("marketplace.themeGoManage")}</button>
         </p>
       )}
 
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(280px, 1fr))", gap:16 }}>
-        {plugins.map((p) => {
-          const isTheme   = p.kind === "theme";
-          const icon      = isTheme ? faPalette : getPluginIcon(p.id);
-          const color     = isTheme ? "var(--c-accent)" : getPluginColor(p.id);
-          // A site wears one theme, so "installed" is an identity check against the
-          // one manifest — not a lookup in the plugin map, which has no theme in it.
-          const instStatus = isTheme
-            ? (theme?.manifest?.id === p.id ? "enabled" : undefined)
-            : installedMap[p.id];
-          // Ownership from the marketplace wins when it answered; the local
-          // entitlement JWT is the offline fallback. A plugin bought two
-          // minutes ago is owned but not yet in any entitlement.
-          // ⚠ Keyed `<kind>.<id>` — the marketplace has signed both halves since the
-          // catalogue learned to sell themes. Hardcoding `plugin.` here made every
-          // owned THEME read as unowned whenever the catalogue did not answer
-          // `owned` (offline, or no account connected), which offered "Buy" for
-          // something already paid for.
-          const entitled  = p.owned ?? entitlements.includes(`${p.kind}.${p.id}`);
-          const locked    = p.licenseRequired && !entitled;
-          // A free plugin needs no entitlement — gating it behind one offered
-          // "Buy" for something that costs nothing and installs fine.
-          const installable = (entitled || !p.licenseRequired) && !!p.latestVersion;
-          // Only a theme carries a footprint; `themeGaps` answers null for anything
-          // without one, including a theme listed before footprints existed.
-          const gaps = isTheme ? themeGaps(p) : null;
+      {market && !cards.length ? (
+        <div className="mkt-empty">
+          <FontAwesomeIcon icon={faMagnifyingGlass} />
+          <span className="mkt-empty__title">{t("marketplace.emptyTitle")}</span>
+          <span>{t("marketplace.emptyHint")}</span>
+        </div>
+      ) : (
+        <div className="mkt-grid">
+          {cards.map((c) => {
+            // Only a theme carries a footprint; `themeGaps` answers null for anything
+            // without one, including a theme listed before footprints existed.
+            const gaps = c.isTheme ? themeGaps(c) : null;
+            const tint = c.accentColor ?? (c.isTheme ? undefined : getPluginColor(c.id));
+            return (
+              <article key={c.id} className="mkt-card" style={tint ? ({ "--mkt-tint": tint } as React.CSSProperties) : undefined}>
+                {/* A theme is bought for how it looks, so its screenshot leads the
+                    card; one whose package shipped none gets a plain placeholder. */}
+                {c.isTheme && (c.screenshot
+                  ? <img className="mkt-card__shot" src={c.screenshot} alt="" loading="lazy" />
+                  : <div className="mkt-card__shot is-empty"><FontAwesomeIcon icon={faImage} /></div>)}
 
-          return (
-            <div key={p.id} className="acp-card" style={{ padding:22, position:"relative", opacity: locked ? 0.8 : 1, overflow:"hidden" }}>
-              {locked && (
-                <div style={{ position:"absolute", top:14, right:14, zIndex:1 }}>
-                  <FontAwesomeIcon icon={faLock} style={{ color:"var(--c-fg-muted)", fontSize:"var(--fs-md)" }} />
-                </div>
-              )}
-
-              {/* A theme is bought for how it looks, so its screenshot leads the
-                  card. A theme whose package shipped none gets a plain placeholder
-                  rather than nothing — a grid where some cards have a picture and
-                  others start with text reads as a loading failure. */}
-              {isTheme && (
-                p.screenshot ? (
-                  <img
-                    src={p.screenshot}
-                    alt=""
-                    loading="lazy"
-                    // ⚠ `maxWidth: none` is load-bearing: the app's global `img`
-                    // rule caps every image at `max-width: 100%`, which clamps a
-                    // full-bleed width straight back to the padded content box —
-                    // silently, and only visibly as an image that is inset on one
-                    // side. The negative margins alone do not survive it.
-                    style={{ display:"block", width:"calc(100% + 44px)", maxWidth:"none", margin:"-22px -22px 14px", aspectRatio:"16 / 10", objectFit:"cover", background:"var(--c-surface)" }}
-                  />
-                ) : (
-                  <div style={{ display:"flex", alignItems:"center", justifyContent:"center", width:"calc(100% + 44px)", margin:"-22px -22px 14px", aspectRatio:"16 / 10", background:"var(--c-surface)", borderBottom:"1px solid var(--c-border)", color:"var(--c-fg-subtle)", fontSize:"1.375rem" }}>
-                    <FontAwesomeIcon icon={faImage} />
-                  </div>
-                )
-              )}
-
-              <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom:12 }}>
-                <div style={{ width:44, height:44, background:`${color}15`, border:`1px solid ${color}30`, borderRadius:"var(--radius-md)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"var(--fs-xl)", color }}>
-                  <FontAwesomeIcon icon={icon} />
-                </div>
-                <div style={{ fontSize:"var(--fs-lg)", fontWeight:800, color:"var(--c-fg)", textAlign:"right" }}>
-                  {p.priceCents === 0 ? t("marketplace.free") : `$${(p.priceCents / 100).toFixed(0)}`}
-                  {p.priceCents > 0 && <span style={{ fontSize:"var(--fs-xs)", fontWeight:400, color:"var(--c-fg-muted)" }}>{t("marketplace.perYear")}</span>}
-                </div>
-              </div>
-
-              <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap", marginBottom:6 }}>
-                <span style={{ fontSize:"var(--fs-base)", fontWeight:800, color:"var(--c-fg)" }}>{p.name}</span>
-                {/* Before the money, not after it. How hard we looked is part of
-                    what a buyer is deciding on, and a theme has no code for us to
-                    have looked at. */}
-                {!isTheme && p.trustTier && <TrustBadge tier={p.trustTier} mode="tier" />}
-              </div>
-              <div style={{ fontSize:"var(--fs-sm)", color:"var(--c-fg-muted)", lineHeight:1.6, marginBottom:16 }}>{p.description}</div>
-
-              {/* On the CARD, beside the price — a theme's missing pieces are part
-                  of what it costs, and a warning shown after the purchase is not
-                  a warning. The types are named because that is the true thing we
-                  can say; see `themeGaps`. */}
-              {gaps && (
-                <div
-                  style={{
-                    display:"flex", gap:8, alignItems:"flex-start", marginBottom:16, padding:"9px 11px",
-                    borderRadius:"var(--radius-md)", background:"color-mix(in srgb, var(--c-warn) 12%, transparent)",
-                    color:"var(--c-fg)", fontSize:"var(--fs-xs)", lineHeight:1.5,
-                  }}
-                >
-                  <FontAwesomeIcon icon={faTriangleExclamation} style={{ color:"var(--c-warn)", marginTop:2 }} />
-                  <div>
-                    <div style={{ fontWeight:700 }}>
-                      {t("marketplace.themeGapsTitle", { count: gaps.blocks.length + gaps.templates.length })}
-                    </div>
-                    <div style={{ color:"var(--c-fg-muted)", wordBreak:"break-word" }}>
-                      {[...gaps.templates, ...gaps.blocks].join(", ")}
-                    </div>
-                    <div style={{ color:"var(--c-fg-muted)", marginTop:3 }}>{t("marketplace.themeGapsHint")}</div>
+                <div className="mkt-card__head">
+                  <div className="mkt-card__icon"><FontAwesomeIcon icon={listingIcon(c)} /></div>
+                  <div className="mkt-card__titles">
+                    <div className="mkt-card__name">{c.name}</div>
+                    {/* How hard we looked is part of what a buyer decides on; a theme
+                        has no code for us to have looked at. */}
+                    {!c.isTheme && c.trustTier && (
+                      <div className={`mkt-card__trust is-${c.trustTier}`}>
+                        <FontAwesomeIcon icon={faShieldHalved} />{t(`trust.tier.${c.trustTier}`)}
+                      </div>
+                    )}
                   </div>
                 </div>
-              )}
 
-              <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
-                {/* Beside the install action, never instead of it. Installing a
-                    theme restages every page at once, and until this existed the
-                    only way to see one was to do it — on a change that has no undo
-                    (a theme has no runtime; nothing can un-give the package). */}
-                {isTheme && p.previewUrlBase && p.previewTemplates?.length ? (
-                  <Button
-                    variant="ghost"
-                    onClick={() => void openPanelDialog({
-                      // An ALERT, not a confirm: there is nothing here to agree to,
-                      // and a Cancel beside a Close asks the admin which of two
-                      // identical outcomes they meant.
-                      kind:  "alert",
-                      icon:  "info",
-                      title: t("marketplace.previewTitle", { name: p.name }),
-                      confirmText: t("marketplace.previewClose"),
-                      bodyNode: (
-                        <ThemePreview
-                          name={p.name}
-                          base={p.previewUrlBase!}
-                          templates={p.previewTemplates!}
-                        />
-                      ),
-                    })}
-                  >
-                    <FontAwesomeIcon icon={faEye} style={{ marginRight: 6 }} />
-                    {t("marketplace.preview")}
-                  </Button>
-                ) : null}
-                {instStatus === "enabled" ? (
-                  <span style={{ display:"inline-flex", alignItems:"center", gap:5, padding:"3px 10px", borderRadius:100, fontSize:"var(--fs-2xs)", fontWeight:700, background:"color-mix(in srgb, var(--c-success) 15%, transparent)", color:"var(--c-success)" }}>
-                    {/* For a theme this says "installed", not "enabled": a theme
-                        has no enabled state, and the library may hold several while
-                        exactly one is active — "enabled" would claim this is the one
-                        the site is wearing, which is a different question. */}
-                    <FontAwesomeIcon icon={faCheck} /> {t(isTheme ? "marketplace.themeInstalled" : "marketplace.enabled")}
-                  </span>
-                ) : instStatus ? (
-                  <Button variant="ghost" onClick={() => navigate("/admin/installed")}>
-                    {t("marketplace.goManage")}
-                  </Button>
-                ) : installable ? (
-                  <Button
-                    variant="ghost"
-                    style={{ color:"var(--c-accent)", borderColor:"var(--c-accent-glow)", background:"var(--c-accent-soft)" }}
-                    disabled={installMutation.isPending}
-                    onClick={() => installMutation.mutate(p)}
-                  >
-                    {installMutation.isPending && installMutation.variables?.id === p.id
-                      ? t("marketplace.installing")
-                      : t("marketplace.install")}
-                  </Button>
-                ) : locked ? (
-                  <Button variant="ghost" onClick={() => navigate("/admin/license")}>
-                    {t("marketplace.activateToInstall")}
-                  </Button>
-                ) : (
-                  <Button variant="ghost">
-                    {t("marketplace.buy")}
-                  </Button>
+                <div className="mkt-card__desc">{c.description}</div>
+
+                {/* Before the money: a theme's missing pieces are part of what it
+                    costs, and a warning after the purchase is not a warning. */}
+                {gaps && (
+                  <div className="mkt-card__gaps">
+                    <FontAwesomeIcon icon={faTriangleExclamation} />
+                    <div>
+                      <b>{t("marketplace.themeGapsTitle", { count: gaps.blocks.length + gaps.templates.length })}</b>
+                      <span>{[...gaps.templates, ...gaps.blocks].join(", ")}</span>
+                      <span>{t("marketplace.themeGapsHint")}</span>
+                    </div>
+                  </div>
                 )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
 
-      {/* Core's one pagination bar. It renders nothing at a single page, so a
-          small catalogue looks exactly as it did before. */}
+                <div className="mkt-card__foot">
+                  <div className="mkt-card__price">
+                    {c.free ? <span className="mkt-card__label">{t("marketplace.free")}</span>
+                      : c.entitled ? <><span className="mkt-card__label">{t("marketplace.licensed")}</span><span className="mkt-card__small">{price(c.priceCents)}{t("marketplace.perYear")}</span></>
+                      : <span className="mkt-card__amount">{price(c.priceCents)}<span className="mkt-card__per">{t("marketplace.perYear")}</span></span>}
+                  </div>
+                  <div className="mkt-card__actions">
+                    {/* Beside the install action, never instead of it: installing a
+                        theme restages every page, and there is no undo. */}
+                    {c.isTheme && c.previewUrlBase && c.previewTemplates?.length ? (
+                      <Button variant="ghost" icon={faEye} onClick={() => void openPanelDialog({
+                        kind: "alert", icon: "info",
+                        title: t("marketplace.previewTitle", { name: c.name }),
+                        confirmText: t("marketplace.previewClose"),
+                        bodyNode: <ThemePreview name={c.name} base={c.previewUrlBase!} templates={c.previewTemplates!} />,
+                      })}>{t("marketplace.preview")}</Button>
+                    ) : null}
+                    {c.state === "enabled" ? (
+                      // For a theme this says it is the one being worn: a theme has
+                      // no enabled state of its own.
+                      <span className="mkt-card__state"><FontAwesomeIcon icon={faCheck} />{t(c.isTheme ? "marketplace.themeActive" : "marketplace.enabled")}</span>
+                    ) : c.state === "installed" ? (
+                      c.instStatus === "disabled"
+                        ? <Button disabled={enableMutation.isPending} onClick={() => enableMutation.mutate(c)}>
+                            {enableMutation.isPending && enableMutation.variables?.id === c.id ? t("marketplace.enabling") : t("marketplace.enable")}
+                          </Button>
+                        : <Button variant="ghost" onClick={() => navigate("/admin/installed")}>{t("marketplace.goManage")}</Button>
+                    ) : c.state === "busy" ? (
+                      <span className="mkt-card__busy"><FontAwesomeIcon icon={faCircleNotch} spin />{t("marketplace.installing")}</span>
+                    ) : c.state === "installable" ? (
+                      <Button variant="ghost" className="mkt-install" icon={faDownload} disabled={installMutation.isPending} onClick={() => installMutation.mutate(c)}>
+                        {t("marketplace.install")}
+                      </Button>
+                    ) : c.state === "connect" ? (
+                      <Button variant="ghost" onClick={() => navigate("/admin/license")}>{t("marketplace.activateToInstall")}</Button>
+                    ) : c.state === "buy" ? (
+                      <Button icon={faArrowUpRightFromSquare} disabled={!c.storeUrl}
+                        onClick={() => c.storeUrl && window.open(c.storeUrl, "_blank", "noopener")}>
+                        {t("marketplace.buy")}
+                      </Button>
+                    ) : (
+                      <span className="mkt-card__muted">{t("marketplace.unreleased")}</span>
+                    )}
+                  </div>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Core's one pagination bar. It renders nothing at a single page. */}
       {market?.meta && (
         <Pager
           page={market.meta.page}

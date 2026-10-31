@@ -310,8 +310,13 @@ export const marketplaceService = {
     });
   },
 
-  listPlugins(opts: MarketplaceListQuery) {
-    return marketplaceSource.listPlugins(opts);
+  /** The catalogue, each listing with its page in the store (the ACP's "Buy"). */
+  async listPlugins(opts: MarketplaceListQuery) {
+    const page = await marketplaceSource.listPlugins(opts);
+    return {
+      ...page,
+      data: page.data.map((l) => ({ ...l, storeUrl: marketplaceWebUrl(`/store/${l.kind}s/${encodeURIComponent(l.id)}`) })),
+    };
   },
 
   /**

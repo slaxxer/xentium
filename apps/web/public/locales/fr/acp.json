@@ -2489,7 +2489,7 @@
     "goManage": "Installé — gérer",
     "install": "Installer",
     "activateToInstall": "Activez la licence pour installer",
-    "buy": "Acheter → xentium.org",
+    "buy": "Acheter",
     "installing": "Installation…",
     "installSuccess": "{{name}} installé — activez-le quand vous voulez.",
     "installFailed": "Échec de l'installation : {{message}}",
@@ -2532,7 +2532,30 @@
     "preview": "Aperçu",
     "previewTitle": "{{name}} — aperçu",
     "previewClose": "Fermer",
-    "previewNote": "Rendu par la place de marché à partir de la version en vente : la disposition et les couleurs sont donc celles du thème. L'intérieur des blocs est un substitut — ce qui s'y trouve, c'est votre contenu, dessiné par les composants de votre site."
+    "previewNote": "Rendu par la place de marché à partir de la version en vente : la disposition et les couleurs sont donc celles du thème. L'intérieur des blocs est un substitut — ce qui s'y trouve, c'est votre contenu, dessiné par les composants de votre site.",
+    "lede": "Plugins et thèmes officiels pour votre communauté. Les extensions installées arrivent désactivées et se gèrent dans Installés.",
+    "licensedSummary": {
+      "plugin": "{{owned}} plugins payants sur {{total}} sous licence",
+      "theme": "{{owned}} thèmes payants sur {{total}} sous licence"
+    },
+    "showEntitlements": "Voir ce qu’elle couvre",
+    "hideEntitlements": "Masquer ce qu’elle couvre",
+    "kindsLabel": "Plugins ou thèmes",
+    "filterLabel": "Filtrer par état",
+    "filter": {
+      "all": "Tous",
+      "enabled": "Activés",
+      "available": "Disponibles",
+      "free": "Gratuits"
+    },
+    "licensed": "Sous licence",
+    "enable": "Activer",
+    "enabling": "Activation…",
+    "enabledToast": "{{name}} est activé.",
+    "themeActive": "Thème actif",
+    "emptyTitle": "Aucun résultat",
+    "emptyHint": "Essayez un autre terme ou un autre filtre.",
+    "unreleased": "Pas encore de version"
   },
   "announcements": {
     "dialogNote": "Envoyé par l'équipe Xentium. Cliquer sur OK la retire de ce site pour tous les administrateurs.",

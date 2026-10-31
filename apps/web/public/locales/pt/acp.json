@@ -2489,7 +2489,7 @@
     "goManage": "Instalado — gerenciar",
     "install": "Instalar",
     "activateToInstall": "Ative a licença para instalar",
-    "buy": "Comprar → xentium.org",
+    "buy": "Comprar",
     "installing": "Instalando…",
     "installSuccess": "{{name}} instalado — ative quando quiser.",
     "installFailed": "Falha na instalação: {{message}}",
@@ -2532,7 +2532,30 @@
     "preview": "Pré-visualização",
     "previewTitle": "{{name}} — pré-visualização",
     "previewClose": "Fechar",
-    "previewNote": "Renderizado pelo marketplace a partir da versão à venda, por isso a disposição e as cores são do próprio tema. O interior dos blocos são marcadores: o que vai lá dentro é o teu conteúdo, desenhado pelos componentes do teu site."
+    "previewNote": "Renderizado pelo marketplace a partir da versão à venda, por isso a disposição e as cores são do próprio tema. O interior dos blocos são marcadores: o que vai lá dentro é o teu conteúdo, desenhado pelos componentes do teu site.",
+    "lede": "Plugins e temas oficiais para a sua comunidade. As extensões instaladas chegam desligadas e geram-se em Instalados.",
+    "licensedSummary": {
+      "plugin": "{{owned}} de {{total}} plugins pagos com licença",
+      "theme": "{{owned}} de {{total}} temas pagos com licença"
+    },
+    "showEntitlements": "Ver o que inclui",
+    "hideEntitlements": "Ocultar o que inclui",
+    "kindsLabel": "Plugins ou temas",
+    "filterLabel": "Filtrar por estado",
+    "filter": {
+      "all": "Todos",
+      "enabled": "Ativados",
+      "available": "Disponíveis",
+      "free": "Grátis"
+    },
+    "licensed": "Com licença",
+    "enable": "Ativar",
+    "enabling": "A ativar…",
+    "enabledToast": "{{name}} está ativado.",
+    "themeActive": "Tema ativo",
+    "emptyTitle": "Nada encontrado",
+    "emptyHint": "Experimente outro termo de pesquisa ou filtro.",
+    "unreleased": "Ainda sem versão"
   },
   "announcements": {
     "dialogNote": "Enviado pela equipa Xentium. Carregar em OK remove-o deste site para todos os administradores.",
