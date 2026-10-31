@@ -52,6 +52,16 @@ import { addonsAdminRouter, addonsPublicRouter } from "../modules/addons/addons.
 
 const ALLOWED_UPLOAD_DIRS = ['avatars', 'covers', 'articles', 'pages', 'groups', 'forum-attachments', 'themes', 'layouts', 'emojis'];
 
+/**
+ * Never the credentials in the request log: the access token, the refresh cookie
+ * (30 days) and any cookie the response sets would otherwise sit in the journal
+ * for anyone who can read it.
+ */
+export const HTTP_LOG_REDACT = {
+  paths: ['req.headers.authorization', 'req.headers.cookie', 'res.headers["set-cookie"]'],
+  censor: '[redacted]',
+};
+
 export function createApp(): Express {
   const app = express();
 
@@ -95,7 +105,7 @@ export function createApp(): Express {
     verify: (req, _res, buf) => { (req as express.Request).rawBody = buf; },
   }));
   app.use(cookieParser(env.COOKIE_SECRET));
-  app.use(pinoHttp({ transport: isProd ? undefined : { target: 'pino-pretty' } }));
+  app.use(pinoHttp({ transport: isProd ? undefined : { target: 'pino-pretty' }, redact: HTTP_LOG_REDACT }));
   // Request rate + latency for ACP → About (in memory, last 80 s).
   app.use(requestMeter);
 
