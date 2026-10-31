@@ -39,6 +39,13 @@ in JavaScript, and it keeps the access token in memory only.
 | **Perm:`key`** | logged in **and** holding that permission (`requirePermission`) |
 | **Admin** | logged in **and** holding `admin.access` (`adminGuard`) |
 
+Some Admin pages also need their own permission, as named in ACP → Permissions:
+user accounts `user.manage` (the member list also accepts `group.manage`), bans from the
+user page `user.ban`, progression `progression.manage` (one group's rung also accepts
+`group.manage`), moderation settings `moderation.settings`, installing, updating or
+removing plugins `plugin.install`, enabling or disabling them `plugin.enable`. The
+`/api/plugins` routes need `admin.access` and `admin.plugins`.
+
 **Two-factor sign-in.** A group holding `account.twofactor.required` (the groups picked in the installer, then
 ACP → Settings → Login; none on an upgraded site)
 must turn on two-factor sign-in before any **Admin** route answers; until then they get
@@ -239,7 +246,8 @@ would be refused.
 | POST | `/:id/publish` | Auth | Publish (in a transaction; sets `published_at` and bumps `article_count`). Your own article; someone else's needs `article.edit_any` too. |
 | POST | `/:id/unpublish` | Auth | Back to draft. |
 | DELETE | `/:id` | Auth (owner/admin) | Soft-delete. |
-| GET | `/:id/revisions` | Auth | Revision history. |
+| GET | `/:id/revisions` | Auth | Revision history: the author's own article, or anyone's with `article.edit.any` or `article.revisions.view`. |
+| POST | `/:id/revisions/:revisionId/restore` | `article.revisions.restore` | Put an earlier version back. The current text is kept as a version first, so a restore can be undone. |
 | POST | `/:id/view` | Public | Count a view (one per IP). |
 | POST | `/:id/featured-image` | Auth | Upload the featured image (`multipart`, field `file`). Each upload gets a new file name, and the replaced picture is deleted. |
 | GET | `/:id/comments` | Public | Comments (tombstones included). |

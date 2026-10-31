@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { requirePermission } from "../../shared/middleware/requirePermission.js";
+import { requireAllPermissions, requireAnyPermission, requirePermission } from "../../shared/middleware/requirePermission.js";
 import { requireAuth } from "../../shared/middleware/requireAuth.js";
 import { CorePermissions } from "@xentium/contracts";
 import { progressionController } from "./progression.controller.js";
@@ -7,7 +7,9 @@ import { progressionController } from "./progression.controller.js";
 // ── Admin progression router (mounted at /api/admin/progression) ──────────────
 export const adminProgressionRouter: Router = Router();
 
-const guard = requirePermission(CorePermissions.ADMIN_ACCESS);
+const guard = requireAllPermissions(CorePermissions.ADMIN_ACCESS, CorePermissions.PROGRESSION_MANAGE);
+// One group's rung (its badge, limits) is also edited from the group page.
+const groupGuard = [requirePermission(CorePermissions.ADMIN_ACCESS), requireAnyPermission(CorePermissions.PROGRESSION_MANAGE, CorePermissions.GROUP_MANAGE)] as const;
 
 // Global ladder view + settings
 adminProgressionRouter.get("/",                guard, progressionController.getLadder);
@@ -18,8 +20,8 @@ adminProgressionRouter.patch("/settings",      guard, progressionController.upda
 adminProgressionRouter.patch("/reorder",       guard, progressionController.reorderLadder);
 
 // Per-group config — :id is the group id
-adminProgressionRouter.get("/:id",             guard, progressionController.getGroupProgression);
-adminProgressionRouter.patch("/:id",           guard, progressionController.updateGroupProgression);
+adminProgressionRouter.get("/:id",             ...groupGuard, progressionController.getGroupProgression);
+adminProgressionRouter.patch("/:id",           ...groupGuard, progressionController.updateGroupProgression);
 
 // ── User limits router (mounted at /api/users) ────────────────────────────────
 export const userLimitsRouter: Router = Router();

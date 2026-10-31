@@ -76,6 +76,22 @@ export function requirePermission(key: PermissionKey): RequestHandler {
   };
 }
 
+/** Grants access only if the user holds EVERY one of the given keys (admin.access + a page's own, say). */
+export function requireAllPermissions(...keys: PermissionKey[]): RequestHandler {
+  return async (req, _res, next) => {
+    const { userId, sessionId } = await authedUserId(req.headers.authorization);
+    const effective = await loadEffective(userId);
+
+    const missing = keys.filter((k) => !effective.includes(k));
+    if (missing.length) throw permissionDeniedError(missing);
+    if (keys.includes(CorePermissions.ADMIN_ACCESS)) await assertTwoFactorIfRequired(userId, effective);
+
+    req.userId = userId;
+    req.sessionId = sessionId;
+    next();
+  };
+}
+
 /** Grants access if the user holds ANY one of the given permission keys. */
 export function requireAnyPermission(...keys: PermissionKey[]): RequestHandler {
   return async (req, _res, next) => {

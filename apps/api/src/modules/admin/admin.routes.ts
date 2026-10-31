@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { requirePermission } from "../../shared/middleware/requirePermission.js";
+import { requireAnyPermission, requirePermission } from "../../shared/middleware/requirePermission.js";
 import { makeRateLimiter } from "../../shared/middleware/rateLimit.js";
 import { CorePermissions, XEC } from "@xentium/contracts";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
@@ -20,6 +20,13 @@ import { adminEmailRouter } from "../email/email.routes.js";
 export const adminRouter: Router = Router();
 
 const adminGuard = requirePermission(CorePermissions.ADMIN_ACCESS);
+// What a permission names is what it guards, on top of admin.access (ACP → Permissions).
+const userManage   = requirePermission(CorePermissions.USER_MANAGE);
+const userBan      = requirePermission(CorePermissions.USER_BAN);
+// The group page lists and moves members too: either right will do there.
+const membersOrGroups = requireAnyPermission(CorePermissions.USER_MANAGE, CorePermissions.GROUP_MANAGE);
+const modSettings  = requirePermission(CorePermissions.MODERATION_SETTINGS);
+const pluginInstall = requirePermission(CorePermissions.PLUGIN_INSTALL);
 const isDev = process.env.NODE_ENV !== "production";
 /**
  * Marketplace artifact operations: authorize → install → update. Named for what
@@ -47,19 +54,19 @@ adminRouter.get("/dashboard/setup",     adminGuard, dashboardController.setup);
 adminRouter.get("/health",              adminGuard, adminController.health);
 
 // Users
-adminRouter.get("/users", adminGuard, adminController.listUsers);
-adminRouter.post("/users", adminGuard, adminController.createUser);
-adminRouter.get("/users/:id", adminGuard, adminController.getUserDetail);
-adminRouter.get("/users/:id/login-events", adminGuard, adminController.listUserLoginEvents);
-adminRouter.put("/users/:id/groups", adminGuard, requireStepUp, adminController.setUserGroups);
-adminRouter.patch("/users/:id/groups", adminGuard, requireStepUp, adminController.patchUserGroups);
-adminRouter.patch("/users/:id/active", adminGuard, adminController.setUserActive);
-adminRouter.post("/users/:id/ban",     adminGuard, adminController.banUser);
-adminRouter.delete("/users/:id/ban",   adminGuard, adminController.liftBan);
-adminRouter.post("/users/:id/force-logout",    adminGuard, adminController.forceLogoutUser);
-adminRouter.post("/users/:id/password-reset",  adminGuard, adminController.sendPasswordReset);
-adminRouter.patch("/users/:id/account",        adminGuard, requireStepUp, adminController.updateUserAccount);
-adminRouter.post("/users/:id/two-factor/reset", adminGuard, requireStepUp, twoFactorController.adminReset);
+adminRouter.get("/users", adminGuard, membersOrGroups, adminController.listUsers);
+adminRouter.post("/users", adminGuard, userManage, adminController.createUser);
+adminRouter.get("/users/:id", adminGuard, userManage, adminController.getUserDetail);
+adminRouter.get("/users/:id/login-events", adminGuard, userManage, adminController.listUserLoginEvents);
+adminRouter.put("/users/:id/groups", adminGuard, membersOrGroups, requireStepUp, adminController.setUserGroups);
+adminRouter.patch("/users/:id/groups", adminGuard, membersOrGroups, requireStepUp, adminController.patchUserGroups);
+adminRouter.patch("/users/:id/active", adminGuard, userManage, adminController.setUserActive);
+adminRouter.post("/users/:id/ban",     adminGuard, userBan, adminController.banUser);
+adminRouter.delete("/users/:id/ban",   adminGuard, userBan, adminController.liftBan);
+adminRouter.post("/users/:id/force-logout",    adminGuard, userManage, adminController.forceLogoutUser);
+adminRouter.post("/users/:id/password-reset",  adminGuard, userManage, adminController.sendPasswordReset);
+adminRouter.patch("/users/:id/account",        adminGuard, userManage, requireStepUp, adminController.updateUserAccount);
+adminRouter.post("/users/:id/two-factor/reset", adminGuard, userManage, requireStepUp, twoFactorController.adminReset);
 
 // Profile fields
 adminRouter.get("/profile-fields", adminGuard, adminController.listProfileFields);
@@ -100,8 +107,8 @@ adminRouter.post("/mod-templates/restore-defaults", adminGuard, adminController.
 adminRouter.put("/mod-templates/order",       adminGuard, adminController.reorderModTemplates);
 adminRouter.patch("/mod-templates/:id",         adminGuard, adminController.updateModTemplate);
 adminRouter.delete("/mod-templates/:id",        adminGuard, adminController.deleteModTemplate);
-adminRouter.get("/mod-settings",                adminGuard, adminController.getModSettings);
-adminRouter.patch("/mod-settings",              adminGuard, adminController.updateModSettings);
+adminRouter.get("/mod-settings",                adminGuard, modSettings, adminController.getModSettings);
+adminRouter.patch("/mod-settings",              adminGuard, modSettings, adminController.updateModSettings);
 adminRouter.get("/modlog",             adminGuard, adminController.listModLog);
 adminRouter.get("/modlog/summary",     adminGuard, adminController.modLogSummary);
 adminRouter.get("/modlog/export.csv",  adminGuard, adminController.modLogExport);
@@ -220,11 +227,11 @@ adminRouter.post("/marketplace/link",          adminGuard, adminController.start
 adminRouter.get("/marketplace/link/:linkId",   adminGuard, adminController.pollMarketplaceLink);
 adminRouter.delete("/marketplace/connection",  adminGuard, adminController.disconnectMarketplace);
 // The authenticated download gate — proves account + per-domain ownership.
-adminRouter.post("/marketplace/authorize",     adminGuard, marketplaceArtifactLimiter, adminController.authorizeMarketplaceDownload);
+adminRouter.post("/marketplace/authorize",     adminGuard, pluginInstall, marketplaceArtifactLimiter, adminController.authorizeMarketplaceDownload);
 // Direct install (§16.2): authorize → server-side fetch + sha256 verify → normal intake.
-adminRouter.post("/marketplace/install",       adminGuard, requireStepUp, marketplaceArtifactLimiter, adminController.installFromMarketplace);
+adminRouter.post("/marketplace/install",       adminGuard, pluginInstall, requireStepUp, marketplaceArtifactLimiter, adminController.installFromMarketplace);
 // Update-in-place (§16.2): same chokepoint, engine swaps the newer artifact in.
-adminRouter.post("/marketplace/update",        adminGuard, requireStepUp, marketplaceArtifactLimiter, adminController.updateFromMarketplace);
+adminRouter.post("/marketplace/update",        adminGuard, pluginInstall, requireStepUp, marketplaceArtifactLimiter, adminController.updateFromMarketplace);
 
 // Sub-routers
 adminRouter.use("/groups",       groupsRouter);
