@@ -1,3 +1,4 @@
+import { compareSemver } from "../../shared/utils/semver.js";
 import { prisma } from "../../infrastructure/db.js";
 import {
   installPlugin,
@@ -38,11 +39,28 @@ export const pluginService = {
       permissions:      manifest.permissions,
       migrations:       manifest.migrations,
       alreadyInstalled: !!existing,
+      installedVersion: existing?.installedVersion ?? null,
+      // An installed plugin is updated by uploading a newer build; same or older is refused.
+      newer:            existing ? compareSemver(manifest.version, existing.installedVersion) > 0 : null,
     };
   },
 
   async install(buffer: Buffer, userId: string) {
     return withLifecycleLock(() => installPlugin(buffer, userId));
+  },
+
+  /**
+   * An upload: installs a new plugin, or UPDATES an installed one (its data kept,
+   * only its new migrations run, on/off as it was). Without this a plugin that is not
+   * in the store, a private one, could only be replaced by uninstalling it, which
+   * rolls its tables back.
+   */
+  async installOrUpdate(buffer: Buffer, userId: string) {
+    const { manifest } = await validatePackage(buffer);
+    const existing = await prisma.installedPlugin.findUnique({ where: { id: manifest.id }, select: { id: true } });
+    return existing
+      ? { manifest: await this.update(buffer, userId), updated: true }
+      : { manifest: await this.install(buffer, userId), updated: false };
   },
 
   async update(buffer: Buffer, userId: string, onProgress?: (p: { phase: string; percent: number }) => void) {

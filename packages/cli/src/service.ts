@@ -87,7 +87,7 @@ export async function installUnits(site: Site, units: UnitNames): Promise<boolea
   info(`Installing two systemd units as ${color.bold(user)}:`);
   info(`  /etc/systemd/system/${units.api}.service`);
   info(`  /etc/systemd/system/${units.worker}.service`);
-  info(color.dim("sudo will ask for your password."));
+  info(color.dim("sudo may ask for your password."));
   line();
 
   const installed =

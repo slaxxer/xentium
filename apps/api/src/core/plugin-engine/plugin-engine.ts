@@ -65,12 +65,17 @@ function hostNodeModules(): string | null {
  * regardless of where the store lives. Best-effort: a failure here is not worth
  * blocking startup over, and the default layout does not need it.
  */
-async function ensureHostModulesLink(): Promise<void> {
-  const link = path.join(PLUGIN_STORE, "node_modules");
-  if (existsSync(link)) return;
-  const target = hostNodeModules();
+export async function ensureHostModulesLink(store = PLUGIN_STORE, target = hostNodeModules()): Promise<void> {
+  const link = path.join(store, "node_modules");
   if (!target) return;
+  // An update installs a new release beside the old one, so a link made before it
+  // still points at the OLD release: plugins would get another copy of express than
+  // core's. Re-point it; a real directory someone put there is left alone.
+  const existing = await fs.readlink(link).catch(() => null);
+  if (existing === target) return;
+  if (existing === null && existsSync(link)) return;
   try {
+    if (existing !== null) await fs.unlink(link);
     await fs.symlink(target, link, "junction");
     logger.info({ link, target }, "Linked host node_modules into the plugin store");
   } catch (err) {

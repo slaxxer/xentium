@@ -56,11 +56,11 @@ pluginManagementRouter.post("/validate", requireAuth, adminGuard, installGuard, 
   }
 });
 
-// Upload and install
+// Upload: installs, or updates an installed plugin to the newer build uploaded
 pluginManagementRouter.post("/upload", requireAuth, adminGuard, installGuard, requireStepUp, uploadGuard, uploadLimiter, upload.single("file"), async (req, res, next) => {
   try {
     if (!req.file) return res.status(400).json({ message: "No file uploaded" });
-    const manifest = await pluginService.install(req.file.buffer, req.userId!);
+    const { manifest, updated } = await pluginService.installOrUpdate(req.file.buffer, req.userId!);
 
     // Refresh the authoritative paid-id set, then correct the stored licenseRequired
     // if this id is a paid marketplace product uploaded with a "free" manifest — so
@@ -77,7 +77,7 @@ pluginManagementRouter.post("/upload", requireAuth, adminGuard, installGuard, re
     // update right away (best-effort; the admin sees it on their next ACP entry).
     const { processUpdateCheck } = await import("../../jobs/updateCheck.js");
     void processUpdateCheck().catch(() => {});
-    res.status(201).json({ id: manifest.id, name: manifest.name, version: manifest.version });
+    res.status(updated ? 200 : 201).json({ id: manifest.id, name: manifest.name, version: manifest.version, updated });
   } catch (err: any) {
     if (err?.message) return res.status(400).json({ message: err.message });
     next(err);
