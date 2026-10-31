@@ -114,12 +114,32 @@ We store tokens **by scope**:
 {
   "global":         { "--c-accent": "#e22b2b" },   // → :root, .xt-site-tokens
   "footer":         { "--c-bg": "#0e0e12" },       // → .xt-foot  (SCOPE_SELECTOR)
-  "variant.accent": { "--surface-bg": "…" }        // → :root .xt-v--accent
+  "variant.accent": { "--surface-bg": "…" },       // → :root .xt-v--accent
+  "page.home":      { "--c-bg": "#101820" }        // → :root[data-xt-page="home"]
 }
 ```
 
-`SCOPE_SELECTOR` in `packages/contracts/src/tokens.ts` maps each scope to its selector. A
-token set in a region's scope only applies inside that region.
+`SCOPE_SELECTOR` in `packages/contracts/src/tokens.ts` maps each region and variant scope
+to its selector, and `scopeSelector()` answers for every scope. A token set in a region's
+scope only applies inside that region.
+
+### Per-page design
+
+Every page that has a layout can have a look of its own. A **page scope** is
+`page.<template>` (`page.home`, `page.members`, `page.forum.index` for a plugin page),
+and its tokens apply to the whole screen while that page is shown, header and footer
+included. The site marks the document root with the page it renders
+(`<html data-xt-page="home">`), and the scope's selector is that root, so a page scope
+beats `global` and a region scope still beats both inside its region.
+
+In Theme Studio → Colours & type, switch the preview to **Page**, pick the page, then
+choose **Only <page>**: every token you change now goes to that page's scope, palette
+included, and the board shows the colours that page will wear. **Whole site** goes back
+to the global scope. Page scopes travel in `tokens.json` like any other scope, and a page
+that doesn't exist on a site (a plugin that isn't installed) simply never matches.
+
+Pages without a layout (sign-in, account settings, legal pages) carry no page mark and
+wear the site's look. The admin panel never does.
 
 ### Validation
 
@@ -330,6 +350,11 @@ What the reset buttons do:
 | **Reset appearance** | clears your tokens, fonts and custom CSS **for this theme** and keeps the theme |
 | **Reset** on a template (Theme Studio, Layout mode) | removes your layout, so the page shows what the theme ships (Core: the built-in default) |
 | **Revert to theme** on a template | stages the theme's version as a draft you can preview and publish |
+| **Reset theme** (Theme Studio, next to Publish) | stages the whole theme as it ships: every page and header or footer layout you changed, the site layout, colours, font and custom CSS. You preview it and Publish; History keeps your version. Logo and branding stay |
+
+The template **Reset** only touches the template open in the picker, and **Reset
+appearance** only the colours, fonts and CSS, both straight away. To put a theme back
+the way it came, use **Reset theme**.
 
 ### Draft and publish
 
@@ -446,6 +471,10 @@ request:
   with a class on its child), which is how a stylesheet sets tokens or
   `color-scheme: dark`;
 - `@keyframes` steps and nested rules stay as written.
+
+To style one page in custom CSS, start the selector at the root with the page mark:
+`:root[data-xt-page="members"] .card { … }`. Rules like that stay on the root (see above),
+and they only match while that page is on screen.
 
 A **theme's** stylesheet has two extra rules, which we enforce on import: no `@import`,
 and no remote `url()`. It can reference its own `assets/…` (we rewrite those to wherever

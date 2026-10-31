@@ -23,6 +23,10 @@
     "smtp_test": {
       "subject": "Test SMTP · {{site_name}}",
       "body": "<h2>L'envoi d'e-mails fonctionne</h2><p>Ceci est le message de test de {{site_name}}. Si vous le lisez, les paramètres SMTP de votre ACP sont corrects et les e-mails quittent le serveur.</p><p>Envoyé depuis {{site_url}}</p>"
+    },
+    "security_alert": {
+      "subject": "{{event}} · {{site_name}}",
+      "body": "<h1>{{event}}</h1><p>{{detail}}</p><p>{{request_box}}</p><hr><p>Ce n’était pas vous ? Changez votre mot de passe et vérifiez dans les paramètres de votre compte où vous êtes connecté. Si vous avez besoin d’aide, {{support_link}}.</p>"
     }
   },
   "buttons": {
@@ -38,5 +42,39 @@
     "location": "Lieu"
   },
   "supportLink": "contactez le support",
-  "sentBy": "Envoyé par {{site}}"
+  "sentBy": "Envoyé par {{site}}",
+  "security": {
+    "twofactor_enabled": {
+      "title": "La connexion en deux étapes est activée",
+      "detail": "La connexion en deux étapes a été activée sur votre compte. Désormais, la connexion demande un code de votre application d’authentification. Vos autres sessions ont été déconnectées."
+    },
+    "twofactor_disabled": {
+      "title": "La connexion en deux étapes a été désactivée",
+      "detail": "La connexion en deux étapes a été désactivée sur votre compte. La connexion ne demande plus de code de votre application d’authentification."
+    },
+    "recovery_used": {
+      "title": "Un code de récupération a été utilisé",
+      "detail": "Un de vos codes de récupération vient d’être utilisé à la place de votre application d’authentification. Chaque code ne fonctionne qu’une fois."
+    },
+    "recovery_regenerated": {
+      "title": "Vous avez de nouveaux codes de récupération",
+      "detail": "De nouveaux codes de récupération ont été créés pour votre compte. Les anciens ne fonctionnent plus."
+    },
+    "twofactor_reset": {
+      "title": "Un administrateur a désactivé votre connexion en deux étapes",
+      "detail": "Un administrateur a retiré la connexion en deux étapes de votre compte et vous a déconnecté partout. Vous pouvez la réactiver dans les paramètres de votre compte."
+    },
+    "twofactor_disabled_admin": {
+      "title": "{{username}} a désactivé la connexion en deux étapes",
+      "detail": "{{username}} doit utiliser la connexion en deux étapes et vient de la désactiver. Le panneau d’administration reste fermé à ce compte jusqu’à sa réactivation."
+    },
+    "recovery_used_admin": {
+      "title": "{{username}} a utilisé un code de récupération",
+      "detail": "{{username}} doit utiliser la connexion en deux étapes et vient d’utiliser un code de récupération à usage unique au lieu de son application d’authentification."
+    },
+    "twofactor_reset_admin": {
+      "title": "La connexion en deux étapes de {{username}} a été retirée",
+      "detail": "Un administrateur a retiré la connexion en deux étapes de {{username}} et l’a déconnecté partout."
+    }
+  }
 }

@@ -4,7 +4,11 @@ import type { NotificationTypeDeclaration, PluginContext, PluginHost, PluginJobD
 import { CorePermissions, registerTemplate } from "@xentium/contracts";
 import { progressionCriteriaRegistry } from "../progression-registry/progression-criteria-registry.js";
 import { badgeCriteriaRegistry } from "../badge-registry/badge-criteria-registry.js";
-import { prisma } from "../../infrastructure/db.js";
+import { pool, prisma } from "../../infrastructure/db.js";
+import { requireStepUp } from "../../modules/auth/twoFactor.service.js";
+import { verifyPassword } from "../../modules/auth/auth.password.js";
+import { isLegacyScheme, verifyLegacyPassword } from "../../modules/auth/auth.legacyPassword.js";
+import { hasUsablePassword } from "../../modules/auth/signInMethods.service.js";
 import { pluginRouter } from "./plugin-router.js";
 import { acpPageRegistry } from "./acp-page-registry.js";
 import { securityScanRegistry } from "../security/security-scan-registry.js";
@@ -69,6 +73,45 @@ export async function addToGroup(userId: string, groupId: string): Promise<void>
   if (!had) emitGroupsChanged(userId, [], [groupId]);
 }
 
+/**
+ * A group a plugin needs (a store's "Customer"), created the first time and found
+ * after that. Its name, badge colour and glow are only the starting point: from then on
+ * the group is the admin's, renamed or recoloured in ACP → Groups, and never touched
+ * again here. It holds `permissions` when it is created (a "Publisher" group needs
+ * the right to publish to mean anything) and nothing else; keys that don't exist are
+ * skipped. An admin who later takes one away is never overruled.
+ */
+export async function ensureGroup(spec: {
+  key: string; name: string; badgeColor?: string; nameGlow?: boolean; displayOrder?: number; permissions?: string[];
+}): Promise<string> {
+  const key = z.string().regex(/^[a-z][a-z0-9_-]{1,40}$/, "A group key is lowercase letters, digits, - and _.").parse(spec.key);
+  // The same line addToGroup holds: a plugin never makes an admin group to put people in.
+  if (spec.permissions?.includes("admin.access")) {
+    throw new XentiumError({ code: XEC.API_FORBIDDEN, httpStatus: 403, message: "A plugin's group cannot hold admin access." });
+  }
+  const existing = await prisma.group.findUnique({ where: { key }, select: { id: true } });
+  if (existing) return existing.id;
+  const color = spec.badgeColor && /^#[0-9a-f]{3,8}$/i.test(spec.badgeColor) ? spec.badgeColor : null;
+  const group = await prisma.group.create({
+    data: {
+      key, name: spec.name.slice(0, 60), isSystem: false, displayOrder: spec.displayOrder ?? 100,
+      // Not a ladder rung: the badge only.
+      ...(color || spec.nameGlow
+        ? { progression: { create: { isProgressionGroup: false, badgeColor: color, badgeTextShadow: !!spec.nameGlow } } }
+        : {}),
+    },
+    select: { id: true },
+  });
+  if (spec.permissions?.length) {
+    const perms = await prisma.permission.findMany({ where: { key: { in: spec.permissions } }, select: { id: true } });
+    if (perms.length) {
+      await prisma.groupPermission.createMany({ data: perms.map((p) => ({ groupId: group.id, permissionId: p.id })), skipDuplicates: true });
+      await permissionCache.invalidateForGroup(group.id).catch(() => {});
+    }
+  }
+  return group.id;
+}
+
 export async function removeFromGroup(userId: string, groupId: string): Promise<void> {
   const { count } = await prisma.userGroup.deleteMany({ where: { userId, groupId } });
   await permissionCache.invalidate(userId);
@@ -78,6 +121,7 @@ export async function removeFromGroup(userId: string, groupId: string): Promise<
 /** Host services shared by every plugin; the plugin's own (`jobs`) are added per context. */
 const host: Omit<PluginHost, "jobs" | "settings" | "files" | "limits" | "cache"> = {
   prisma,
+  pg: pool,
   zod: z,
   users: pluginUsers,
   time: pluginTime,
@@ -90,6 +134,23 @@ const host: Omit<PluginHost, "jobs" | "settings" | "files" | "limits" | "cache">
     optionalAuth,
     // Wrap so plugins can pass any permission-key string (core type is a strict union).
     requirePermission: (key: string) => requirePermission(key as never),
+    requireStepUp,
+  },
+  // The same rules as signing in: a hash starting with "!" can never verify (an
+  // imported or provider-only account), and a migrated account keeps its source
+  // platform's scheme until its next sign-in upgrades it.
+  auth: {
+    verifyPassword: async (userId: string, password: string) => {
+      const u = await prisma.user.findUnique({ where: { id: userId }, select: { passwordHash: true, passwordScheme: true } });
+      if (!u || !hasUsablePassword(u.passwordHash)) return false;
+      return (isLegacyScheme(u.passwordScheme)
+        ? verifyLegacyPassword(u.passwordScheme, u.passwordHash, password)
+        : verifyPassword(u.passwordHash, password)).catch(() => false);
+    },
+    hasPassword: async (userId: string) => {
+      const u = await prisma.user.findUnique({ where: { id: userId }, select: { passwordHash: true } });
+      return !!u && hasUsablePassword(u.passwordHash);
+    },
   },
   progression: { getEffectiveGroupId: getEffectiveProgressionGroupId },
   // Embeds inside content, and who may see that content (fails closed).
@@ -101,7 +162,7 @@ const host: Omit<PluginHost, "jobs" | "settings" | "files" | "limits" | "cache">
   // Ask instead of refuse: e.g. "may this member still reply to a closed thread?".
   permissions: { has: (userId: string, key: string) => hasPermission(userId, key as never) },
   utils:      { resolveAvatar, sanitizeRichText, cron: { resolveCron: resolveCronPattern, previewRuns }, encryptSecret, decryptSecret },
-  groups:     { add: addToGroup, remove: removeFromGroup },
+  groups:     { add: addToGroup, remove: removeFromGroup, ensure: ensureGroup },
   notificationService: {
     // Lazy import avoids a top-level circular dependency with the engine.
     dispatch: async (opts: any) => {
@@ -208,8 +269,9 @@ export class PluginContextImpl implements PluginContext {
   async registerNavItem(item: NavItemDeclaration): Promise<void> {
     // Check if this plugin's nav item already exists
     const existing = await prisma.navItem.findFirst({
-      where: { pluginId: this.pluginId, label: item.label },
+      where: { pluginId: this.pluginId, label: item.label, parentId: null },
     });
+    let parentId = existing?.id ?? null;
 
     if (!existing) {
       // Plugin links always append BELOW everything already in the nav —
@@ -217,7 +279,7 @@ export class PluginContextImpl implements PluginContext {
       // plugins keep their spot (newest last). The declared `item.position`
       // is deliberately not an absolute index; admins reorder in the ACP.
       const maxPos = await prisma.navItem.aggregate({ _max: { position: true } });
-      await prisma.navItem.create({
+      parentId = (await prisma.navItem.create({
         data: {
           label:       item.label,
           url:         item.url,
@@ -227,6 +289,20 @@ export class PluginContextImpl implements PluginContext {
           isSystem:    false,
           pluginId:    this.pluginId,
           openInNewTab: false,
+        },
+      })).id;
+    }
+    // Its dropdown: each child once, under the plugin's own link. One an admin moved
+    // elsewhere is found by plugin + label and left where it is.
+    for (const [n, child] of (item.children ?? []).entries()) {
+      if (!parentId) break;
+      const has = await prisma.navItem.findFirst({ where: { pluginId: this.pluginId, label: child.label, NOT: { id: parentId } } });
+      if (has) continue;
+      await prisma.navItem.create({
+        data: {
+          label: child.label, url: child.url, position: n + 1, parentId,
+          visibility: child.visibility ?? "public", isActive: true, isSystem: false,
+          pluginId: this.pluginId, openInNewTab: false,
         },
       });
     }

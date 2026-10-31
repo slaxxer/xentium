@@ -23,6 +23,10 @@
     "smtp_test": {
       "subject": "SMTP-Test – {{site_name}}",
       "body": "<h2>Der E-Mail-Versand funktioniert</h2><p>Das ist die Testnachricht von {{site_name}}. Wenn du sie liest, stimmen die SMTP-Einstellungen im ACP und E-Mails verlassen den Server.</p><p>Gesendet von {{site_url}}</p>"
+    },
+    "security_alert": {
+      "subject": "{{event}} · {{site_name}}",
+      "body": "<h1>{{event}}</h1><p>{{detail}}</p><p>{{request_box}}</p><hr><p>Das warst du nicht? Ändere dein Passwort und prüfe in deinen Kontoeinstellungen, wo du angemeldet bist. Wenn du Hilfe brauchst, {{support_link}}.</p>"
     }
   },
   "buttons": {
@@ -38,5 +42,39 @@
     "location": "Ort"
   },
   "supportLink": "wende dich an den Support",
-  "sentBy": "Gesendet von {{site}}"
+  "sentBy": "Gesendet von {{site}}",
+  "security": {
+    "twofactor_enabled": {
+      "title": "Zwei-Faktor-Anmeldung ist aktiv",
+      "detail": "Für dein Konto wurde die Zwei-Faktor-Anmeldung eingeschaltet. Ab jetzt fragt die Anmeldung nach einem Code aus deiner Authenticator-App. Deine anderen Sitzungen wurden abgemeldet."
+    },
+    "twofactor_disabled": {
+      "title": "Zwei-Faktor-Anmeldung wurde ausgeschaltet",
+      "detail": "Für dein Konto wurde die Zwei-Faktor-Anmeldung ausgeschaltet. Die Anmeldung fragt nicht mehr nach einem Code aus deiner Authenticator-App."
+    },
+    "recovery_used": {
+      "title": "Ein Wiederherstellungscode wurde verwendet",
+      "detail": "Gerade wurde einer deiner Wiederherstellungscodes statt deiner Authenticator-App verwendet. Jeder Code funktioniert nur einmal."
+    },
+    "recovery_regenerated": {
+      "title": "Du hast neue Wiederherstellungscodes",
+      "detail": "Für dein Konto wurden neue Wiederherstellungscodes erstellt. Die alten funktionieren nicht mehr."
+    },
+    "twofactor_reset": {
+      "title": "Ein Admin hat deine Zwei-Faktor-Anmeldung ausgeschaltet",
+      "detail": "Ein Admin hat die Zwei-Faktor-Anmeldung von deinem Konto entfernt und dich überall abgemeldet. Du kannst sie in deinen Kontoeinstellungen wieder einschalten."
+    },
+    "twofactor_disabled_admin": {
+      "title": "{{username}} hat die Zwei-Faktor-Anmeldung ausgeschaltet",
+      "detail": "{{username}} muss die Zwei-Faktor-Anmeldung nutzen und hat sie gerade ausgeschaltet. Der Adminbereich bleibt für dieses Konto gesperrt, bis sie wieder aktiv ist."
+    },
+    "recovery_used_admin": {
+      "title": "{{username}} hat einen Wiederherstellungscode verwendet",
+      "detail": "{{username}} muss die Zwei-Faktor-Anmeldung nutzen und hat gerade einen einmaligen Wiederherstellungscode statt der Authenticator-App verwendet."
+    },
+    "twofactor_reset_admin": {
+      "title": "Zwei-Faktor-Anmeldung von {{username}} entfernt",
+      "detail": "Ein Admin hat die Zwei-Faktor-Anmeldung von {{username}} entfernt und das Konto überall abgemeldet."
+    }
+  }
 }

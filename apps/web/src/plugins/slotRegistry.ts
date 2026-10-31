@@ -40,12 +40,50 @@ export interface ProfileTabSlot {
   id: string;
   label: string;
   component: ComponentType<{ profileId: string; profileUsername: string; isOwn: boolean }>;
+  /**
+   * Whether this profile gets the tab at all (a publisher's listings on a member who
+   * publishes nothing would be an empty tab). Absent = every profile. Hidden until it
+   * answers, so a tab never appears and vanishes again.
+   */
+  shownFor?: (userId: string) => Promise<boolean>;
 }
 
 // ── Account settings section ──────────────────────────────────────────────────
 export interface AccountSectionSlot {
   id: string;
   label: string;
+  component: ComponentType;
+}
+
+// ── Account tab ───────────────────────────────────────────────────────────────
+/**
+ * A tab of its own on the member's Account page (`/account?tab=<id>`), listed in
+ * the account menu after core's tabs, under its `group` heading. For a plugin
+ * whose member pages belong with the account (a shop's licences and invoices),
+ * so it never builds an account area of its own.
+ *
+ * `id` is namespaced (`store.licences`) and is the tab's URL value. `permission`
+ * hides the tab from members without it (a hint: the plugin's endpoints check
+ * again). `keywords` feed the account menu's search.
+ */
+export interface AccountTabSlot {
+  id: string;
+  /** A getter may translate it at render. */
+  label: string;
+  /** FontAwesome IconDefinition. */
+  icon?: unknown;
+  /** Heading the tab is listed under; tabs sharing one are grouped. Absent = no heading. */
+  group?: string;
+  /** Lower renders higher, within the plugin tabs. */
+  order?: number;
+  permission?: string;
+  keywords?: string;
+  /**
+   * Whether this member gets the tab at all (a shop's Invoices for someone who never
+   * bought anything). Absent = everyone. Not listed until it answers; opened by its
+   * URL anyway, the tab waits for the answer instead of falling back to Profile.
+   */
+  shownFor?: (userId: string) => Promise<boolean>;
   component: ComponentType;
 }
 
@@ -171,6 +209,8 @@ export interface UserMenuItemSlot {
   icon?: unknown;
   /** Lower renders higher. */
   order?: number;
+  /** Whether this member gets the entry (same rule as an account tab's). Absent = everyone. */
+  shownFor?: (userId: string) => Promise<boolean>;
 }
 
 // ── Plugin-level metadata (icon, color, ACP position, notification prefixes) ──
@@ -218,6 +258,8 @@ export interface ProfileStatSlot {
   fetchValue: (userId: string) => Promise<number>;
   /** If provided, clicking the stat switches to this profile tab. */
   tabId?: string;
+  /** Whether this profile shows the stat at all. Absent = every profile. */
+  shownFor?: (userId: string) => Promise<boolean>;
 }
 
 // ── Profile action (registered by plugins, shown in /u/:username card action row) ─
@@ -263,6 +305,19 @@ export interface UserDetailPanelSlot {
 export interface IpEnrichmentSlot {
   id: string;
   component: ComponentType<{ ip: string }>;
+}
+
+// ── ACP badge (registered by plugins) ─────────────────────────────────────────
+/**
+ * A count beside one of the plugin's ACP pages (`path`, as registered with
+ * registerAcpPage): new applications, reports waiting. Shown when above zero, and
+ * the section's rail icon gets a dot. Polled while the ACP is open; `count` should
+ * be cheap and answer 0 for an admin it does not concern.
+ */
+export interface AcpBadgeSlot {
+  id: string;
+  path: string;
+  count(): Promise<number>;
 }
 
 // ── ModCanvas queue (registered by plugins) ───────────────────────────────────
@@ -385,6 +440,7 @@ export interface ComposerToolSlot {
 class SlotRegistry {
   private profileTabs:       ProfileTabSlot[]       = [];
   private accountSections:   AccountSectionSlot[]   = [];
+  private accountTabs:       AccountTabSlot[]       = [];
   private privacySections:   PrivacySectionSlot[]   = [];
   private settingsSections:  SettingsSectionSlot[]  = [];
   private editorPanels:      EditorPanelSlot[]      = [];
@@ -394,6 +450,7 @@ class SlotRegistry {
   private searchTabs:        SearchTabSlot[]         = [];
   private modCanvasSections: ModCanvasSectionSlot[]  = [];
   private modQueues:         ModQueueSlot[]          = [];
+  private acpBadges:         AcpBadgeSlot[]          = [];
   private userDetailPanels:  UserDetailPanelSlot[]    = [];
   private ipEnrichments:     IpEnrichmentSlot[]       = [];
   private modCanvasUserPanels: ModCanvasUserPanelSlot[] = [];
@@ -435,6 +492,7 @@ class SlotRegistry {
   registerPluginMeta(meta: PluginMeta)                      { this._activePlugin = meta.pluginId; this.pluginMetas.push(meta); }
   registerProfileTab(slot: ProfileTabSlot)                  { this._own(slot.id);     this.profileTabs.push(slot); }
   registerAccountSection(slot: AccountSectionSlot)          { this._own(slot.id);     this.accountSections.push(slot); }
+  registerAccountTab(slot: AccountTabSlot)                  { this._own(slot.id);     this.accountTabs.push(slot); }
   registerRegistrationField(slot: RegistrationFieldSlot)    { this._own(slot.id);     this.registrationFields.push(slot); }
   registerPrivacySection(slot: PrivacySectionSlot)          { this._own(slot.id);     this.privacySections.push(slot); }
   registerSettingsSection(slot: SettingsSectionSlot)         { this._own(slot.id);     this.settingsSections.push(slot); }
@@ -444,6 +502,7 @@ class SlotRegistry {
   registerSearchTab(tab: SearchTabSlot)                     { this._own(tab.id);      this.searchTabs.push(tab); }
   registerModCanvasSection(section: ModCanvasSectionSlot)   { this._own(section.id);  this.modCanvasSections.push(section); }
   registerModQueue(queue: ModQueueSlot)                     { this._own(queue.id);    this.modQueues.push(queue); }
+  registerAcpBadge(slot: AcpBadgeSlot)                      { this._own(slot.id);     this.acpBadges.push(slot); }
   registerUserDetailPanel(panel: UserDetailPanelSlot)       { this._own(panel.id);    this.userDetailPanels.push(panel); }
   registerIpEnrichment(slot: IpEnrichmentSlot)              { this._own(slot.id);     this.ipEnrichments.push(slot); }
   registerModCanvasUserPanel(slot: ModCanvasUserPanelSlot)  { this._own(slot.id);     this.modCanvasUserPanels.push(slot); }
@@ -466,6 +525,7 @@ class SlotRegistry {
 
   getProfileTabs()       { return [...this.profileTabs]; }
   getAccountSections()   { return [...this.accountSections]; }
+  getAccountTabs()       { return [...this.accountTabs].sort((a, b) => (a.order ?? 100) - (b.order ?? 100)); }
   /** Sign-up fields, each with the add-on id its value is sent under. */
   getRegistrationFields() {
     return [...this.registrationFields]
@@ -486,6 +546,7 @@ class SlotRegistry {
   }
   getModCanvasSections() { return [...this.modCanvasSections]; }
   getModQueues()         { return [...this.modQueues]; }
+  getAcpBadges()         { return [...this.acpBadges]; }
   getUserDetailPanels()  { return [...this.userDetailPanels].sort((a, b) => (a.order ?? 100) - (b.order ?? 100)); }
   getIpEnrichments()     { return [...this.ipEnrichments]; }
   getModCanvasUserPanels() { return [...this.modCanvasUserPanels].sort((a, b) => (a.order ?? 100) - (b.order ?? 100)); }
@@ -534,6 +595,7 @@ class SlotRegistry {
     this.profileTabs       = this.profileTabs.filter((s) => !this._ownedBy(s.id, pluginId));
     this.editorPanels      = this.editorPanels.filter((s) => !this._ownedBy(s.id, pluginId));
     this.accountSections   = this.accountSections.filter((s) => !this._ownedBy(s.id, pluginId));
+    this.accountTabs       = this.accountTabs.filter((s) => !this._ownedBy(s.id, pluginId));
     this.registrationFields = this.registrationFields.filter((s) => !this._ownedBy(s.id, pluginId));
     this.privacySections   = this.privacySections.filter((s) => !this._ownedBy(s.id, pluginId));
     this.routes            = this.routes.filter((r) => !this._ownedBy(r.path, pluginId));

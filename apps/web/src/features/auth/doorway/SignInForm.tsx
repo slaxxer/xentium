@@ -12,8 +12,9 @@ import { DigitsInput, FormError, OrDivider, PasskeyButton, PasswordInput, Provid
 import {
   completePin, isPasskeyCancel, passkeysSupported, signInWithPasskey, startProvider, type SignInResponse,
 } from "./signInClient";
+import { TwoFactorStep } from "./TwoFactorStep";
 
-type Pending = { kind: "password" } | { kind: "ticket"; ticket: string };
+type Pending = { kind: "password" } | { kind: "ticket"; ticket: string } | { kind: "totp"; ticket: string };
 
 /**
  * Every way in, plus the PIN step any of them can end at — ONE implementation for the
@@ -50,6 +51,10 @@ export function SignInForm({ head, returnTo, onSignedIn, onEmailLink, compact = 
   const [badCredentials, setBadCredentials] = useState(false);
 
   async function finish(res: SignInResponse, via: Pending["kind"]) {
+    if (res.requiresTotp && res.ticket) {
+      setPending({ kind: "totp", ticket: res.ticket });
+      return;
+    }
     if (res.requiresPin) {
       setPending(via === "ticket" && res.ticket ? { kind: "ticket", ticket: res.ticket } : { kind: "password" });
       setPin("");
@@ -94,6 +99,18 @@ export function SignInForm({ head, returnTo, onSignedIn, onEmailLink, compact = 
   const provider = (p: string) => run(p, () => startProvider(p, remember, returnTo));
 
   const Heading = compact ? "h2" : "h1";
+
+  if (pending?.kind === "totp") {
+    return (
+      <TwoFactorStep
+        ticket={pending.ticket}
+        heading={Heading}
+        onDone={(res) => finish(res, "ticket")}
+        onBack={() => { setPending(null); setPassword(""); }}
+        backLabel={t("door.back")}
+      />
+    );
+  }
 
   if (pending) {
     return (

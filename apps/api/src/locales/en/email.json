@@ -23,6 +23,10 @@
     "smtp_test": {
       "subject": "SMTP test — {{site_name}}",
       "body": "<h2>Outbound mail works</h2><p>This is the test message from {{site_name}}. If you are reading it, the SMTP settings in your ACP are correct and mail is leaving the server.</p><p>Sent from {{site_url}}</p>"
+    },
+    "security_alert": {
+      "subject": "{{event}} · {{site_name}}",
+      "body": "<h1>{{event}}</h1><p>{{detail}}</p><p>{{request_box}}</p><hr><p>Not you? Change your password and check where you are signed in, in your account settings. If you need help, {{support_link}}.</p>"
     }
   },
   "buttons": {
@@ -38,5 +42,39 @@
     "location": "Location"
   },
   "supportLink": "contact support",
-  "sentBy": "Sent by {{site}}"
+  "sentBy": "Sent by {{site}}",
+  "security": {
+    "twofactor_enabled": {
+      "title": "Two-factor sign-in is on",
+      "detail": "Two-factor sign-in was turned on for your account. From now on, signing in asks for a code from your authenticator app. Your other sessions were signed out."
+    },
+    "twofactor_disabled": {
+      "title": "Two-factor sign-in was turned off",
+      "detail": "Two-factor sign-in was turned off for your account. Signing in no longer asks for a code from your authenticator app."
+    },
+    "recovery_used": {
+      "title": "A recovery code was used",
+      "detail": "One of your recovery codes was just used instead of your authenticator app. Each code works once."
+    },
+    "recovery_regenerated": {
+      "title": "You have new recovery codes",
+      "detail": "New recovery codes were made for your account. The old ones no longer work."
+    },
+    "twofactor_reset": {
+      "title": "An admin turned off your two-factor sign-in",
+      "detail": "An admin removed two-factor sign-in from your account and signed you out everywhere. You can turn it on again in your account settings."
+    },
+    "twofactor_disabled_admin": {
+      "title": "{{username}} turned off two-factor sign-in",
+      "detail": "{{username}} must use two-factor sign-in and just turned it off. The admin panel stays closed to them until it is on again."
+    },
+    "recovery_used_admin": {
+      "title": "{{username}} used a recovery code",
+      "detail": "{{username}} must use two-factor sign-in and just used a one-time recovery code instead of their authenticator app."
+    },
+    "twofactor_reset_admin": {
+      "title": "Two-factor sign-in was removed from {{username}}",
+      "detail": "An admin removed two-factor sign-in from {{username}} and signed them out everywhere."
+    }
+  }
 }

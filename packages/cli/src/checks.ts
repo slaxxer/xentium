@@ -262,7 +262,7 @@ export async function checkRegistry(registry = "https://registry.npmjs.org"): Pr
     "Xentium is installed from npm. Check the network, a proxy, or `npm config get registry`.");
 }
 
-export async function checkMarketplace(url = "https://plugins.xentium.org/api/v1"): Promise<Check> {
+export async function checkMarketplace(url = "https://app.xentium.org/api/p/xentium-store/v1"): Promise<Check> {
   if (await reachable(url)) return ok("marketplace", "Xentium marketplace", "reachable");
   return warn("marketplace", "Xentium marketplace", `cannot reach ${url} — plugins and updates won't be offered until it is`);
 }

@@ -45,7 +45,9 @@
     "members": "Membros",
     "editor": "Editor",
     "groupSetup": "Configuração",
-    "groupLogs": "Registos"
+    "groupLogs": "Registos",
+    "waiting_one": "{{count}} pendente",
+    "waiting_other": "{{count}} pendentes"
   },
   "sidebar": {
     "adminPanel": "Painel de administração",
@@ -57,7 +59,10 @@
     "sections": "Secções",
     "expandPanel": "Expandir painel",
     "collapsePanel": "Recolher painel",
-    "dockPanel": "Manter o painel aberto"
+    "dockPanel": "Manter o painel aberto",
+    "twoFactorTitle": "Ative o início de sessão em dois passos",
+    "twoFactorBody": "O seu grupo tem de usar o início de sessão em dois passos para abrir o painel de administração. Ative-o nas definições da conta e volte.",
+    "twoFactorAction": "Abrir definições da conta"
   },
   "topbar": {
     "breadcrumbRoot": "Painel de administração",
@@ -531,9 +536,11 @@
       "cpu": "CPU",
       "memory": "Memória",
       "queue": "Fila",
-      "vcpu": "4 vCPU",
-      "memUsage": "{{used}} / 2048 MB",
-      "jobsPending": "{{count}} tarefas pendentes"
+      "vcpu": "{{count}} vCPU",
+      "memUsage": "{{used}} / {{total}} MB",
+      "jobsPending": "{{count}} tarefas pendentes",
+      "jobsRunning": "{{count}} em execução",
+      "jobsFailed": "{{count}} falhadas"
     },
     "throughput": "Taxa de pedidos",
     "reqPerSec": "{{count}} ped./s",
@@ -861,12 +868,6 @@
         "desc": "O utilizador autenticado não tem permissão para realizar esta ação.",
         "cause": "Falta a chave de permissão para o recurso solicitado.",
         "fix": "Garante que o grupo do utilizador tem a permissão necessária atribuída em ACP → Membros → Permissões."
-      },
-      "XEC-API-4031": {
-        "msg": "Desativado na demo",
-        "desc": "Esta instalação funciona em modo demo, que recusa ações que executariam código no servidor, enviariam e-mail ou bloqueariam outros visitantes.",
-        "cause": "DEMO_MODE=true no ambiente do servidor.",
-        "fix": "Não há nada a corrigir numa demo. Na sua própria instalação, não defina DEMO_MODE."
       },
       "XEC-API-4150": {
         "msg": "Pedido comprimido recusado",
@@ -1251,6 +1252,48 @@
         "desc": "Um filtro de um plugin instalado parou esta ação.",
         "cause": "Um plugin registou uma verificação (por exemplo no registo ou ao guardar conteúdo) que recusou esta entrada.",
         "fix": "Leia a mensagem mostrada ao membro; vem do plugin. Para mudar a regra, veja as definições desse plugin ou desative-o."
+      },
+      "XEC-AUTH-1070": {
+        "msg": "Código de dois passos errado",
+        "desc": "O código de autenticação ou de recuperação não corresponde.",
+        "cause": "O código foi mal escrito, pertence a outra conta ou o relógio do telemóvel está muito desacertado.",
+        "fix": "Introduza o código atual da app. Se os códigos nunca corresponderem, confirme que a hora do telemóvel é acertada automaticamente."
+      },
+      "XEC-AUTH-1071": {
+        "msg": "Código de dois passos já usado",
+        "desc": "O código estava certo, mas já tinha sido usado.",
+        "cause": "Cada código funciona uma vez, e o mesmo código foi introduzido duas vezes em 30 segundos.",
+        "fix": "Aguarde pelo próximo código na app."
+      },
+      "XEC-AUTH-1072": {
+        "msg": "Demasiados códigos de dois passos",
+        "desc": "Foram introduzidos demasiados códigos errados para esta conta.",
+        "cause": "Dez códigos errados em 15 minutos bloqueiam as verificações em dois passos da conta.",
+        "fix": "Aguarde 15 minutos. Se o telemóvel se perdeu, um administrador pode repor o início de sessão em dois passos em ACP → Utilizadores."
+      },
+      "XEC-AUTH-1073": {
+        "msg": "Passo de dois passos expirado",
+        "desc": "O início de sessão esperou demasiado pelo código.",
+        "cause": "O passo do código dura cinco minutos e cinco códigos errados.",
+        "fix": "Inicie sessão de novo."
+      },
+      "XEC-AUTH-1074": {
+        "msg": "Início de sessão em dois passos obrigatório",
+        "desc": "Esta conta tem de usar o início de sessão em dois passos antes de o painel de administração abrir.",
+        "cause": "Um grupo da conta tem «Tem de usar o início de sessão em dois passos» (ACP → Permissões).",
+        "fix": "Ative o início de sessão em dois passos em Conta → Segurança."
+      },
+      "XEC-AUTH-1075": {
+        "msg": "Confirmar com um código",
+        "desc": "Esta ação pede um código novo da app de autenticação.",
+        "cause": "Atribuir permissões, instalar código e ações semelhantes pedem-no outra vez, mesmo com sessão iniciada.",
+        "fix": "Introduza o código quando for pedido. Um código vale cinco minutos."
+      },
+      "XEC-AUTH-1076": {
+        "msg": "Estado dos dois passos",
+        "desc": "O início de sessão em dois passos não está no estado de que este pedido precisa.",
+        "cause": "Já está ativo, já está desativado, ou a configuração não foi iniciada.",
+        "fix": "Recarregue a página e tente de novo."
       }
     },
     "memberPlaceholder": "Membro (opcional)",
@@ -2869,7 +2912,7 @@
     "copyFrom": "Copiar de…",
     "copyTitle": "Copiar permissões de",
     "copyNote": "Substitui o rascunho deste grupo. Nada muda até você salvar.",
-    "adminWarning": "abre o painel de administração, e a maioria das suas páginas não verifica mais nada. Este grupo pode comandar o site, digam o que disserem os interruptores abaixo.",
+    "adminWarning": "abre o painel de administração. Muitas das suas páginas (definições, aparência, registos) não verificam mais nada, por isso este grupo pode alterar a maior parte do site, digam o que disserem os interruptores abaixo.",
     "search": "Pesquisar permissões",
     "filter": {
       "all": "Todas",
@@ -3033,7 +3076,20 @@
     "toastClosed": "Comentários fechados",
     "toastReopened": "Comentários abertos de novo",
     "toastHidden": "Artigo oculto",
-    "toastShown": "Artigo visível de novo"
+    "toastShown": "Artigo visível de novo",
+    "history": {
+      "menu": "Histórico de versões",
+      "title": "Histórico de versões",
+      "lede": "Versões guardadas de “{{title}}”, da mais recente para a mais antiga. Ao restaurar, o texto atual fica guardado como versão, por isso pode desfazê-lo aqui.",
+      "loading": "A carregar versões…",
+      "empty": "Ainda não há versões guardadas. É guardada uma sempre que um artigo publicado é guardado.",
+      "by": "por {{user}}",
+      "newest": "Mais recente",
+      "restore": "Restaurar",
+      "ask": "Restaurar esta versão?",
+      "restored": "Versão restaurada",
+      "close": "Fechar"
+    }
   },
   "legal": {
     "eyebrow": "Conteúdo",
@@ -3145,7 +3201,10 @@
       "public": "público",
       "members": "membros",
       "groups": "grupos"
-    }
+    },
+    "fieldParent": "Mostrar sob",
+    "parentNone": "Na barra",
+    "parentLocked": "Há ligações sob esta, por isso fica na barra."
   },
   "categories": {
     "title": "Categorias de artigos",
@@ -3433,7 +3492,13 @@
     "deviceCookies_other": "Cookies de dispositivo · {{n}}",
     "copyFullId": "Copiar ID completo",
     "showLess": "Mostrar menos",
-    "onlineNow": "Online"
+    "onlineNow": "Online",
+    "twoFactorReset": "Repor o início de sessão em dois passos",
+    "actTwoFactorSub": "Ativo desde {{date}}. Para quem perdeu o telemóvel e os códigos de recuperação.",
+    "twoFactorResetTitle": "Repor o início de sessão em dois passos?",
+    "twoFactorResetText": "Isto desativa o início de sessão em dois passos de {{name}} e termina todas as sessões. A pessoa inicia sessão com a palavra-passe e pode ativá-lo de novo. Faça-o apenas quando tiver a certeza de que é mesmo ela a pedir.",
+    "twoFactorResetSelf": "Desative o seu nas definições da conta.",
+    "toastTwoFactorReset": "Início de sessão em dois passos reposto para {{name}}."
   },
   "styleEditor": {
     "fontSiteDefault": "Padrão (Bricolage Grotesque + Figtree)",
@@ -3491,8 +3556,8 @@
     "toastRemoved": "Removido.",
     "toastDraft": "Rascunho salvo — publique para aplicá-lo ao vivo.",
     "toastReset": "Aparência redefinida — herdando o design base.",
-    "resetTitle": "Redefinir a aparência para o design base?",
-    "resetText": "Restaura os tokens de tema e fontes padrão e limpa o seu CSS personalizado para claro e escuro. Isto não pode ser desfeito.",
+    "resetTitle": "Repor cores, tipos de letra e CSS?",
+    "resetText": "As suas cores, tipos de letra e CSS personalizado deste tema são removidos de imediato, e mostra o que o tema traz (Core: o aspeto incorporado). Não pode ser desfeito. Os layouts não mudam: «Repor tema» no topo cobre tudo.",
     "reset": "Redefinir",
     "loading": "Carregando…",
     "logoText": "Texto do logo (alternativa quando não há imagem)",
@@ -3759,7 +3824,14 @@
       "700": "Negrito",
       "800": "Extranegrito",
       "900": "Black"
-    }
+    },
+    "pageDesign": "Design da página",
+    "pageWholeSite": "Todo o site",
+    "pageOnly": "Só {{page}}",
+    "pageOnlyHint": "A editar só {{page}}: cada cor e tamanho que alterar aqui aplica-se apenas a esta página, incluindo o cabeçalho e o rodapé.",
+    "pageSiteHint": "A editar todo o site. Mude para a página para lhe dar um aspeto próprio.",
+    "pagesWithLook": "Páginas com aspeto próprio",
+    "pageScope": "Página: {{page}}"
   },
   "layoutEditor": {
     "structure": "Estrutura",
@@ -3837,7 +3909,9 @@
       "branding": "Retirado: agora é a barra do rodapé.",
       "articleCategories": "Categorias com o número de artigos. Um clique filtra o índice.",
       "articleTrending": "Os artigos com mais gostos e comentários dos últimos dias.",
-      "articleTags": "As etiquetas mais usadas. Um clique filtra o índice."
+      "articleTags": "As etiquetas mais usadas. Um clique filtra o índice.",
+      "buttons": "Até dois botões de ligação, a chamada à ação de uma faixa ou de um cabeçalho.",
+      "mastheadPage": "Onde o conteúdo de cabeçalho próprio de uma página (um hero) aparece dentro do cabeçalho do site."
     },
     "catalogueTitle": "Adicionar um bloco a {{region}}",
     "catalogueNote": "Os blocos vêm de um catálogo fixo, por isso um layout nunca pode executar código. Nada fica online até publicares.",
@@ -3942,11 +4016,13 @@
       "header": "Cabeçalho",
       "main": "Corpo",
       "aside": "Aside",
-      "footer": "Rodapé"
+      "footer": "Rodapé",
+      "headerBand": "Cabeçalho"
     },
     "pageRegion": {
       "main": "Corpo",
-      "aside": "Barra lateral"
+      "aside": "Barra lateral",
+      "headerBand": "Cabeçalho"
     },
     "pageChromeHint": "Uma página é um corpo e uma barra lateral. O cabeçalho e o rodapé são modelos próprios, iguais em todas as páginas — clique num deles na pré-visualização para o organizar.",
     "asideHint": "Fica ao lado do corpo e abaixo dele num ecrã estreito.",
@@ -4490,7 +4566,8 @@
       "magic_link": "Link de início de sessão",
       "email_verify": "Verificar e-mail",
       "email_change": "Alteração de e-mail",
-      "smtp_test": "Teste SMTP"
+      "smtp_test": "Teste SMTP",
+      "security_alert": "Alerta de segurança"
     },
     "onThisPage": "Nesta página",
     "server": {
@@ -5132,7 +5209,17 @@
     "publishHint": "Publica em conjunto as alterações de layout e de estilo deste tema.",
     "published": "Publicados {{layouts}} layouts{{styles}}.",
     "withStyles": " e as alterações de estilo",
-    "nothingPending": "Nada para publicar."
+    "nothingPending": "Nada para publicar.",
+    "reset": "Repor tema",
+    "resetHint": "Repor todo o tema tal como vem, como rascunho para publicar",
+    "resetTitle": "Repor {{theme}} nos valores predefinidos?",
+    "resetBody": "Cada layout de página, cabeçalho ou rodapé que alterou, o layout do site, as cores, o tipo de letra e o CSS personalizado voltam ao que {{theme}} traz. Fica como rascunho: confirme na pré-visualização e depois publique. Depois de publicar, o Histórico pode repor a sua versão. O logótipo e a marca mantêm-se.",
+    "resetBodyCore": "Cada layout de página, cabeçalho ou rodapé que alterou, o layout do site, as cores, o tipo de letra e o CSS personalizado voltam aos valores incorporados. Fica como rascunho: confirme na pré-visualização e depois publique. Depois de publicar, o Histórico pode repor a sua versão. O logótipo e a marca mantêm-se.",
+    "resetConfirm": "Repor tema",
+    "resetCancel": "Cancelar",
+    "resetStaged": "Valores predefinidos em rascunho. Confirme a pré-visualização e publique.",
+    "resetNothing": "Este tema já está tal como vem.",
+    "coreName": "Core"
   },
   "savebar": {
     "region": "Alterações não salvas",
@@ -5336,6 +5423,14 @@
               "md": "Médio",
               "lg": "Grande"
             }
+          },
+          "align": {
+            "title": "Alinhar colunas",
+            "enum": {
+              "start": "Topo",
+              "center": "Centro",
+              "end": "Fundo"
+            }
           }
         }
       },
@@ -5409,6 +5504,9 @@
           },
           "level": {
             "title": "Nível"
+          },
+          "lede": {
+            "title": "Texto por baixo"
           }
         }
       },
@@ -5982,6 +6080,35 @@
             "title": "Quantas etiquetas"
           }
         }
+      },
+      "buttons": {
+        "label": "Botões",
+        "props": {
+          "primaryLabel": {
+            "title": "Botão principal"
+          },
+          "primaryHref": {
+            "title": "O botão principal leva a",
+            "description": "Um caminho como /forum, ou um URL completo."
+          },
+          "secondaryLabel": {
+            "title": "Segundo botão",
+            "description": "Deixe vazio para um só botão."
+          },
+          "secondaryHref": {
+            "title": "O segundo botão leva a"
+          },
+          "align": {
+            "title": "Alinhamento",
+            "enum": {
+              "start": "Esquerda",
+              "center": "Centro"
+            }
+          }
+        }
+      },
+      "mastheadPage": {
+        "label": "Cabeçalho desta página"
       }
     },
     "jobs": {
@@ -6107,13 +6234,12 @@
       }
     },
     "domains": {
-      "System": "Sistema",
       "Administration": "Administração",
-      "Users": "Utilizadores",
-      "Articles": "Artigos",
       "Moderation": "Moderação",
-      "Messaging": "Mensagens",
-      "Extensions": "Extensões"
+      "Members": "Membros",
+      "Articles": "Artigos",
+      "Comments": "Comentários",
+      "Messaging": "Mensagens"
     },
     "permissions": {
       "admin.access": "Aceder ao painel de administração",
@@ -6159,7 +6285,8 @@
       "plugin.enable": "Ativar e desativar plugins",
       "system.tasks.manage": "Gerir tarefas agendadas",
       "emoji.manage": "Gerir emojis",
-      "system.update": "Atualizar o Xentium no ACP"
+      "system.update": "Atualizar o Xentium no ACP",
+      "account.twofactor.required": "Tem de usar o início de sessão em dois passos"
     }
   },
   "emojis": {
@@ -6207,5 +6334,15 @@
     "subtitle": "As definições que este complemento oferece. As alterações aplicam-se ao guardar.",
     "general": "Geral",
     "unavailable": "Este complemento não tem definições aqui, ou está desligado."
+  },
+  "twoFactorPolicy": {
+    "title": "Início de sessão em dois passos",
+    "desc": "Os grupos ativados aqui têm de usar uma app de autenticação. Os seus membros são convidados a ativá-lo em cada página, e o painel de administração fica fechado para eles até o fazerem. Os restantes podem ativá-lo na sua conta.",
+    "required": "Obrigatório",
+    "optional": "Opcional",
+    "members_one": "{{count}} membro",
+    "members_other": "{{count}} membros",
+    "toggle": "Exigir início de sessão em dois passos para {{group}}",
+    "lockoutWarning": "Ainda não ativou o início de sessão em dois passos. Depois de guardar, o painel de administração fica fechado para si até o fazer (Conta → Segurança)."
   }
 }

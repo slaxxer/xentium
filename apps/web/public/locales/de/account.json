@@ -217,7 +217,30 @@
     "stateOff": "Aus",
     "deviceCount_one": "1 Gerät",
     "deviceCount_other": "{{count}} Geräte",
-    "footNote": "Hier wird nichts automatisch gespeichert – wo es zählt, fragt jede Aktion nach deinem Passwort."
+    "footNote": "Hier wird nichts automatisch gespeichert – wo es zählt, fragt jede Aktion nach deinem Passwort.",
+    "tfa": {
+      "title": "Zwei-Faktor-Anmeldung",
+      "offDesc": "Bei jeder Anmeldung nach einem Code aus einer Authenticator-App wie Google Authenticator fragen. Ersetzt die Login-PIN.",
+      "onDesc": "Aktiv seit {{date}}. Die Anmeldung fragt nach einem Code aus deiner Authenticator-App. Übrige Wiederherstellungscodes: {{left}}.",
+      "requiredHint": "Dein Konto hat Team-Zugriff, deshalb ist die Zwei-Faktor-Anmeldung Pflicht, bevor sich der Adminbereich öffnet.",
+      "turnOn": "Einschalten",
+      "turnOff": "Ausschalten",
+      "newCodes": "Neue Wiederherstellungscodes",
+      "step1": "Installiere eine Authenticator-App auf deinem Handy, zum Beispiel Google Authenticator, 1Password oder Authy.",
+      "step2": "Scanne damit den QR-Code. Scannen klappt nicht? Gib stattdessen diesen Schlüssel ein:",
+      "step3": "Gib den 6-stelligen Code ein, den die App zeigt.",
+      "qrAlt": "QR-Code für deine Authenticator-App",
+      "codeLabel": "Code aus deiner App",
+      "codeOrRecovery": "Code aus deiner App oder ein Wiederherstellungscode",
+      "codesOnce": "Bewahre diese Wiederherstellungscodes sicher auf. Jeder meldet dich einmal an, falls du dein Handy verlierst. Sie werden nur dieses eine Mal angezeigt.",
+      "copy": "Kopieren",
+      "download": "Herunterladen",
+      "saved": "Ich habe sie gespeichert",
+      "copied": "Wiederherstellungscodes kopiert.",
+      "enabled": "Zwei-Faktor-Anmeldung ist aktiv.",
+      "disabled": "Zwei-Faktor-Anmeldung ist aus.",
+      "failed": "Das hat nicht geklappt. Versuch es erneut."
+    }
   },
   "pageSub": "Dein Profil, deine Sicherheit, und was diese Seite über dich verraten darf.",
   "viewProfile": "Mein Profil ansehen",
@@ -233,7 +256,8 @@
       "notifications": "benachrichtigungen e-mail folgen erwähnungen likes aufstieg abzeichen",
       "preferences": "design dunkel hell sprache schrift abzeichen bewegung kompakt autoplay aussehen",
       "privacy": "privatsphäre geburtstag sichtbarkeit pinnwand kommentare follower blockiert"
-    }
+    },
+    "tfaOn": "Zwei-Faktor an"
   },
   "save": {
     "unsaved_one": "1 nicht gespeicherte Änderung",

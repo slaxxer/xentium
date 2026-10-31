@@ -236,6 +236,9 @@
   &--gap-md { gap: var(--sp-6); }
   &--gap-lg { gap: var(--sp-10); }
 
+  &--align-center { align-items: center; }
+  &--align-end    { align-items: flex-end; }
+
   /* Collapse stays INTRINSIC — never an admin knob. Wrapping happens on its own
      once a weighted track hits its floor, and below the phone breakpoint the row
      becomes a stack outright. This replaces a per-count media-query matrix, which
@@ -361,6 +364,16 @@
     &:is(h2) { font-size: clamp(22px, 2.2vw, 28px); }
     &:is(h3) { font-size: clamp(18px, 1.8vw, 22px); }
   }
+
+  &__lede {
+    margin: var(--sp-3) 0 0;
+    max-width: 62ch;
+    font-size: var(--fs-md);
+    line-height: 1.65;
+    color: var(--c-fg-muted);
+    text-wrap: pretty;
+  }
+  &--center &__lede { margin-inline: auto; }
 }
 
 /* ── image ───────────────────────────────────────────────────────────────── */
@@ -731,4 +744,13 @@ html.xt-dragging [data-xt-region]:not([data-xt-block]) {
   background: var(--c-bg, transparent);
   white-space: pre-wrap;
   cursor: text;
+}
+
+/* ── buttons ─────────────────────────────────────────────────────────────── */
+.xt-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+
+  &--center { justify-content: center; }
 }

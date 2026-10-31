@@ -213,6 +213,7 @@ export async function oauthCallbackHandler(req: Request, res: Response) {
   const r = outcome.result;
   if (r.kind === "banned") return go(withQuery("/login", { error: r.expiresAt ? XEC.AUTH_BANNED : XEC.AUTH_BANNED_PERMANENT }));
   if (r.kind === "pin") return go(withQuery("/login/complete", { pin: r.ticket, to: outcome.returnTo }));
+  if (r.kind === "totp") return go(withQuery("/login/complete", { totp: r.ticket, to: outcome.returnTo }));
   setRefreshCookie(res, r.refreshToken, r.persistent);
   return go(withQuery("/login/complete", { to: outcome.returnTo }));
 }

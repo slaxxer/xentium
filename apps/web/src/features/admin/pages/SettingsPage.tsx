@@ -13,6 +13,7 @@ import { SaveChip } from "../../../components/SaveChip";
 import { Toggle, TextField, NumberStepper, Button } from "../../../components/AcpControls";
 import { MaintenanceSettings, MaintenanceStatusPill } from "./MaintenanceSettings";
 import { SignInProvidersPanel } from "./SignInProvidersPanel";
+import { TwoFactorPolicyPanel } from "./TwoFactorPolicyPanel";
 import { ErrorBoundary } from "../../errors/ErrorBoundary";
 import { slotRegistry } from "../../../plugins/slotRegistry";
 
@@ -752,7 +753,7 @@ export function SettingsPage() {
                   <div className="set-extra"><InviteCodesPanel /></div>
                 )}
                 {section.id === "login" && (
-                  <div className="set-extra"><SignInProvidersPanel /></div>
+                  <div className="set-extra"><TwoFactorPolicyPanel /><SignInProvidersPanel /></div>
                 )}
               </section>
             ))}

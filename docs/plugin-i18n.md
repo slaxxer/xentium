@@ -115,7 +115,8 @@ with dots (a permission, a block type) nests by its dots:
 ```
 
 - `domains` is the permission group, by the `domain` you registered. `acpSections` is
-  the `section` of `registerAcpPage`, and `acpPages` is its `path` without `/admin/`.
+  the `section` of `registerAcpPage`, `acpGroups` its `group`, and `acpPages` is its
+  `path` without `/admin/`.
 - `nav` is your nav link's URL without the leading `/`. It translates only while the
   link still has the label you registered; once an admin renames it, their name shows.
 - Anything you leave out shows your English, so you can add these a few at a time.

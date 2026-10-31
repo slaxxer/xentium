@@ -25,12 +25,16 @@ d0cs
 
 BUGS.md
 
-# How WE cut a release: the interactive wizard and its runbook. The pipeline it
-# drives IS public (the workflow and scripts/publish-release.mjs have to be, CI
-# runs them) — this is the part that knows our process, our marketplace and our
-# staff account, and it stays out of the repo. Runbook: d0cs/releasing.md.
+# How WE cut a release: the interactive wizard, its runbook and the post-publish
+# steps (moving npm's latest, deprecating, announcing). The pipeline it drives IS
+# public (the workflow and scripts/publish-release.mjs have to be, CI runs them) —
+# this is the part that knows our process, our marketplace and our staff account,
+# and it stays out of the repo. Runbook: d0cs/releasing.md.
 /release.sh
 /scripts/release-wizard.mjs
+/scripts/announce-release.mjs
+/scripts/promote-latest.mjs
+/scripts/deprecate-older.mjs
 
 # Local design/prototype workspace — not part of the shipped repo
 nodevo-redesign/

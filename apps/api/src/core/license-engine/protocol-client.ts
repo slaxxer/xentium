@@ -117,7 +117,9 @@ function buildUrl(path: string): URL {
  * what `MARKETPLACE_WEB_URL` is for.
  */
 export function marketplaceWebUrl(path = "/"): string {
-  const base = (env.MARKETPLACE_WEB_URL ?? env.LICENSE_SERVER_URL.replace(/\/api\/v\d+\/?$/, ""))
+  // The store's API is `/api/p/<plugin>/vN` on a Xentium site (`/api/vN` on the old
+  // standalone marketplace); its pages are on the same origin either way.
+  const base = (env.MARKETPLACE_WEB_URL ?? env.LICENSE_SERVER_URL.replace(/\/api\/(?:p\/[a-z0-9-]+\/)?v\d+\/?$/, ""))
     .replace(/\/+$/, "");
   return `${base}${path.startsWith("/") ? path : `/${path}`}`;
 }

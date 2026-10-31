@@ -89,6 +89,14 @@ model User {
   emailVerifiedAt    DateTime? @map("email_verified_at")
   loginPinEnabled    Boolean   @default(false) @map("login_pin_enabled")
   loginPinHash       String?   @map("login_pin_hash")
+  /// Two-factor sign-in with an authenticator app (TOTP, RFC 6238). The secret is
+  /// encrypted with the secret box; it is set during setup and only counts once
+  /// `totpEnabledAt` is set by a first correct code. `totpLastStep` is the step of
+  /// the last code spent, so a code works once. Recovery codes are SHA-256 hashes.
+  totpSecret         String?   @map("totp_secret")
+  totpEnabledAt      DateTime? @map("totp_enabled_at")
+  totpLastStep       Int?      @map("totp_last_step")
+  totpRecoveryHashes String[]  @default([]) @map("totp_recovery_hashes")
   dobDisplay         String    @default("age") @map("dob_display")  // 'hidden' | 'age' | 'date'
   preferredLocale    String?   @map("preferred_locale")  // null = follow resolution chain (§60.4)
   hiddenBadges       String[]  @default([]) @map("hidden_badges")  // Group IDs the user hides from their badge stack, systemwide

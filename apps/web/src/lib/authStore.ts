@@ -30,6 +30,8 @@ export interface AuthUser {
   pendingLegal?: LegalDocumentKey[];
   /** `pendingLegal` is not empty. */
   needsLegalConsent?: boolean;
+  /** Two-factor sign-in: on, and whether ACP → Permissions makes it a duty for this account. */
+  twoFactor?: { enabled: boolean; required: boolean };
 }
 
 /** May this user do `key`? A UI hint — the endpoint enforces it regardless. */

@@ -45,7 +45,9 @@
     "members": "Miembros",
     "editor": "Editor",
     "groupSetup": "Configuración",
-    "groupLogs": "Registros"
+    "groupLogs": "Registros",
+    "waiting_one": "{{count}} pendiente",
+    "waiting_other": "{{count}} pendientes"
   },
   "sidebar": {
     "adminPanel": "Panel de administración",
@@ -57,7 +59,10 @@
     "sections": "Secciones",
     "expandPanel": "Expandir panel",
     "collapsePanel": "Contraer panel",
-    "dockPanel": "Mantener el panel abierto"
+    "dockPanel": "Mantener el panel abierto",
+    "twoFactorTitle": "Activa el inicio de sesión en dos pasos",
+    "twoFactorBody": "Tu grupo debe usar el inicio de sesión en dos pasos para abrir el panel de administración. Actívalo en los ajustes de tu cuenta y vuelve.",
+    "twoFactorAction": "Abrir ajustes de la cuenta"
   },
   "topbar": {
     "breadcrumbRoot": "Panel de administración",
@@ -531,9 +536,11 @@
       "cpu": "CPU",
       "memory": "Memoria",
       "queue": "Cola",
-      "vcpu": "4 vCPU",
-      "memUsage": "{{used}} / 2048 MB",
-      "jobsPending": "{{count}} tareas pendientes"
+      "vcpu": "{{count}} vCPU",
+      "memUsage": "{{used}} / {{total}} MB",
+      "jobsPending": "{{count}} tareas pendientes",
+      "jobsRunning": "{{count}} en curso",
+      "jobsFailed": "{{count}} fallidas"
     },
     "throughput": "Rendimiento de solicitudes",
     "reqPerSec": "{{count}} sol./s",
@@ -861,12 +868,6 @@
         "desc": "El usuario autenticado no tiene permiso para realizar esta acción.",
         "cause": "Falta la clave de permiso para el recurso solicitado.",
         "fix": "Asegúrate de que el grupo del usuario tiene asignado el permiso necesario en ACP → Miembros → Permisos."
-      },
-      "XEC-API-4031": {
-        "msg": "Desactivado en la demo",
-        "desc": "Esta instalación funciona en modo demo, que rechaza acciones que ejecutarían código en el servidor, enviarían correo o dejarían fuera a otros visitantes.",
-        "cause": "DEMO_MODE=true en el entorno del servidor.",
-        "fix": "No hay nada que corregir en una demo. En tu propia instalación, no definas DEMO_MODE."
       },
       "XEC-API-4150": {
         "msg": "Solicitud comprimida rechazada",
@@ -1251,6 +1252,48 @@
         "desc": "Un filtro de un plugin instalado detuvo esta acción.",
         "cause": "Un plugin registró una comprobación (por ejemplo al registrarse o al guardar contenido) y rechazó esta entrada.",
         "fix": "Lee el mensaje que ve el miembro; viene del plugin. Para cambiar la regla, revisa los ajustes de ese plugin o desactívalo."
+      },
+      "XEC-AUTH-1070": {
+        "msg": "Código de dos pasos incorrecto",
+        "desc": "El código de autenticación o de recuperación no coincide.",
+        "cause": "El código se escribió mal, es de otra cuenta o el reloj del móvil va muy desfasado.",
+        "fix": "Introduce el código actual de la app. Si nunca coinciden, comprueba que la hora del móvil se ajusta automáticamente."
+      },
+      "XEC-AUTH-1071": {
+        "msg": "Código de dos pasos ya usado",
+        "desc": "El código era correcto, pero ya se había usado.",
+        "cause": "Cada código funciona una vez y se introdujo el mismo código dos veces en 30 segundos.",
+        "fix": "Espera al siguiente código en la app."
+      },
+      "XEC-AUTH-1072": {
+        "msg": "Demasiados códigos de dos pasos",
+        "desc": "Se introdujeron demasiados códigos incorrectos para esta cuenta.",
+        "cause": "Diez códigos incorrectos en 15 minutos bloquean la comprobación en dos pasos de la cuenta.",
+        "fix": "Espera 15 minutos. Si se perdió el móvil, un administrador puede restablecerlo en ACP → Usuarios."
+      },
+      "XEC-AUTH-1073": {
+        "msg": "Paso de dos pasos caducado",
+        "desc": "El inicio de sesión esperó demasiado su código.",
+        "cause": "El paso del código dura cinco minutos y cinco códigos incorrectos.",
+        "fix": "Vuelve a iniciar sesión."
+      },
+      "XEC-AUTH-1074": {
+        "msg": "Inicio de sesión en dos pasos obligatorio",
+        "desc": "Esta cuenta debe usar el inicio de sesión en dos pasos antes de que se abra el panel de administración.",
+        "cause": "Un grupo de la cuenta tiene «Debe usar el inicio de sesión en dos pasos» (ACP → Permisos).",
+        "fix": "Activa el inicio de sesión en dos pasos en Cuenta → Seguridad."
+      },
+      "XEC-AUTH-1075": {
+        "msg": "Confirmar con un código",
+        "desc": "Esta acción pide un código nuevo de la app de autenticación.",
+        "cause": "Conceder permisos, instalar código y acciones parecidas lo piden otra vez, aunque hayas iniciado sesión.",
+        "fix": "Introduce el código cuando se pida. Un código vale para cinco minutos."
+      },
+      "XEC-AUTH-1076": {
+        "msg": "Estado de dos pasos",
+        "desc": "El inicio de sesión en dos pasos no está en el estado que necesita esta petición.",
+        "cause": "Ya está activado, ya está desactivado o no se empezó a configurar.",
+        "fix": "Recarga la página y vuelve a intentarlo."
       }
     },
     "memberPlaceholder": "Miembro (opcional)",
@@ -2869,7 +2912,7 @@
     "copyFrom": "Copiar de…",
     "copyTitle": "Copiar permisos de",
     "copyNote": "Sustituye el borrador de este grupo. Nada cambia hasta que guardes.",
-    "adminWarning": "abre el panel de administración, y la mayoría de sus páginas no comprueban nada más. Este grupo puede dirigir el sitio digan lo que digan los interruptores de abajo.",
+    "adminWarning": "abre el panel de administración. Muchas de sus páginas (ajustes, apariencia, registros) no comprueban nada más, así que este grupo puede cambiar casi todo el sitio, digan lo que digan los interruptores de abajo.",
     "search": "Buscar permisos",
     "filter": {
       "all": "Todos",
@@ -3033,7 +3076,20 @@
     "toastClosed": "Comentarios cerrados",
     "toastReopened": "Comentarios abiertos de nuevo",
     "toastHidden": "Artículo oculto",
-    "toastShown": "Artículo visible de nuevo"
+    "toastShown": "Artículo visible de nuevo",
+    "history": {
+      "menu": "Historial de versiones",
+      "title": "Historial de versiones",
+      "lede": "Versiones guardadas de «{{title}}», de la más reciente a la más antigua. Al restaurar, el texto actual se guarda como versión, así que puedes deshacerlo aquí.",
+      "loading": "Cargando versiones…",
+      "empty": "Aún no hay versiones guardadas. Se guarda una cada vez que se guarda un artículo publicado.",
+      "by": "por {{user}}",
+      "newest": "Más reciente",
+      "restore": "Restaurar",
+      "ask": "¿Restaurar esta versión?",
+      "restored": "Versión restaurada",
+      "close": "Cerrar"
+    }
   },
   "legal": {
     "eyebrow": "Contenido",
@@ -3145,7 +3201,10 @@
       "public": "público",
       "members": "miembros",
       "groups": "grupos"
-    }
+    },
+    "fieldParent": "Mostrar bajo",
+    "parentNone": "En la barra",
+    "parentLocked": "Hay enlaces bajo este, así que se queda en la barra."
   },
   "categories": {
     "title": "Categorías de artículos",
@@ -3433,7 +3492,13 @@
     "deviceCookies_other": "Cookies de dispositivo · {{n}}",
     "copyFullId": "Copiar ID completo",
     "showLess": "Mostrar menos",
-    "onlineNow": "En línea"
+    "onlineNow": "En línea",
+    "twoFactorReset": "Restablecer el inicio de sesión en dos pasos",
+    "actTwoFactorSub": "Activado desde {{date}}. Para quien perdió el móvil y sus códigos de recuperación.",
+    "twoFactorResetTitle": "¿Restablecer el inicio de sesión en dos pasos?",
+    "twoFactorResetText": "Esto desactiva el inicio de sesión en dos pasos de {{name}} y cierra todas sus sesiones. Podrá iniciar sesión con su contraseña y volver a activarlo. Hazlo solo si estás seguro de que es esa persona quien lo pide.",
+    "twoFactorResetSelf": "Desactiva el tuyo en los ajustes de tu cuenta.",
+    "toastTwoFactorReset": "Inicio de sesión en dos pasos restablecido para {{name}}."
   },
   "styleEditor": {
     "fontSiteDefault": "Predeterminada (Bricolage Grotesque + Figtree)",
@@ -3491,8 +3556,8 @@
     "toastRemoved": "Eliminado.",
     "toastDraft": "Borrador guardado — publica para aplicarlo en vivo.",
     "toastReset": "Apariencia restablecida — heredando el diseño base.",
-    "resetTitle": "¿Restablecer la apariencia al diseño base?",
-    "resetText": "Restaura los tokens de tema y fuentes predeterminados y borra tu CSS personalizado para claro y oscuro. Esto no se puede deshacer.",
+    "resetTitle": "¿Restablecer colores, fuentes y CSS?",
+    "resetText": "Tus colores, fuentes y CSS personalizado de este tema se eliminan al instante, y muestra lo que trae el tema (Core: el aspecto integrado). No se puede deshacer. Los diseños no cambian: «Restablecer tema» arriba lo cubre todo.",
     "reset": "Restablecer",
     "loading": "Cargando…",
     "logoText": "Texto del logo (reserva cuando no hay imagen)",
@@ -3759,7 +3824,14 @@
       "700": "Negrita",
       "800": "Extranegrita",
       "900": "Black"
-    }
+    },
+    "pageDesign": "Diseño de página",
+    "pageWholeSite": "Todo el sitio",
+    "pageOnly": "Solo {{page}}",
+    "pageOnlyHint": "Editando solo {{page}}: cada color y tamaño que cambies aquí se aplica únicamente en esta página, incluidos la cabecera y el pie.",
+    "pageSiteHint": "Editando todo el sitio. Cambia a la página para darle un aspecto propio.",
+    "pagesWithLook": "Páginas con aspecto propio",
+    "pageScope": "Página: {{page}}"
   },
   "layoutEditor": {
     "structure": "Estructura",
@@ -3837,7 +3909,9 @@
       "branding": "Retirado: ahora es la barra del pie.",
       "articleCategories": "Categorías con su número de artículos. Un clic filtra el índice.",
       "articleTrending": "Los artículos con más me gusta y comentarios de los últimos días.",
-      "articleTags": "Las etiquetas más usadas. Un clic filtra el índice."
+      "articleTags": "Las etiquetas más usadas. Un clic filtra el índice.",
+      "buttons": "Hasta dos botones de enlace, la llamada a la acción de una banda o una cabecera.",
+      "mastheadPage": "Dónde aparece el contenido de cabecera propio de una página (un hero) dentro de la cabecera del sitio."
     },
     "catalogueTitle": "Añadir un bloque a {{region}}",
     "catalogueNote": "Los bloques provienen de un catálogo fijo, así que un diseño nunca puede ejecutar código. Nada se publica hasta que lo publiques.",
@@ -3942,11 +4016,13 @@
       "header": "Cabecera",
       "main": "Cuerpo",
       "aside": "Aside",
-      "footer": "Pie"
+      "footer": "Pie",
+      "headerBand": "Cabecera"
     },
     "pageRegion": {
       "main": "Cuerpo",
-      "aside": "Barra lateral"
+      "aside": "Barra lateral",
+      "headerBand": "Cabecera"
     },
     "pageChromeHint": "Una página es un cuerpo y una barra lateral. El encabezado y el pie son plantillas propias, iguales en todas las páginas: haz clic en uno en la vista previa para organizarlo.",
     "asideHint": "Se sitúa junto al cuerpo, y debajo en pantallas estrechas.",
@@ -4490,7 +4566,8 @@
       "magic_link": "Enlace de inicio de sesión",
       "email_verify": "Verificar correo",
       "email_change": "Cambio de correo",
-      "smtp_test": "Prueba SMTP"
+      "smtp_test": "Prueba SMTP",
+      "security_alert": "Aviso de seguridad"
     },
     "onThisPage": "En esta página",
     "server": {
@@ -5132,7 +5209,17 @@
     "publishHint": "Publica a la vez los cambios de diseño y de estilo de este tema.",
     "published": "Publicados {{layouts}} diseños{{styles}}.",
     "withStyles": " y los cambios de estilo",
-    "nothingPending": "Nada que publicar."
+    "nothingPending": "Nada que publicar.",
+    "reset": "Restablecer tema",
+    "resetHint": "Devuelve todo el tema a como viene, como borrador para publicar",
+    "resetTitle": "¿Restablecer {{theme}} a sus valores predeterminados?",
+    "resetBody": "Cada diseño de página, cabecera o pie que cambiaste, el diseño del sitio, los colores, la fuente y el CSS personalizado vuelven a lo que trae {{theme}}. Queda como borrador: compruébalo en la vista previa y luego publica. Tras publicar, el Historial puede recuperar tu versión. El logotipo y la marca se mantienen.",
+    "resetBodyCore": "Cada diseño de página, cabecera o pie que cambiaste, el diseño del sitio, los colores, la fuente y el CSS personalizado vuelven a los valores integrados. Queda como borrador: compruébalo en la vista previa y luego publica. Tras publicar, el Historial puede recuperar tu versión. El logotipo y la marca se mantienen.",
+    "resetConfirm": "Restablecer tema",
+    "resetCancel": "Cancelar",
+    "resetStaged": "Valores predeterminados en borrador. Revisa la vista previa y publica.",
+    "resetNothing": "Este tema ya está como viene.",
+    "coreName": "Core"
   },
   "savebar": {
     "region": "Cambios sin guardar",
@@ -5336,6 +5423,14 @@
               "md": "Mediana",
               "lg": "Grande"
             }
+          },
+          "align": {
+            "title": "Alinear columnas",
+            "enum": {
+              "start": "Arriba",
+              "center": "Centro",
+              "end": "Abajo"
+            }
           }
         }
       },
@@ -5409,6 +5504,9 @@
           },
           "level": {
             "title": "Nivel"
+          },
+          "lede": {
+            "title": "Texto debajo"
           }
         }
       },
@@ -5982,6 +6080,35 @@
             "title": "Cuántas etiquetas"
           }
         }
+      },
+      "buttons": {
+        "label": "Botones",
+        "props": {
+          "primaryLabel": {
+            "title": "Botón principal"
+          },
+          "primaryHref": {
+            "title": "El botón principal enlaza a",
+            "description": "Una ruta como /forum o una URL completa."
+          },
+          "secondaryLabel": {
+            "title": "Segundo botón",
+            "description": "Déjalo vacío para un solo botón."
+          },
+          "secondaryHref": {
+            "title": "El segundo botón enlaza a"
+          },
+          "align": {
+            "title": "Alineación",
+            "enum": {
+              "start": "Izquierda",
+              "center": "Centro"
+            }
+          }
+        }
+      },
+      "mastheadPage": {
+        "label": "Cabecera de esta página"
       }
     },
     "jobs": {
@@ -6107,13 +6234,12 @@
       }
     },
     "domains": {
-      "System": "Sistema",
       "Administration": "Administración",
-      "Users": "Usuarios",
-      "Articles": "Artículos",
       "Moderation": "Moderación",
-      "Messaging": "Mensajería",
-      "Extensions": "Extensiones"
+      "Members": "Miembros",
+      "Articles": "Artículos",
+      "Comments": "Comentarios",
+      "Messaging": "Mensajería"
     },
     "permissions": {
       "admin.access": "Acceder al panel de administración",
@@ -6159,7 +6285,8 @@
       "plugin.enable": "Activar y desactivar plugins",
       "system.tasks.manage": "Gestionar tareas programadas",
       "emoji.manage": "Gestionar emojis",
-      "system.update": "Actualizar Xentium desde el ACP"
+      "system.update": "Actualizar Xentium desde el ACP",
+      "account.twofactor.required": "Debe usar el inicio de sesión en dos pasos"
     }
   },
   "emojis": {
@@ -6207,5 +6334,15 @@
     "subtitle": "Los ajustes que ofrece este complemento. Los cambios se aplican al guardar.",
     "general": "General",
     "unavailable": "Este complemento no tiene ajustes aquí, o está desactivado."
+  },
+  "twoFactorPolicy": {
+    "title": "Inicio de sesión en dos pasos",
+    "desc": "Los grupos activados aquí deben usar una app de autenticación. A sus miembros se les pide activarlo en cada página, y el panel de administración permanece cerrado para ellos hasta que lo hagan. Los demás pueden activarlo en su cuenta.",
+    "required": "Obligatorio",
+    "optional": "Opcional",
+    "members_one": "{{count}} miembro",
+    "members_other": "{{count}} miembros",
+    "toggle": "Exigir inicio de sesión en dos pasos a {{group}}",
+    "lockoutWarning": "Aún no has activado el inicio de sesión en dos pasos. Tras guardar, el panel de administración se cerrará para ti hasta que lo hagas (Cuenta → Seguridad)."
   }
 }

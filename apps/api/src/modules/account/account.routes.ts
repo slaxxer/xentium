@@ -3,6 +3,7 @@ import { accountController } from "./account.controller.js";
 import { requireAuth } from "../../shared/middleware/requireAuth.js";
 import { uploadSingle } from "../../shared/middleware/upload.js";
 import { requireMaxDimensions } from "../../shared/middleware/imageDimensions.js";
+import { twoFactorController } from "../auth/twoFactor.controller.js";
 
 export const accountRouter: Router = Router();
 
@@ -31,6 +32,12 @@ accountRouter.get("/profile-fields", accountController.getProfileFieldValues);
 accountRouter.patch("/profile-fields", accountController.updateProfileFieldValues);
 accountRouter.post("/pin", accountController.setPin);
 accountRouter.delete("/pin", accountController.disablePin);
+// Two-factor sign-in with an authenticator app (replaces the PIN while on).
+accountRouter.get("/two-factor", twoFactorController.state);
+accountRouter.post("/two-factor/setup", twoFactorController.setup);
+accountRouter.post("/two-factor/enable", twoFactorController.enable);
+accountRouter.post("/two-factor/disable", twoFactorController.disable);
+accountRouter.post("/two-factor/recovery-codes", twoFactorController.recoveryCodes);
 accountRouter.get("/badges",   accountController.getBadgeVisibility);
 accountRouter.patch("/badges", accountController.updateBadgeVisibility);
 accountRouter.get("/notifications",   accountController.getNotificationPreferences);

@@ -11,7 +11,7 @@ import { legalService } from "./legal.service.js";
  * (LegalConsentGate); this is the same rule on the server, so a script holding
  * their token can't carry on either.
  *
- * Mounted on /api after the maintenance and demo guards. Requests without a Bearer
+ * Mounted on /api after the maintenance guard. Requests without a Bearer
  * token pass (guests, and the cookie-only refresh), as do the routes the document's
  * page itself needs: auth (me, accept, sign out), the legal pages, and the READ-only
  * public chrome a page renders with (site, navigation, theme, layouts…). The rest

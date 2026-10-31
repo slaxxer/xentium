@@ -325,8 +325,8 @@ export const marketplaceService = {
   async getConnection() {
     return {
       ...(await marketplaceSource.getConnection()),
-      accountUrl: marketplaceWebUrl("/account"),
-      licencesUrl: marketplaceWebUrl("/account/licences"),
+      accountUrl: marketplaceWebUrl("/account?tab=xentium-store.licences"),
+      licencesUrl: marketplaceWebUrl("/account?tab=xentium-store.licences"),
     };
   },
 

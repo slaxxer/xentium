@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { FontAwesomeIcon } from "../../../components/Icon";
 import {
-  faPlus, faGripVertical, faPencil, faTrash,
+  faPlus, faGripVertical, faPencil, faTrash, faArrowTurnUp,
   faSave, faExternalLinkAlt,
 } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../../lib/api";
@@ -20,22 +20,34 @@ interface NavItem {
   isSystem: boolean;
   openInNewTab: boolean;
   visibility: string;
+  /** Shown in this link's dropdown (one level). */
+  parentId?: string | null;
+  placement?: string;
 }
+
+type NavItemInput = { label: string; url: string; openInNewTab: boolean; visibility: string; parentId: string | null };
 
 function EditModal({
   item,
+  parents,
+  hasChildren,
   onClose,
   onSave,
 }: {
   item?: NavItem;
+  /** Links in the bar this one may sit under. */
+  parents: NavItem[];
+  /** It has links under it, so it stays in the bar. */
+  hasChildren: boolean;
   onClose: () => void;
-  onSave: (data: { label: string; url: string; openInNewTab: boolean; visibility: string }) => void;
+  onSave: (data: NavItemInput) => void;
 }) {
   const { t } = useTranslation("acp");
   const [label,      setLabel]      = useState(item?.label       ?? "");
   const [url,        setUrl]        = useState(item?.url         ?? "");
   const [openNew,    setOpenNew]    = useState(item?.openInNewTab ?? false);
   const [visibility, setVisibility] = useState(item?.visibility  ?? "public");
+  const [parentId,   setParentId]   = useState<string | null>(item?.parentId ?? null);
 
   return (
     <div className="acp-modal-overlay" onClick={onClose}>
@@ -63,6 +75,16 @@ function EditModal({
           </select>
         </div>
 
+        <div className="acp-form-field">
+          <label className="acp-label">{t("navigation.fieldParent")}</label>
+          <select className="acp-select" value={parentId ?? ""} disabled={hasChildren}
+            onChange={e => setParentId(e.target.value || null)}>
+            <option value="">{t("navigation.parentNone")}</option>
+            {parents.filter((p) => p.id !== item?.id).map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
+          </select>
+          {hasChildren && <p className="acp-hint">{t("navigation.parentLocked")}</p>}
+        </div>
+
         <label className="acp-checkbox-row" style={{ marginBottom: "1.25rem" }}>
           <input type="checkbox" checked={openNew} onChange={e => setOpenNew(e.target.checked)} />
           <span>{t("navigation.openNewTab")}</span>
@@ -73,7 +95,7 @@ function EditModal({
           <Button
            
             disabled={!label.trim() || !url.trim()}
-            onClick={() => onSave({ label, url, openInNewTab: openNew, visibility })}
+            onClick={() => onSave({ label, url, openInNewTab: openNew, visibility, parentId })}
           >
             <FontAwesomeIcon icon={faSave} style={{ marginRight: 5 }} />
             {item ? t("navigation.save") : t("navigation.addLink")}
@@ -98,10 +120,13 @@ export function NavigationPage() {
     queryFn: () => api.get("/admin/nav-items"),
   });
 
-  const sorted = useMemo(
-    () => [...items].sort((a, b) => a.position - b.position),
-    [items],
-  );
+  /** The bar's links in order, each followed by the links in its dropdown. */
+  const sorted = useMemo(() => {
+    const byPos = [...items].sort((a, b) => a.position - b.position);
+    const top = byPos.filter((i) => !i.parentId || !items.some((p) => p.id === i.parentId));
+    return top.flatMap((p) => [p, ...byPos.filter((c) => c.parentId === p.id)]);
+  }, [items]);
+  const parents = useMemo(() => sorted.filter((i) => !i.parentId && (i.placement ?? "navbar") === "navbar"), [sorted]);
 
   // ── Mutations ──────────────────────────────────────────────────────────────
 
@@ -111,7 +136,7 @@ export function NavigationPage() {
   }
 
   const createMutation = useMutation({
-    mutationFn: (data: { label: string; url: string; openInNewTab: boolean; visibility: string }) =>
+    mutationFn: (data: NavItemInput) =>
       api.post("/admin/nav-items", data),
     onSuccess: () => {
       invalidateAll();
@@ -295,8 +320,9 @@ export function NavigationPage() {
                   <FontAwesomeIcon icon={faGripVertical} />
                 </div>
 
-                {/* Label */}
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                {/* Label (a dropdown link sits indented under its parent) */}
+                <div style={{ display: "flex", alignItems: "center", gap: 6, paddingLeft: item.parentId ? 22 : 0 }}>
+                  {item.parentId && <FontAwesomeIcon icon={faArrowTurnUp} rotation={90} style={{ color: "var(--c-fg-subtle)" }} aria-hidden />}
                   <span style={{ fontSize: "var(--fs-sm)", fontWeight: 700, color: "var(--c-fg)" }}>{item.label}</span>
                   {item.isSystem && (
                     <span className="acp-badge acp-badge--muted" style={{ marginTop: 0 }}>{t("navigation.core")}</span>
@@ -354,6 +380,8 @@ export function NavigationPage() {
       {editItem !== undefined && (
         <EditModal
           item={editItem ?? undefined}
+          parents={parents}
+          hasChildren={!!editItem && items.some((i) => i.parentId === editItem.id)}
           onClose={() => setEditItem(undefined)}
           onSave={(data) => {
             if (editItem) {

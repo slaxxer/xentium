@@ -1,0 +1,26 @@
+/* The step-up code prompt: the dialog look, plus one code field. */
+
+.xt-stepup__input {
+  display: block;
+  width: 100%;
+  margin: 16px 0 0;
+  padding: 12px 14px;
+  font: inherit;
+  font-size: 1.375rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.3em;
+  text-align: center;
+  color: var(--c-fg);
+  background: var(--c-bg);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm);
+
+  &:focus { outline: 2px solid var(--c-accent); outline-offset: 1px; }
+  &.is-invalid { border-color: var(--c-danger); }
+}
+
+.xt-stepup__error {
+  margin: 8px 0 0;
+  font-size: 0.8125rem;
+  color: var(--c-danger);
+}

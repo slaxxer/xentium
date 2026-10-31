@@ -22,6 +22,7 @@ import {
 } from "../../jobs/scheduledJobs.js";
 import { listPluginSchedules } from "../../core/plugin-platform/jobs.js";
 import { prisma } from "../../infrastructure/db.js";
+import { systemMetrics } from "../../shared/metrics/systemMetrics.js";
 
 const jobConfigSchema = z.object({
   enabled:     z.boolean(),
@@ -606,6 +607,11 @@ export const adminController = {
     res.status(204).end();
   }) as RequestHandler,
 
+  /** ACP → About → System health: host CPU and memory, queues, this process's requests. */
+  systemMetrics: (async (_req, res) => {
+    res.json(await systemMetrics());
+  }) as RequestHandler,
+
   getStatusSummary: (async (req, res) => {
     res.json(await marketplaceService.getStatusSummary(req.userId));
   }) as RequestHandler,
@@ -727,6 +733,8 @@ export const adminController = {
       url: z.string().min(1).max(500),
       openInNewTab: z.boolean().default(false),
       visibility: z.enum(["public","members","groups"]).default("public"),
+      // Under another link: shown in that link's dropdown. One level only.
+      parentId: z.string().min(1).max(64).nullable().optional(),
     }).parse(req.body);
     res.status(201).json(await adminService.createNavItem(body));
   }) as RequestHandler,
@@ -739,6 +747,7 @@ export const adminController = {
       isActive: z.boolean().optional(),
       openInNewTab: z.boolean().optional(),
       visibility: z.enum(["public","members","groups"]).optional(),
+      parentId: z.string().min(1).max(64).nullable().optional(),
     }).parse(req.body);
     res.json(await adminService.updateNavItem(id, body));
   }) as RequestHandler,

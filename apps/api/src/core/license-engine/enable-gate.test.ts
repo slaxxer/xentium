@@ -149,7 +149,7 @@ describe("refusing a paid plugin, accurately", () => {
     world.token = "tok";
     const err = await refusalFor();
     expect(err?.code).toBe(XEC.LICENSE_NOT_FOUND);
-    expect(err?.message).toContain("https://marketplace.example/plugins/xentium-forum");
+    expect(err?.message).toContain("https://marketplace.example/store/plugins/xentium-forum");
   });
 
   it("names seat exhaustion instead of telling the admin to activate", async () => {
@@ -164,7 +164,7 @@ describe("refusing a paid plugin, accurately", () => {
     const err = await refusalFor();
     expect(err?.code).toBe(XEC.LICENSE_CAP_REACHED);
     expect(err?.message).toMatch(/All 3 seats/);
-    expect(err?.message).toContain("https://marketplace.example/account/licences");
+    expect(err?.message).toContain("https://marketplace.example/account?tab=xentium-store.licences");
     expect(err?.message).not.toMatch(/Activate a licen[cs]e/i);
   });
 

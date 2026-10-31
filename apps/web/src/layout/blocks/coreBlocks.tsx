@@ -7,6 +7,9 @@
  * themes — must migrate forever.
  */
 import { Children } from "react";
+import { Link } from "react-router-dom";
+import { faArrowRight } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "../../components/Icon";
 import { useTranslation } from "react-i18next";
 import { blockPropSchemas, blockTypesIn, type LocalizedText } from "@xentium/contracts";
 import { LayoutWidgetOutlet } from "../../plugins/LayoutWidgetOutlet";
@@ -98,7 +101,7 @@ registerBlock({
     // tracks up to four, and a document can arrive from an imported theme.
     const tracks = Math.min(Math.max(Children.count(children), 1), 4);
     return (
-      <div className={`xt-columns xt-columns--${tracks} xt-columns--gap-${props.gap}`}>
+      <div className={`xt-columns xt-columns--${tracks} xt-columns--gap-${props.gap}${props.align && props.align !== "start" ? ` xt-columns--align-${props.align}` : ""}`}>
         {children}
       </div>
     );
@@ -130,9 +133,10 @@ registerBlock({
 
 // ── Content ─────────────────────────────────────────────────────────────────
 
-function HeadingBlock({ props }: BlockProps<{ text: LocalizedText; eyebrow?: LocalizedText; level: 1 | 2 | 3; align: "start" | "center"; icon?: string }>) {
+function HeadingBlock({ props }: BlockProps<{ text: LocalizedText; eyebrow?: LocalizedText; lede?: LocalizedText; level: 1 | 2 | 3; align: "start" | "center"; icon?: string }>) {
   const text    = useText(props.text);
   const eyebrow = useText(props.eyebrow);
+  const lede    = useText(props.lede);
   const Tag = (`h${props.level}`) as "h1" | "h2" | "h3";
   return (
     <header className={`xt-heading xt-heading--${props.align}`}>
@@ -144,6 +148,7 @@ function HeadingBlock({ props }: BlockProps<{ text: LocalizedText; eyebrow?: Loc
         {/* Its own element in the editor only, so typing over it does not take the icon. */}
         {props.icon && isEditorPreview() ? <span {...inlineText("text")}>{text}</span> : text}
       </Tag>
+      {lede && <p className="xt-heading__lede" {...inlineText("lede")}>{lede}</p>}
     </header>
   );
 }
@@ -175,6 +180,40 @@ registerBlock({
   // Same stored shape and renderer as `articles.body`, so a layout's prose and
   // an article's prose can never drift in how marks are rendered.
   component: ({ props }) => <div className="xt-richtext"><ArticleContent body={props.content} /></div>,
+});
+
+/** A path stays in the app; anything else is a plain link out. */
+function ButtonLink({ href, className, children }: { href: string; className: string; children: React.ReactNode }) {
+  return href.startsWith("/") && !href.startsWith("//")
+    ? <Link to={href} className={className}>{children}</Link>
+    : <a href={href} className={className} rel="noopener noreferrer">{children}</a>;
+}
+
+/** One or two link buttons: a band's call to action, styled by the site's buttons. */
+function ButtonsBlock({ props }: BlockProps<{
+  primaryLabel: LocalizedText; primaryHref: string; secondaryLabel?: LocalizedText; secondaryHref?: string; align: "start" | "center";
+}>) {
+  const primary = useText(props.primaryLabel);
+  const secondary = useText(props.secondaryLabel);
+  return (
+    <div className={`xt-buttons xt-buttons--${props.align}`}>
+      {primary && (
+        <ButtonLink href={props.primaryHref} className="btn-primary btn-lg">
+          <span {...inlineText("primaryLabel")}>{primary}</span> <FontAwesomeIcon icon={faArrowRight} />
+        </ButtonLink>
+      )}
+      {secondary && props.secondaryHref && (
+        <ButtonLink href={props.secondaryHref} className="btn-ghost btn-lg"><span {...inlineText("secondaryLabel")}>{secondary}</span></ButtonLink>
+      )}
+    </div>
+  );
+}
+
+registerBlock({
+  type:   "buttons",
+  schema: blockPropSchemas.buttons,
+  editorMeta: { label: "Buttons", category: "content" },
+  component: ButtonsBlock,
 });
 
 function ImageBlock({

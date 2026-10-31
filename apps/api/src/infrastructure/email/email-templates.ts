@@ -28,6 +28,7 @@ export const EMAIL_TEMPLATE_KEYS = [
   "magic_link",
   "email_verify",
   "email_change",
+  "security_alert",
   "smtp_test",
 ] as const;
 
@@ -217,6 +218,8 @@ const PLACEHOLDERS: Record<EmailTemplateKey, readonly string[]> = {
   magic_link:     ["site_name", "site_url", "login_url", "login_button", "username", "expiry_minutes"],
   email_verify:   ["site_name", "site_url", "code", "code_box", "username", "expiry_minutes"],
   email_change:   ["site_name", "site_url", "code", "code_box", "username", "new_email", "expiry_minutes"],
+  security_alert: ["site_name", "site_url", "username", "event", "detail",
+                   "request_box", "request_time", "request_device", "request_location", "support_link"],
   smtp_test:      ["site_name", "site_url"],
 };
 

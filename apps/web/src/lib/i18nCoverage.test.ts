@@ -15,7 +15,7 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import ts from "typescript";
 import { z } from "zod";
-import { blockPropSchemas, CorePermissions } from "@xentium/contracts";
+import { blockPropSchemas, CorePermissions, XEC } from "@xentium/contracts";
 import { enrichPerm } from "./permissions";
 import { CHROME_SETTINGS } from "../features/admin/pages/ChromeSettings";
 import { BACKGROUND_PROPS } from "../features/admin/pages/BlockBackground";
@@ -114,6 +114,22 @@ describe("text core defines in code", () => {
     const domains = [...new Set(keys.map((k) => enrichPerm({ id: k, key: k, label: "", domain: "" }).domain))]
       .filter((d) => !core.domains[d]);
     expect([...missing, ...domains.map((d) => `domain:${d}`)], "acp:core.permissions / domains").toEqual([]);
+  });
+
+  it("translates every core error code a reader can see", () => {
+    // These keep the server's own message on purpose: it names the file, rule,
+    // version or reason, and `apiErrorMessage` would swap it for a generic line.
+    const SERVER_MESSAGE = new Set([
+      "XEC-API-4009", "XEC-AUTH-1076", "XEC-PLUGIN-2001", "XEC-PLUGIN-2010", "XEC-PLUGIN-2012",
+      "XEC-PLUGIN-2013", "XEC-PLUGIN-2030", "XEC-LICENSE-9004", "XEC-LICENSE-9009",
+      "XEC-MARKETPLACE-9103", "XEC-CORE-8002", "XEC-EMAIL-8603", "XEC-QUEUE-5000", "XEC-QUEUE-5001",
+    ]);
+    // Add-ons translate their own codes in their own namespace.
+    const ADDON_DOMAINS = ["XEC-FORUM-", "XEC-STORE-"];
+    const errors = flatten(load("en", "errors"));
+    const missing = (Object.values(XEC) as string[]).filter((c) =>
+      !errors.has(c) && !SERVER_MESSAGE.has(c) && !ADDON_DOMAINS.some((d) => c.startsWith(d)));
+    expect(missing, "errors:<code>").toEqual([]);
   });
 });
 

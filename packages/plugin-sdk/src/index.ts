@@ -49,6 +49,11 @@ export interface NavItemDeclaration {
   icon?:       string;
   position?:   number;
   visibility?: "public" | "members";
+  /**
+   * Links in this item's dropdown (one level). Created once, like the item itself:
+   * an admin may rename, hide, reorder or move them in ACP → Navigation and that sticks.
+   */
+  children?:   Array<{ label: string; url: string; visibility?: "public" | "members" }>;
 }
 
 export interface AcpPageDeclaration {
@@ -56,6 +61,12 @@ export interface AcpPageDeclaration {
   label:   string;
   path:    string;                 // frontend route path e.g. "/admin/forum/categories"
   icon?:   string;
+  /**
+   * A heading in the section's panel this page sits under ("Sales", "Catalog"):
+   * plain text, or `host.acpGroups.<group>` in your namespace for a translation.
+   * Pages of one group are listed together, in the order you register them.
+   */
+  group?:  string;
 }
 
 /** A normalized search hit (source-agnostic). Mirrors HomeFeedItem — core never
@@ -445,6 +456,17 @@ export interface PluginHost extends BasePluginHost {
    * becomes the button. Queued, so it never slows the request. `localeOf` answers the
    * language a member's emails go out in.
    */
+  /**
+   * Re-check who is asking, for the changes a stolen session must not make alone
+   * (where money goes, an email address). Pair it with `middleware.requireStepUp`.
+   */
+  auth: {
+    /** The member's current password is `password`. False for an account without one. */
+    verifyPassword: (userId: string, password: string) => Promise<boolean>;
+    /** Whether the member has a password at all (not one made only through a sign-in provider). */
+    hasPassword: (userId: string) => Promise<boolean>;
+  };
+
   email: {
     send: (opts: { to: string; title: string; body: string; link?: string; buttonLabel?: string; locale?: string }) => Promise<void>;
     localeOf: (userId: string) => Promise<string>;

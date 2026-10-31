@@ -86,6 +86,38 @@ export const SCOPE_SELECTOR: Record<ThemeScope, string> = {
   "variant.plain":   ".xt-v--plain",
 };
 
+/**
+ * Per-page design: a scope per layout template (`page.home`, `page.forum.index`).
+ *
+ * Its tokens apply to the WHOLE screen while that page is shown — header and footer
+ * included — because the site marks the document root with the page it renders
+ * (`<html data-xt-page="home">`, set by the layout renderer) and the scope's
+ * selector is that root. Not in `ThemeScope`/`SCOPE_SELECTOR`: the set of pages is
+ * a runtime registry (plugins add templates), and an unknown page's scope is simply
+ * a selector nothing matches. Custom CSS reaches one page the same way:
+ * `:root[data-xt-page="home"] .card { … }`.
+ */
+export const PAGE_ATTR = "data-xt-page";
+export type PageScope = `page.${string}`;
+const PAGE_KEY_RE = /^[a-z0-9]+(?:[._-][a-z0-9]+)*$/;
+
+export const pageScopeId = (templateKey: string): PageScope => `page.${templateKey}`;
+export const isPageScope = (scope: string): scope is PageScope =>
+  scope.startsWith("page.") && PAGE_KEY_RE.test(scope.slice(5));
+export const pageOfScope = (scope: string): string | null => (isPageScope(scope) ? scope.slice(5) : null);
+
+/**
+ * The selector a scope's tokens are emitted under, or null for a scope this build
+ * does not know (skipped, never applied site-wide). One answer for the served
+ * stylesheet and the editor's live preview.
+ */
+export function scopeSelector(scope: string): string | null {
+  if (scope === "global") return ":root";
+  const page = pageOfScope(scope);
+  if (page) return `:root[${PAGE_ATTR}="${page}"]`;
+  return (SCOPE_SELECTOR as Record<string, string>)[scope] ?? null;
+}
+
 /** The scope id a block variant's overrides are stored under. */
 export const variantScopeId = (variant: BlockVariant): ThemeScope =>
   `variant.${variant}` as ThemeScope;

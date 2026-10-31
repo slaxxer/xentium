@@ -4,12 +4,14 @@ import { api } from "../../../lib/api";
 
 /**
  * The browser half of the sign-in methods. Every method answers with the same
- * shape: a session (`accessToken`) or a PIN step. A password PIN step has no
- * ticket (the password is re-sent with the PIN); every other method's does.
+ * shape: a session (`accessToken`), a PIN step or an authenticator-code step. A
+ * password PIN step has no ticket (the password is re-sent with the PIN); every
+ * other step's does.
  */
 export interface SignInResponse {
   accessToken?: string;
   requiresPin?: boolean;
+  requiresTotp?: boolean;
   ticket?: string;
 }
 
@@ -44,6 +46,10 @@ export async function startProvider(provider: string, remember: boolean, returnT
 
 export async function completePin(ticket: string, pin: string): Promise<SignInResponse> {
   return api.post<SignInResponse>("/auth/login/pin", { ticket, pin });
+}
+
+export async function completeTotp(ticket: string, code: string): Promise<SignInResponse> {
+  return api.post<SignInResponse>("/auth/login/2fa", { ticket, code });
 }
 
 /** A readable label for the device a passkey is being made on. */

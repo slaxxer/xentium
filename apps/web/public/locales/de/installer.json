@@ -199,7 +199,17 @@
       "good": "Gut",
       "strong": "Stark"
     },
-    "username_placeholder": "Administrator"
+    "username_placeholder": "Administrator",
+    "tfa_title": "Zwei-Faktor-Anmeldung",
+    "tfa_desc": "Welche Gruppen müssen eine Authenticator-App nutzen? Nichts angehakt: jede Person entscheidet selbst. Du kannst das später unter ACP → Einstellungen → Anmeldung ändern.",
+    "tfa_groups": {
+      "admin": "Administratoren",
+      "supermod": "Supermods",
+      "moderator": "Moderatoren",
+      "member": "Mitglieder"
+    },
+    "tfa_admin_note": "Du wirst direkt nach der Installation gebeten, sie einzurichten.",
+    "tfa_member_note": "Alle Mitglieder, auch alle, die sich später registrieren, werden gebeten, sie einzurichten."
   },
   "finalize": {
     "title": "Bereit, wenn du es bist",

@@ -22,7 +22,10 @@ import {
   HEARTH_DEFAULT_TOKENS,
   TOKEN_REGISTRY,
   TOKEN_BY_VAR,
-  SCOPE_SELECTOR,
+  pageOfScope,
+  pageScopeId,
+  scopeSelector,
+  type PageScope,
   type TokenMap,
   type ScopedTokens,
   type ScopedTokenSet,
@@ -160,7 +163,7 @@ type Origin = "own" | "global" | "theme" | "inherited";
  * rather than to stock Xentium.
  */
 function inheritedValue(
-  cssVar: string, globalBucket: TokenMap, themeBuckets: ScopedTokens, scope: ThemeScope,
+  cssVar: string, globalBucket: TokenMap, themeBuckets: ScopedTokens, scope: EditScope,
 ): { value: string; origin: Origin; from?: string } {
   const fromTheme = themeBuckets[scope]?.[cssVar] ?? themeBuckets.global?.[cssVar];
   if (fromTheme !== undefined) return { value: fromTheme, origin: "theme" };
@@ -206,6 +209,9 @@ function sectionVars(section: Section): string[] {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
+/** Where an edit lands: the whole site, a region or variant, or one page (per-page design). */
+type EditScope = ThemeScope | PageScope;
+
 /**
  * The Style Editor edits ONE theme at a time — the one named in `?theme=`, else the
  * live one. Keyed by it, so switching themes starts the editor fresh rather than
@@ -226,6 +232,14 @@ function StyleEditorInner({ themeKey, tab }: { themeKey: string | null; tab: Sty
   const navigate = useNavigate();
   const [sectionId, setSectionId] = useState(SECTIONS[0]!.id);
   const [scope, setScope] = useState<ThemeScope>("global");
+  /**
+   * Per-page design: the page the Page preview shows, and whether edits go to THAT
+   * page only (`page.<template>`). Only while a page is previewed — the Components
+   * specimen is no page, so there is nothing to scope to.
+   */
+  const [previewPage, setPreviewPage] = useState<{ id: string; label: string } | null>(null);
+  const [pageOnly, setPageOnly] = useState(false);
+  const pageScope: PageScope | null = pageOnly && previewPage ? pageScopeId(previewPage.id) : null;
   const [previewState, setPreviewState] = useState<PreviewState>("base");
   const [hotspots, setHotspots] = useState(false);
   const [jumpOpen, setJumpOpen] = useState(false);
@@ -450,6 +464,11 @@ function StyleEditorInner({ themeKey, tab }: { themeKey: string | null; tab: Sty
       document.getElementById(CUSTOM_CSS_PREVIEW_ID)?.remove();
       await refreshTokenCss();
       setSavedSnap({ tokens: empty, fontFamily: "", fontSize: "16", fontWeight: "400" });
+      // The rest of the Studio reads the same tokens (the layout editor's Theme panel and
+      // its preview): without this they kept showing, and could stage again, the old ones.
+      qc.invalidateQueries({ queryKey: ["acp-tokens", themeKey] });
+      qc.invalidateQueries({ queryKey: ["acp-draft-status"] });
+      qc.invalidateQueries({ queryKey: ["studio-status"] });
       swalToast(t("styleEditor.toastReset"), "success");
     },
     onError: (e) => swalToast(apiErrorMessage(e)),
@@ -479,7 +498,10 @@ function StyleEditorInner({ themeKey, tab }: { themeKey: string | null; tab: Sty
   // and `.pub-nav` render identically — while every install that has ever set a
   // navbar colour has it stored under `global`. Reading the region bucket instead
   // would show those existing overrides as "Inherited" and write a second copy.
-  const effScope: ThemeScope = section.kind === "component" ? scope : "global";
+  //
+  // "This page only" overrides both: every token of every section goes to the page's
+  // bucket, palette included — a page's own look is its own colours, not one button.
+  const effScope: EditScope = pageScope ?? (section.kind === "component" ? scope : "global");
 
   function selectSection(id: string) {
     setSectionId(id);
@@ -506,10 +528,10 @@ function StyleEditorInner({ themeKey, tab }: { themeKey: string | null; tab: Sty
     else setScope("global");
   }
 
-  function bucketHas(s: ThemeScope, cssVar: string): boolean {
+  function bucketHas(s: EditScope, cssVar: string): boolean {
     return !!(tokens![s] && cssVar in tokens![s]!);
   }
-  function setOverride(s: ThemeScope, cssVar: string, value: string) {
+  function setOverride(s: EditScope, cssVar: string, value: string) {
     setTokens((prev) => {
       if (!prev) return prev;
       return { ...prev, [s]: { ...(prev[s] ?? {}), [cssVar]: value } };
@@ -524,7 +546,7 @@ function StyleEditorInner({ themeKey, tab }: { themeKey: string | null; tab: Sty
     else setOverride("global", "--icon-scale", String(v));
   }
 
-  function clearOverride(s: ThemeScope, cssVar: string) {
+  function clearOverride(s: EditScope, cssVar: string) {
     setTokens((prev) => {
       if (!prev) return prev;
       const next = { ...prev };
@@ -538,7 +560,7 @@ function StyleEditorInner({ themeKey, tab }: { themeKey: string | null; tab: Sty
   }
 
   // Resolved value + where it came from, at the active scope.
-  function display(cssVar: string, atScope: ThemeScope = effScope): { value: string; origin: Origin; from?: string } {
+  function display(cssVar: string, atScope: EditScope = effScope): { value: string; origin: Origin; from?: string } {
     if (bucketHas(atScope, cssVar)) return { value: tokens![atScope]![cssVar]!, origin: "own" };
     // A component token in a region scope falls back to its global override, then base.
     if (atScope !== "global" && cssVar in globalBucket) return { value: globalBucket[cssVar]!, origin: "global" };
@@ -568,7 +590,7 @@ function StyleEditorInner({ themeKey, tab }: { themeKey: string | null; tab: Sty
     blocks.push(`:root {\n${gDecls}\n}`);
     for (const [s, map] of Object.entries(scoped)) {
       if (s === "global" || !map) continue;
-      const sel = SCOPE_SELECTOR[s as ThemeScope];
+      const sel = scopeSelector(s);
       if (!sel) continue;
       const decls = Object.entries(map).map(([k, v]) => `  ${k}: ${v} !important;`).join("\n");
       if (decls.trim()) blocks.push(`${sel} {\n${decls}\n}`);
@@ -589,10 +611,24 @@ function StyleEditorInner({ themeKey, tab }: { themeKey: string | null; tab: Sty
     Object.entries(bucket ?? {}).map(([cssVar, value]) => ({
       key: `${sc}|${cssVar}`,
       label: tokenLabel(cssVar, t),
-      where: t(SCOPE_LABEL[sc] ?? sc),
+      where: scopeName(sc),
       value,
     })),
   );
+
+  /** A scope as the admin reads it: "Navbar", "Accent", "Page: Forum". */
+  function scopeName(sc: string): string {
+    const page = pageOfScope(sc);
+    if (page) return t("styleEditor.pageScope", { page: previewPageLabel(page) });
+    return t(SCOPE_LABEL[sc] ?? sc);
+  }
+  function previewPageLabel(id: string): string {
+    if (previewPage?.id === id) return previewPage.label;
+    const def = listTemplates().find((d) => d.key === id);
+    return def?.label ?? t(`layoutEditor.template.${id}`, { defaultValue: id });
+  }
+  /** Pages that already have a look of their own, for the "already set in" chips. */
+  const pageMarks = Object.keys(tokens).filter((sc) => pageOfScope(sc) && Object.keys(tokens[sc] ?? {}).length > 0);
 
   // Rows for the active section.
   const rowVars = sectionVars(section);
@@ -672,7 +708,8 @@ function StyleEditorInner({ themeKey, tab }: { themeKey: string | null; tab: Sty
                 <div className="se-cluster__h">{t(cluster.heading)}</div>
                 <div className="se-cluster__tiles">
                   {cluster.tiles.map((tile) => {
-                    const d = display(tile.cssVar, "global");
+                    // The board follows "Only <page>": it shows the colours that page will wear.
+                    const d = display(tile.cssVar, pageScope ?? "global");
                     const on = sectionId === tile.section;
                     return (
                       <button
@@ -759,6 +796,7 @@ function StyleEditorInner({ themeKey, tab }: { themeKey: string | null; tab: Sty
               previewState={previewState}
               setPreviewState={setPreviewState}
               onPick={handlePick}
+              onPage={(p) => { setPreviewPage(p); if (!p) setPageOnly(false); }}
             />
 
             <div className="se-insp">
@@ -770,7 +808,7 @@ function StyleEditorInner({ themeKey, tab }: { themeKey: string | null; tab: Sty
                       <div className="se-insp__title">{t(section.label)}</div>
                       <div className="se-insp__kind">
                         {t(`styleEditor.k${section.kind === "component" ? "Component" : section.kind === "region" ? "Region" : section.kind === "foundation" ? "Foundation" : "Palette"}`)}
-                        {section.kind === "component" && ` · ${t(SCOPE_LABEL[scope] ?? scope)}`}
+                        {pageScope ? ` · ${scopeName(pageScope)}` : section.kind === "component" && ` · ${t(SCOPE_LABEL[scope] ?? scope)}`}
                       </div>
                     </div>
                   </div>
@@ -790,7 +828,36 @@ function StyleEditorInner({ themeKey, tab }: { themeKey: string | null; tab: Sty
                   </div>
                 )}
 
-                {isScopeable(section) && (
+                {previewPage && (
+                  <div className="se-scope se-scope--page">
+                    <div className="se-scope__row">
+                      <span className="se-scope__lab">{t("styleEditor.pageDesign")}</span>
+                      <div className="se-seg" role="radiogroup" aria-label={t("styleEditor.pageDesign")}>
+                        <button type="button" role="radio" aria-checked={!pageOnly}
+                          className={`se-chip${!pageOnly ? " is-on" : ""}`} onClick={() => setPageOnly(false)}>
+                          {t("styleEditor.pageWholeSite")}
+                        </button>
+                        <button type="button" role="radio" aria-checked={pageOnly}
+                          className={`se-chip${pageOnly ? " is-on" : ""}`} onClick={() => setPageOnly(true)}>
+                          {t("styleEditor.pageOnly", { page: previewPage.label })}
+                        </button>
+                      </div>
+                    </div>
+                    <p className="se-scope__sentence">
+                      {pageOnly ? t("styleEditor.pageOnlyHint", { page: previewPage.label }) : t("styleEditor.pageSiteHint")}
+                    </p>
+                    {pageMarks.length > 0 && (
+                      <div className="se-scope__marks">
+                        <span className="se-scope__marksLab">{t("styleEditor.pagesWithLook")}</span>
+                        {pageMarks.map((sc) => (
+                          <span key={sc} className="se-chip">{previewPageLabel(pageOfScope(sc)!)} · {Object.keys(tokens[sc] ?? {}).length}</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {isScopeable(section) && !pageOnly && (
                   <div className="se-scope">
                     <div className="se-scope__row">
                       <span className="se-scope__lab">{t("styleEditor.applyTo")}</span>
@@ -1351,13 +1418,15 @@ export function previewOverlayRules({ activeGroup, hotspots, previewState }: {
   return rules.join("\n");
 }
 
-function PreviewFrame({ css, extraCss, activeGroup, hotspots, setHotspots, previewState, setPreviewState, onPick, themeKey }: {
+function PreviewFrame({ css, extraCss, activeGroup, hotspots, setHotspots, previewState, setPreviewState, onPick, onPage, themeKey }: {
   css: string; extraCss: string; activeGroup?: string;
   /** The theme being edited — the specimen loads ITS stylesheet under the draft. */
   themeKey: string | null;
   hotspots: boolean; setHotspots: (v: boolean) => void;
   previewState: PreviewState; setPreviewState: (s: PreviewState) => void;
   onPick: (group: string, scope: string) => void;
+  /** The page on screen, or null for the Components specimen (per-page design). */
+  onPage: (page: { id: string; label: string } | null) => void;
 }) {
   const { t } = useTranslation("acp");
   const ref = useRef<HTMLIFrameElement>(null);
@@ -1377,6 +1446,10 @@ function PreviewFrame({ css, extraCss, activeGroup, hotspots, setHotspots, previ
   const [pageId, setPageId] = useState(pages[0]!.id);
   const page = pages.find((p) => p.id === pageId) ?? pages[0]!;
   const surfaceRef = useRef(surface); surfaceRef.current = surface;
+  const onPageRef = useRef(onPage); onPageRef.current = onPage;
+  useEffect(() => {
+    onPageRef.current(surface === "page" ? { id: page.id, label: page.label } : null);
+  }, [surface, page.id, page.label]);
   const themeQs = themeKey ? `${PREVIEW_THEME_PARAM}=${encodeURIComponent(themeKey)}` : "";
   const previewSrc = surface === "page"
     ? `${page.route}${page.route.includes("?") ? "&" : "?"}${LAYOUT_PREVIEW_PARAM}=draft${themeQs ? `&${themeQs}` : ""}`

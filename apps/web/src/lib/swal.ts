@@ -16,7 +16,7 @@ import { openDialog } from "./dialog";
  */
 export function apiErrorMessage(
   e: unknown,
-  fallback = "Something went wrong. Please try again.",
+  fallback = i18n.t("common:feedback.tryAgain"),
 ): string {
   if (e == null) return fallback;
   const err = e as Record<string, unknown>;
@@ -39,15 +39,15 @@ export function apiErrorMessage(
   return serverMsg ?? fallback;
 }
 
-export function swalError(text: string, title = "Error") {
+export function swalError(text: string, title = i18n.t("common:feedback.error")) {
   return openDialog({ kind: "alert", icon: "error", title, body: text });
 }
 
 export async function swalConfirm(
   title: string,
   text: string,
-  confirmText = "Yes",
-  cancelText = "Cancel",
+  confirmText = i18n.t("common:actions.yes"),
+  cancelText = i18n.t("common:actions.cancel"),
 ): Promise<boolean> {
   return openDialog({ kind: "confirm", icon: "question", title, body: text, confirmText, cancelText });
 }

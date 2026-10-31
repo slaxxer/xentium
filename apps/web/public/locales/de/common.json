@@ -21,7 +21,8 @@
     "search": "Suchen",
     "decrease": "Verringern",
     "increase": "Erhöhen",
-    "ok": "OK"
+    "ok": "OK",
+    "yes": "Ja"
   },
   "nav": {
     "home": "Startseite",
@@ -40,7 +41,8 @@
     "adminPanel": "Admin-Bereich",
     "adminAttention": "Im Adminbereich wartet etwas auf dich",
     "homeAria": "Zur Startseite",
-    "menu": "Menü"
+    "menu": "Menü",
+    "openMenu": "Menü {{label}} öffnen"
   },
   "search": {
     "short": "Suchen",
@@ -186,7 +188,8 @@
     },
     "updatesLabel": "Neuigkeiten:",
     "staffSignIn": "Team-Anmeldung",
-    "autoRefreshNote": "Diese Seite lädt sich von selbst neu, sobald wir fertig sind. Du musst nichts tun."
+    "autoRefreshNote": "Diese Seite lädt sich von selbst neu, sobald wir fertig sind. Du musst nichts tun.",
+    "code": "Authenticator-Code"
   },
   "themeChooser": {
     "open": "Theme wählen",
@@ -639,7 +642,8 @@
   "blockRender": {
     "failed": "Block „{{type}}“ konnte nicht angezeigt werden.",
     "unavailable": "Block „{{type}}“ ist nicht verfügbar.",
-    "mastheadHidden": "Kopfbereich ausgeblendet"
+    "mastheadHidden": "Kopfbereich ausgeblendet",
+    "mastheadPage": "Kopfbereich der Seite: eine Seite, die einen hat, zeigt ihn hier"
   },
   "themePreview": {
     "aside": "Seitenleiste",
@@ -741,5 +745,17 @@
     "max": "Bis zu {{size}} je Datei",
     "tooLarge": "Größer als {{size}}",
     "failed": "Das Hochladen ist fehlgeschlagen. Versuch es noch einmal."
+  },
+  "stepUp": {
+    "title": "Bestätige, dass du es bist",
+    "body": "Gib den 6-stelligen Code aus deiner Authenticator-App ein, um fortzufahren.",
+    "label": "Authenticator-Code",
+    "confirm": "Bestätigen",
+    "wrong": "Dieser Code stimmt nicht. Versuch den aktuellen.",
+    "used": "Dieser Code wurde gerade schon verwendet. Warte auf den nächsten."
+  },
+  "feedback": {
+    "error": "Fehler",
+    "tryAgain": "Etwas ist schiefgelaufen. Bitte versuche es erneut."
   }
 }

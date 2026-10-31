@@ -14,6 +14,7 @@
  */
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import {
+  faHandPointer,
   faCopyright, faLink, faAward, faEye, faHeart, faImagePortrait, faMedal, faAlignLeft, faAt, faBars, faBell, faBolt, faBoxesStacked, faChartSimple, faCircleHalfStroke, faCircleInfo, faCircleUser, faClipboardList, faColumns, faComments, faFeather, faFileLines, faFlag, faFolderTree, faGaugeHigh, faGripLines, faClipboardCheck, faHeading, faIdBadge, faImage, faLayerGroup, faListCheck, faMagnifyingGlass, faNewspaper, faPeopleGroup, faPuzzlePiece, faRankingStar, faRectangleAd, faShield, faShieldHalved, faSliders, faSquare, faTableCells, faTag, faTrophy, faUser, faUserGroup, faUsers, faWindowMaximize, faWindowMinimize, faArrowTrendUp, faHashtag,
 } from "@fortawesome/free-solid-svg-icons";
 import { getBlock } from "./blockRegistry";
@@ -56,6 +57,8 @@ const BY_TYPE: Record<string, IconDefinition> = {
   // content
   heading: faHeading,
   eyebrow: faTag,
+  buttons: faHandPointer,
+  mastheadPage: faWindowMaximize,
   text: faAlignLeft,
   paragraph: faAlignLeft,
   richText: faFeather,

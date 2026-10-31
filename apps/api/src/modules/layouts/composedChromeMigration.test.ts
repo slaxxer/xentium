@@ -73,8 +73,13 @@ describe("splitting the moderation tool out of the bell", () => {
       band.children = [band.children![0]!, ...icons.filter((c) => c !== search), menu, search];
       return doc;
     };
-    expect(composeHeader(flat(false))).toEqual(DEFAULT_LAYOUTS["chrome.header"]);   // v2
-    expect(composeHeader(flat(true))).toEqual(DEFAULT_LAYOUTS["chrome.header"]);    // v3
+    // Today's default less "This page's masthead", which came later and is not this
+    // migration's business (a header without it draws a page's masthead under itself).
+    const composed = structuredClone(DEFAULT_LAYOUTS["chrome.header"]);
+    const band = composed.regions.header!.find((b) => b.type === "header")!;
+    band.children = band.children!.filter((c) => c.type !== "mastheadPage");
+    expect(composeHeader(flat(false))).toEqual(composed);   // v2
+    expect(composeHeader(flat(true))).toEqual(composed);    // v3
     expect(composeHeader(structuredClone(DEFAULT_LAYOUTS["chrome.header"]))).toBeNull();
   });
 

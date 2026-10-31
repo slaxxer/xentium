@@ -217,7 +217,30 @@
     "stateOff": "Desligado",
     "deviceCount_one": "1 dispositivo",
     "deviceCount_other": "{{count}} dispositivos",
-    "footNote": "Nada nesta página é guardado sozinho — onde importa, cada ação pede a tua palavra-passe."
+    "footNote": "Nada nesta página é guardado sozinho — onde importa, cada ação pede a tua palavra-passe.",
+    "tfa": {
+      "title": "Início de sessão em dois passos",
+      "offDesc": "Pedir um código de uma app de autenticação, como o Google Authenticator, sempre que inicia sessão. Substitui o PIN de acesso.",
+      "onDesc": "Ativo desde {{date}}. O início de sessão pede um código da sua app de autenticação. Códigos de recuperação restantes: {{left}}.",
+      "requiredHint": "A sua conta tem acesso de equipa, por isso o início de sessão em dois passos é obrigatório para abrir o painel de administração.",
+      "turnOn": "Ativar",
+      "turnOff": "Desativar",
+      "newCodes": "Novos códigos de recuperação",
+      "step1": "Instale uma app de autenticação no telemóvel, como o Google Authenticator, o 1Password ou o Authy.",
+      "step2": "Leia o código QR com ela. Não consegue ler? Introduza antes esta chave:",
+      "step3": "Introduza o código de 6 dígitos que a app mostra.",
+      "qrAlt": "Código QR para a sua app de autenticação",
+      "codeLabel": "Código da sua app",
+      "codeOrRecovery": "Código da sua app ou um código de recuperação",
+      "codesOnce": "Guarde estes códigos de recuperação num local seguro. Cada um inicia sessão uma vez se perder o telemóvel. Só são mostrados desta vez.",
+      "copy": "Copiar",
+      "download": "Transferir",
+      "saved": "Já os guardei",
+      "copied": "Códigos de recuperação copiados.",
+      "enabled": "O início de sessão em dois passos está ativo.",
+      "disabled": "O início de sessão em dois passos está desativado.",
+      "failed": "Não funcionou. Tente de novo."
+    }
   },
   "pageSub": "O teu perfil, a tua segurança, e o que este site pode contar sobre ti.",
   "viewProfile": "Ver o meu perfil",
@@ -233,7 +256,8 @@
       "notifications": "notificações email na app seguidores menções gostos progressão emblemas",
       "preferences": "tema escuro claro idioma tipo de letra emblemas movimento compacto reprodução aspeto",
       "privacy": "privacidade aniversário visibilidade mural comentários seguidores bloqueados"
-    }
+    },
+    "tfaOn": "Dois passos ativo"
   },
   "save": {
     "unsaved_one": "1 alteração não guardada",

@@ -50,7 +50,9 @@ const MOD_PERMS = [
 ];
 
 const GRANTS: Record<string, string[]> = {
-  admin:    Object.values(CorePermissions),
+  // Everything except the 2FA duty, which is the site's choice (installer, then
+  // ACP → Settings → Sign-in): an upgrade must not lock admins out of the ACP.
+  admin:    Object.values(CorePermissions).filter((k) => k !== CorePermissions.ACCOUNT_TWO_FACTOR_REQUIRED),
   supermod: MOD_PERMS,
   moderator: [
     CorePermissions.USER_BAN,

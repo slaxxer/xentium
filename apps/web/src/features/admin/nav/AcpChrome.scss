@@ -96,6 +96,18 @@ $panel-w: 248px;
     &.is-here .acp-rail__bar { background: var(--c-accent); }
   }
 
+  // Some page in this section has a count (see the panel's __count).
+  &__dot {
+    position: absolute;
+    top: 8px;
+    right: 9px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--c-danger);
+    box-shadow: 0 0 0 2px var(--c-surface, var(--c-bg));
+  }
+
   &__bar {
     position: absolute;
     left: -14px;
@@ -266,6 +278,22 @@ $panel-w: 248px;
       color: var(--c-accent);
       font-weight: 600;
     }
+  }
+
+  // A plugin's count beside its page (registerAcpBadge): something waits there.
+  &__count {
+    margin-left: auto;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    border-radius: 999px;
+    display: inline-grid;
+    place-items: center;
+    font-size: var(--fs-2xs);
+    font-weight: 700;
+    line-height: 1;
+    background: var(--c-danger);
+    color: var(--c-on-accent, #fff);
   }
 
   &__foot {

@@ -9,6 +9,7 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { runChecks, worst, type Check } from "./checks.js";
 import { backup as dumpDatabase, installedVersion, waitForHealth } from "./release.js";
+import { resetTwoFactor } from "./account.js";
 import { findSite, type Site } from "./site.js";
 import { installUnits, installUpdater, runForeground, systemctl, unitNames, unitState, unitsInstalled } from "./service.js";
 import { rollback, update } from "./update.js";
@@ -28,6 +29,8 @@ ${color.bold("xentium")} — run and update a Xentium site
   ${color.bold("xentium update")} [version]   install a release, migrate, switch over
   ${color.bold("xentium rollback")} [version] go back to the release you were on
   ${color.bold("xentium install-service")}    install (or rewrite) the systemd units and the updater
+  ${color.bold("xentium reset-2fa")} <email|username>
+                             turn off two-factor sign-in for an account locked out of it
   ${color.bold("xentium updater")}            run an update the ACP asked for (started by systemd)
 
 Options
@@ -196,6 +199,26 @@ async function backup(site: Site): Promise<number> {
   return 0;
 }
 
+async function resetTwoFactorCommand(site: Site, who: string | undefined): Promise<number> {
+  heading("Reset two-factor sign-in");
+  if (!who) {
+    error("Name the account: xentium reset-2fa <email or username>");
+    return 1;
+  }
+  const result = await resetTwoFactor(site, who);
+  if (!result.ok) {
+    error(result.reason);
+    return 1;
+  }
+  if (result.usernames.length === 0) {
+    error(`No account has the email or username "${who}".`);
+    return 1;
+  }
+  success(`Two-factor sign-in is off for ${result.usernames.join(", ")}, and their sessions have ended.`);
+  note("They sign in with their password now, and should turn two-factor sign-in on again in their account settings.");
+  return 0;
+}
+
 async function installService(site: Site): Promise<number> {
   const config = site.readConfig();
   const units = config.service ?? unitNames();
@@ -269,6 +292,7 @@ async function main(): Promise<number> {
     case "updater":         return runUpdater(requireSite(flags));
     case "rollback":        return rollback(requireSite(flags), rest[0]);
     case "install-service": return installService(requireSite(flags));
+    case "reset-2fa":       return resetTwoFactorCommand(requireSite(flags), rest[0]);
     default:
       error(`Unknown command: ${command}`);
       line(HELP.trim());

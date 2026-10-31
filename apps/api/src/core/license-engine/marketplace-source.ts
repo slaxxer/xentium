@@ -2,7 +2,7 @@
 // reaching for a host directly, and the URL comes from env.LICENSE_SERVER_URL so
 // a developer can run against a local marketplace.
 //
-// There is ONE marketplace: plugins.xentium.org. The interface is a test seam,
+// There is ONE marketplace: the store on app.xentium.org. The interface is a test seam,
 // not an invitation to point an instance at someone else's shop, and anything
 // carrying an identity claim — an announcement, a plugin signature — is checked
 // against the key bundled in the build whatever that URL says.

@@ -23,6 +23,10 @@
     "smtp_test": {
       "subject": "Prueba de SMTP · {{site_name}}",
       "body": "<h2>El correo saliente funciona</h2><p>Este es el mensaje de prueba de {{site_name}}. Si lo estás leyendo, la configuración SMTP del ACP es correcta y el correo sale del servidor.</p><p>Enviado desde {{site_url}}</p>"
+    },
+    "security_alert": {
+      "subject": "{{event}} · {{site_name}}",
+      "body": "<h1>{{event}}</h1><p>{{detail}}</p><p>{{request_box}}</p><hr><p>¿No fuiste tú? Cambia tu contraseña y revisa en los ajustes de tu cuenta dónde tienes la sesión iniciada. Si necesitas ayuda, {{support_link}}.</p>"
     }
   },
   "buttons": {
@@ -38,5 +42,39 @@
     "location": "Ubicación"
   },
   "supportLink": "contacta con soporte",
-  "sentBy": "Enviado por {{site}}"
+  "sentBy": "Enviado por {{site}}",
+  "security": {
+    "twofactor_enabled": {
+      "title": "El inicio de sesión en dos pasos está activado",
+      "detail": "Se activó el inicio de sesión en dos pasos en tu cuenta. A partir de ahora, al iniciar sesión se pedirá un código de tu app de autenticación. Se cerraron tus otras sesiones."
+    },
+    "twofactor_disabled": {
+      "title": "Se desactivó el inicio de sesión en dos pasos",
+      "detail": "Se desactivó el inicio de sesión en dos pasos en tu cuenta. Al iniciar sesión ya no se pedirá un código de tu app de autenticación."
+    },
+    "recovery_used": {
+      "title": "Se usó un código de recuperación",
+      "detail": "Se acaba de usar uno de tus códigos de recuperación en lugar de tu app de autenticación. Cada código funciona una sola vez."
+    },
+    "recovery_regenerated": {
+      "title": "Tienes códigos de recuperación nuevos",
+      "detail": "Se crearon códigos de recuperación nuevos para tu cuenta. Los anteriores ya no funcionan."
+    },
+    "twofactor_reset": {
+      "title": "Un administrador desactivó tu inicio de sesión en dos pasos",
+      "detail": "Un administrador quitó el inicio de sesión en dos pasos de tu cuenta y cerró todas tus sesiones. Puedes volver a activarlo en los ajustes de tu cuenta."
+    },
+    "twofactor_disabled_admin": {
+      "title": "{{username}} desactivó el inicio de sesión en dos pasos",
+      "detail": "{{username}} debe usar el inicio de sesión en dos pasos y acaba de desactivarlo. El panel de administración seguirá cerrado para esa cuenta hasta que vuelva a activarlo."
+    },
+    "recovery_used_admin": {
+      "title": "{{username}} usó un código de recuperación",
+      "detail": "{{username}} debe usar el inicio de sesión en dos pasos y acaba de usar un código de recuperación de un solo uso en lugar de su app de autenticación."
+    },
+    "twofactor_reset_admin": {
+      "title": "Se quitó el inicio de sesión en dos pasos de {{username}}",
+      "detail": "Un administrador quitó el inicio de sesión en dos pasos de {{username}} y cerró todas sus sesiones."
+    }
+  }
 }

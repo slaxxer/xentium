@@ -97,6 +97,13 @@ export interface NotifyOptions {
 export interface PluginHost {
   /** The host's database client. */
   prisma: any;
+  /**
+   * The host's database connection pool (a node-postgres `Pool`), for a plugin that
+   * brings its own client: `new PrismaClient({ adapter: new PrismaPg(host.pg as Pool) })`,
+   * Drizzle, Kysely or plain `pg`. Shared with the host, so never `end()` it. Tables
+   * are still created only by the plugin's SQL migrations. Absent on an older host.
+   */
+  pg?: unknown;
   /** Job queue handles. Plugins enqueue; the host's worker processes. */
   queues: any;
   /** Validated host environment config. */
@@ -112,6 +119,13 @@ export interface PluginHost {
     optionalAuth: any;
     /** `requirePermission(key)` → middleware gating on a permission key. */
     requirePermission: (key: string) => any;
+    /**
+     * Ask a signed-in member with two-factor sign-in on for a fresh code before the
+     * request runs (mount AFTER requireAuth, before any upload parser). The browser
+     * answers the 403 by asking for the code and repeating the request. Passes
+     * straight through for a member without 2FA. Absent on an older host.
+     */
+    requireStepUp?: any;
   };
   utils: {
     /**
@@ -143,6 +157,13 @@ export interface PluginHost {
   groups: {
     add: (userId: string, groupId: string) => Promise<void>;
     remove: (userId: string, groupId: string) => Promise<void>;
+    /**
+     * A group your plugin needs, by key: created the first time (with no permissions,
+     * the name and badge colour you give), its id returned after that. Once it exists
+     * it is the admin's: renamed or recoloured in ACP → Groups and never overwritten.
+     */
+    /** `permissions` are granted when the group is CREATED, never again (the group is the admin's after that). */
+    ensure: (spec: { key: string; name: string; badgeColor?: string; nameGlow?: boolean; displayOrder?: number; permissions?: string[] }) => Promise<string>;
   };
 }
 

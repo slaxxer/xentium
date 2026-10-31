@@ -27,6 +27,7 @@ import { toast } from "../../../lib/toast";
 import { apiErrorMessage } from "../../../lib/swal";
 import { AccountCard } from "../components/AccountCard";
 import { ConnectedAccountsCard, PasskeysCard, SetPasswordHint, useSignInMethods } from "./SignInMethodsCards";
+import { TwoFactorCard } from "./TwoFactorCard";
 import { useDateTime } from "../../../lib/datetime";
 
 type PinMode = null | "enable" | "change" | "disable";
@@ -496,9 +497,15 @@ export function SecurityTab() {
   });
   const { data: methods } = useSignInMethods();
 
-  /** The strip: three real facts, each with the card that changes it below. */
+  /** The strip: three real facts, each with the card that changes it below. The
+   *  second step is two-factor sign-in when it is on, else the PIN. */
+  const tfaOn = !!user?.twoFactor?.enabled;
   const status = [
-    {
+    tfaOn ? {
+      id: "tfa", icon: faShieldHalved, tone: "ok",
+      label: t("security.tfa.title"),
+      value: t("security.stateOn"),
+    } : {
       id: "pin", icon: faKey, tone: user?.loginPinEnabled ? "ok" : "warn",
       label: t("security.loginPin"),
       value: user?.loginPinEnabled ? t("security.stateOn") : t("security.stateOff"),
@@ -530,7 +537,8 @@ export function SecurityTab() {
       <ChangeEmailCard />
       <ChangeUsernameCard />
       {methods && !methods.password ? <SetPasswordHint /> : <ChangePasswordCard />}
-      <LoginPinCard />
+      <TwoFactorCard />
+      {!tfaOn && <LoginPinCard />}
       <PasskeysCard />
       <ConnectedAccountsCard />
       <SessionsCard />

@@ -21,7 +21,8 @@
     "search": "Rechercher",
     "decrease": "Diminuer",
     "increase": "Augmenter",
-    "ok": "OK"
+    "ok": "OK",
+    "yes": "Oui"
   },
   "nav": {
     "home": "Accueil",
@@ -40,7 +41,8 @@
     "adminPanel": "Panneau dʼadministration",
     "adminAttention": "Quelque chose attend votre attention dans le panneau d'administration",
     "homeAria": "Aller à l’accueil",
-    "menu": "Menu"
+    "menu": "Menu",
+    "openMenu": "Ouvrir le menu {{label}}"
   },
   "search": {
     "short": "Rechercher",
@@ -191,7 +193,8 @@
     },
     "updatesLabel": "Actualités :",
     "staffSignIn": "Connexion équipe",
-    "autoRefreshNote": "Cette page se recharge d'elle-même dès que nous avons terminé, inutile de l'actualiser."
+    "autoRefreshNote": "Cette page se recharge d'elle-même dès que nous avons terminé, inutile de l'actualiser.",
+    "code": "Code d’authentification"
   },
   "themeChooser": {
     "open": "Choisir un thème",
@@ -649,7 +652,8 @@
   "blockRender": {
     "failed": "Le bloc « {{type}} » n’a pas pu s’afficher.",
     "unavailable": "Le bloc « {{type}} » n’est pas disponible.",
-    "mastheadHidden": "Bandeau masqué"
+    "mastheadHidden": "Bandeau masqué",
+    "mastheadPage": "Bandeau de la page : une page qui en a un l'affiche ici"
   },
   "themePreview": {
     "aside": "Latéral",
@@ -751,5 +755,17 @@
     "max": "Jusqu'à {{size}} chacun",
     "tooLarge": "Plus de {{size}}",
     "failed": "L'envoi a échoué. Réessayez."
+  },
+  "stepUp": {
+    "title": "Confirmez que c’est vous",
+    "body": "Saisissez le code à 6 chiffres de votre application d’authentification pour continuer.",
+    "label": "Code d’authentification",
+    "confirm": "Confirmer",
+    "wrong": "Ce code est incorrect. Essayez le code actuel.",
+    "used": "Ce code vient d’être utilisé. Attendez le suivant."
+  },
+  "feedback": {
+    "error": "Erreur",
+    "tryAgain": "Une erreur s'est produite. Veuillez réessayer."
   }
 }

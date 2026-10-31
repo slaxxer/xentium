@@ -2,18 +2,22 @@ import { Router, type RequestHandler } from "express";
 import multer from "multer";
 import { z } from "zod";
 import { requireAuth } from "../../shared/middleware/requireAuth.js";
-import { requirePermission } from "../../shared/middleware/requirePermission.js";
+import { requireAllPermissions, requirePermission } from "../../shared/middleware/requirePermission.js";
 import { makeRateLimiter } from "../../shared/middleware/rateLimit.js";
 import { CorePermissions } from "@xentium/contracts";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
 import { XEC } from "../../shared/errors/xec.js";
 import { getFreshSetting } from "../../shared/utils/settings.js";
 import { pluginService } from "./plugin.service.js";
+import { requireStepUp } from "../auth/twoFactor.service.js";
 
 export const pluginManagementRouter: Router = Router();
 
 const isDev         = process.env.NODE_ENV !== "production";
-const adminGuard    = requirePermission(CorePermissions.ADMIN_PLUGINS);
+// admin.access first: it is the check that carries the ACP's two-factor requirement.
+const adminGuard    = requireAllPermissions(CorePermissions.ADMIN_ACCESS, CorePermissions.ADMIN_PLUGINS);
+const installGuard  = requirePermission(CorePermissions.PLUGIN_INSTALL);
+const enableGuard   = requirePermission(CorePermissions.PLUGIN_ENABLE);
 const uploadLimiter  = makeRateLimiter("plugin-upload", 60 * 60_000, isDev ? 1000 : 20); // §26: 20/hr
 const upload       = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
 
@@ -41,7 +45,7 @@ pluginManagementRouter.get("/", requireAuth, adminGuard, async (_req, res, next)
 });
 
 // Validate a package (dry run — no install)
-pluginManagementRouter.post("/validate", requireAuth, adminGuard, uploadGuard, upload.single("file"), async (req, res, next) => {
+pluginManagementRouter.post("/validate", requireAuth, adminGuard, installGuard, uploadGuard, upload.single("file"), async (req, res, next) => {
   try {
     if (!req.file) return res.status(400).json({ message: "No file uploaded" });
     const result = await pluginService.validateOnly(req.file.buffer);
@@ -53,7 +57,7 @@ pluginManagementRouter.post("/validate", requireAuth, adminGuard, uploadGuard, u
 });
 
 // Upload and install
-pluginManagementRouter.post("/upload", requireAuth, adminGuard, uploadGuard, uploadLimiter, upload.single("file"), async (req, res, next) => {
+pluginManagementRouter.post("/upload", requireAuth, adminGuard, installGuard, requireStepUp, uploadGuard, uploadLimiter, upload.single("file"), async (req, res, next) => {
   try {
     if (!req.file) return res.status(400).json({ message: "No file uploaded" });
     const manifest = await pluginService.install(req.file.buffer, req.userId!);
@@ -81,7 +85,7 @@ pluginManagementRouter.post("/upload", requireAuth, adminGuard, uploadGuard, upl
 });
 
 // Enable
-pluginManagementRouter.post("/:id/enable", requireAuth, adminGuard, async (req, res, next) => {
+pluginManagementRouter.post("/:id/enable", requireAuth, adminGuard, enableGuard, requireStepUp, async (req, res, next) => {
   try {
     const { id } = z.object({ id: z.string() }).parse(req.params);
     await pluginService.enable(id);
@@ -90,7 +94,7 @@ pluginManagementRouter.post("/:id/enable", requireAuth, adminGuard, async (req, 
 });
 
 // Disable
-pluginManagementRouter.post("/:id/disable", requireAuth, adminGuard, async (req, res, next) => {
+pluginManagementRouter.post("/:id/disable", requireAuth, adminGuard, enableGuard, async (req, res, next) => {
   try {
     const { id } = z.object({ id: z.string() }).parse(req.params);
     await pluginService.disable(id);
@@ -99,7 +103,7 @@ pluginManagementRouter.post("/:id/disable", requireAuth, adminGuard, async (req,
 });
 
 // Uninstall
-pluginManagementRouter.delete("/:id", requireAuth, adminGuard, async (req, res, next) => {
+pluginManagementRouter.delete("/:id", requireAuth, adminGuard, installGuard, requireStepUp, async (req, res, next) => {
   try {
     const { id }         = z.object({ id: z.string() }).parse(req.params);
     const { removeData } = z.object({ removeData: z.coerce.boolean().default(false) }).parse(req.query);

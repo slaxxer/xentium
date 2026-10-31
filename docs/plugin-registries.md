@@ -261,6 +261,15 @@ An admin page, and a link in the site's nav.
 Plugin nav links always go below core's. The `position` you declare is a hint, not an
 index; admins reorder links in the ACP.
 
+A plugin with several pages in its own section can split the panel with headings, the
+way System has Setup and Logs: give each page a `group`. Pages of one group are listed
+together, in the order you register them; a page without one goes first.
+
+```ts
+ctx.registerAcpPage({ section: "Store", label: "Overview", path: "/admin/store" });
+ctx.registerAcpPage({ section: "Store", label: "Orders", path: "/admin/store/orders", group: "Sales" });
+```
+
 A plugin with its own ACP section can give it one of the ACP's own icons, so it matches
 the core sections (outline, filled while you're in it): add `acpIcon` to
 `slotRegistry.registerPluginMeta`, with `forum`, `files`, `support` or `shop`. Without it,
@@ -324,6 +333,31 @@ slotRegistry.registerUserMenuItem({
 
 The menu only shows to signed-in members. The page it links to still decides who may
 open it (`requiresAuth` on the route), and your API still checks every request.
+
+### Account tabs (`slotRegistry.registerAccountTab`)
+
+A plugin whose member pages belong with the account (licences, invoices, a membership)
+adds them as tabs of the member's own Account page instead of building an account area
+of its own. Each tab is listed in the account menu after core's tabs, under its `group`
+heading, and opens at `/account?tab=<id>`:
+
+```ts
+slotRegistry.registerAccountTab({
+  id: "my-plugin.invoices",           // namespaced; also the tab's URL value
+  get label() { return getI18n().t("my-plugin:account.invoices"); },
+  group: "Shop",                      // tabs sharing a group are listed together
+  icon: faReceipt,
+  permission: "my-plugin.buy",        // optional: hidden from members without it
+  keywords: "bills receipts",         // optional: found by the account menu's search
+  order: 10,
+  component: InvoicesTab,
+});
+```
+
+Draw the tab with the account page's own cards (`acct-card`) so it looks like the
+tabs around it. Pair it with a user-menu entry pointing at `/account?tab=<id>` when
+members should reach it in one click. The tab is a hint for what to show: your API
+still checks every request.
 
 ### Icons
 

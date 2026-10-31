@@ -11,6 +11,7 @@ import { apiErr, errorText, pinErrorText } from "./authErrors";
 import { DigitsInput, FormError, PasswordInput } from "./pieces";
 import { MagicLinkRequest } from "./SignInPanel";
 import { completePin, type SignInResponse } from "./signInClient";
+import { TwoFactorStep } from "./TwoFactorStep";
 
 /** /forgot-password — a reset link, or a sign-in link instead. */
 export function ForgotPanel() {
@@ -95,6 +96,17 @@ function TicketPin({ ticket, onDone }: { ticket: string; onDone: (res: SignInRes
   );
 }
 
+/** The authenticator-code step for a ticket from a link or a provider's return. */
+function TicketTotp({ ticket, onDone }: { ticket: string; onDone: (res: SignInResponse) => Promise<void> }) {
+  const { t } = useTranslation("auth");
+  const navigate = useNavigate();
+  return (
+    <AuthDoorway>
+      <TwoFactorStep ticket={ticket} onDone={onDone} onBack={() => navigate("/login", { replace: true })} backLabel={t("door.backToSignIn")} />
+    </AuthDoorway>
+  );
+}
+
 /**
  * /login/link?token=… — where a sign-in link lands. It does NOT sign in on
  * arrival: mail scanners open links, and some run the page's script, so a
@@ -107,15 +119,17 @@ export function MagicLinkLanding() {
   const token = params.get("token") ?? "";
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(token ? "" : t("door.err.linkInvalid"));
-  const [ticket, setTicket] = useState<string | null>(null);
+  const [ticket, setTicket] = useState<{ step: "pin" | "totp"; ticket: string } | null>(null);
 
   const done = async (res: SignInResponse) => {
-    if (res.requiresPin && res.ticket) { setTicket(res.ticket); return; }
+    if (res.requiresTotp && res.ticket) { setTicket({ step: "totp", ticket: res.ticket }); return; }
+    if (res.requiresPin && res.ticket) { setTicket({ step: "pin", ticket: res.ticket }); return; }
     await applyLogin(res.accessToken!);
     navigate("/", { replace: true });
   };
 
-  if (ticket) return <TicketPin ticket={ticket} onDone={done} />;
+  if (ticket?.step === "totp") return <TicketTotp ticket={ticket.ticket} onDone={done} />;
+  if (ticket) return <TicketPin ticket={ticket.ticket} onDone={done} />;
 
   const go = async () => {
     setBusy(true); setError("");
@@ -153,17 +167,21 @@ export function SignInComplete() {
   const [params] = useSearchParams();
   const to = safeReturnTo(params.get("to"));
   const ticket = params.get("pin");
+  const totpTicket = params.get("totp");
   const { isAuthenticated, isLoading } = useAuth();
   const [stuck, setStuck] = useState(false);
 
   // The boot refresh already ran; if it found no session, give it a moment
   // and then say so rather than spinning. Re-armed whenever these change.
   useEffect(() => {
-    if (ticket || isLoading || isAuthenticated) return;
+    if (ticket || totpTicket || isLoading || isAuthenticated) return;
     const id = setTimeout(() => setStuck(true), 1500);
     return () => clearTimeout(id);
-  }, [ticket, isLoading, isAuthenticated]);
+  }, [ticket, totpTicket, isLoading, isAuthenticated]);
 
+  if (totpTicket) {
+    return <TicketTotp ticket={totpTicket} onDone={async (res) => { await applyLogin(res.accessToken!); navigate(to, { replace: true }); }} />;
+  }
   if (ticket) {
     return <TicketPin ticket={ticket} onDone={async (res) => { await applyLogin(res.accessToken!); navigate(to, { replace: true }); }} />;
   }

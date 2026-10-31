@@ -476,6 +476,30 @@ export function MyIndexRoute() {
 `blockRegistry`. A bundled copy registers into its own registry, which the host never
 reads, and your template silently won't exist.
 
+### Your page in the site's masthead
+
+Declare a region named `headerBand` and your page gets its own masthead content: a
+hero, a title with a price, whatever belongs at the top. The site's masthead draws it
+where its **This page's masthead** block sits (core's default header has it under the
+logo), on the masthead's own background, with text and buttons in the masthead's
+colours. A site whose header has no such block draws it under the header instead.
+Pages that don't declare the region leave the masthead as it is.
+
+```ts
+regions: ["headerBand", "main"],
+```
+
+Build it from blocks like any region: core's eyebrow, heading, text and buttons, plus
+your own. It's still part of your page's document, so admins arrange it with the page
+in Theme Studio and a per-page design colours it. The `context` you pass to
+`LayoutRenderer` reaches these blocks too, so a listing page can put the listing's own
+title and price up there.
+
+Inside the masthead the page's colour tokens point at the masthead's (`--c-fg` is the
+masthead's text colour, and so on). A card that should keep the page's colours, like a
+white price box, sets them back from `--xt-page-fg`, `--xt-page-fg-muted`,
+`--xt-page-fg-subtle`, `--xt-page-border` and `--xt-page-accent`.
+
 ### What gets refused
 
 `registerTemplate` **throws** instead of warning, so a bad declaration fails the enable

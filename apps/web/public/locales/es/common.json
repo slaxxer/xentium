@@ -21,7 +21,8 @@
     "search": "Buscar",
     "decrease": "Disminuir",
     "increase": "Aumentar",
-    "ok": "Aceptar"
+    "ok": "Aceptar",
+    "yes": "Sí"
   },
   "nav": {
     "home": "Inicio",
@@ -40,7 +41,8 @@
     "adminPanel": "Panel de administración",
     "adminAttention": "Hay algo en el panel de administración que requiere tu atención",
     "homeAria": "Ir a la página de inicio",
-    "menu": "Menú"
+    "menu": "Menú",
+    "openMenu": "Abrir el menú {{label}}"
   },
   "search": {
     "short": "Buscar",
@@ -191,7 +193,8 @@
     },
     "updatesLabel": "Novedades:",
     "staffSignIn": "Acceso del equipo",
-    "autoRefreshNote": "Esta página vuelve sola en cuanto terminemos, no hace falta recargar."
+    "autoRefreshNote": "Esta página vuelve sola en cuanto terminemos, no hace falta recargar.",
+    "code": "Código de autenticación"
   },
   "themeChooser": {
     "open": "Elegir un tema",
@@ -649,7 +652,8 @@
   "blockRender": {
     "failed": "No se pudo mostrar el bloque «{{type}}».",
     "unavailable": "El bloque «{{type}}» no está disponible.",
-    "mastheadHidden": "Cabecera oculta"
+    "mastheadHidden": "Cabecera oculta",
+    "mastheadPage": "Cabecera de la página: una página que tenga una la muestra aquí"
   },
   "themePreview": {
     "aside": "Lateral",
@@ -751,5 +755,17 @@
     "max": "Hasta {{size}} cada uno",
     "tooLarge": "Más de {{size}}",
     "failed": "No se pudo subir. Inténtalo de nuevo."
+  },
+  "stepUp": {
+    "title": "Confirma que eres tú",
+    "body": "Introduce el código de 6 dígitos de tu app de autenticación para continuar.",
+    "label": "Código de autenticación",
+    "confirm": "Confirmar",
+    "wrong": "Ese código no es correcto. Prueba con el actual.",
+    "used": "Ese código se acaba de usar. Espera al siguiente."
+  },
+  "feedback": {
+    "error": "Error",
+    "tryAgain": "Algo salió mal. Inténtalo de nuevo."
   }
 }

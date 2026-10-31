@@ -77,7 +77,7 @@ export async function createSession(userId: string, meta: Meta, opts: { persiste
   // Trigger security analysis shortly after login so multi-account / IP
   // patterns are detected in near real-time instead of waiting 30 minutes.
   triggerSecurityCheck().catch(() => null);
-  return { refreshToken: raw, persistent, accessToken: await tokens.issueAccess(userId, session.id) };
+  return { refreshToken: raw, persistent, sessionId: session.id, accessToken: await tokens.issueAccess(userId, session.id) };
 }
 
 /**

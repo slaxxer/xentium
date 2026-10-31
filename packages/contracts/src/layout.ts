@@ -57,6 +57,16 @@ export type TemplateKey = CoreTemplateKey | (string & {});
 /** True for the site-wide chrome templates, which no route owns. */
 export const isChromeTemplate = (key: TemplateKey): boolean => key.startsWith('chrome.');
 
+/**
+ * A page's own band in the SITE header: a template that declares this region gets
+ * it drawn by the site header, under the header's own blocks (the navbar and any
+ * masthead), across the full width, instead of inside the page's body. It is still
+ * the PAGE's document: arranged with the page, themed with the page
+ * (`page.<template>`), and gone when the page is. A hero belongs here; a page
+ * without the region keeps the site header as it is.
+ */
+export const HEADER_BAND_REGION = 'headerBand';
+
 /** Regions the CORE templates expose. Plugin templates declare their own. */
 export const TEMPLATE_REGIONS = {
   /*
@@ -1141,6 +1151,8 @@ export const blockPropSchemas = {
    */
   columns: z.object({
     gap: z.enum(['sm', 'md', 'lg']).default('md'),
+    /** Where tracks of different heights line up: a hero's text beside a shorter panel. */
+    align: z.enum(['start', 'center', 'end']).default('start'),
   }),
 
   /**
@@ -1195,6 +1207,8 @@ export const blockPropSchemas = {
   heading: z.object({
     text:    localizedTextSchema,
     eyebrow: localizedTextSchema.optional(),
+    /** A line of plain text under the title (a hero's intro). Translatable, unlike `richText`. */
+    lede:    localizedTextSchema.optional().meta({ title: 'Text under it' }),
     level:   z.union([z.literal(1), z.literal(2), z.literal(3)]).default(2),
     align:   z.enum(['start', 'center']).default('start'),
     /**
@@ -1209,6 +1223,24 @@ export const blockPropSchemas = {
      */
     icon: z.string().optional().meta({ title: 'Icon', format: 'icon' }),
   }),
+
+  /**
+   * Up to two link buttons: the call to action a masthead (or any band) needs,
+   * without a plugin. The second is optional; an empty label hides it.
+   */
+  buttons: z.object({
+    primaryLabel:   localizedTextSchema.default('Get started').meta({ title: 'Main button' }),
+    primaryHref:    linkHrefSchema.default('/').meta({ title: 'Main button links to', description: 'A path like /forum, or a full URL.' }),
+    secondaryLabel: localizedTextSchema.optional().meta({ title: 'Second button', description: 'Leave empty for one button.' }),
+    secondaryHref:  linkHrefSchema.optional().meta({ title: 'Second button links to' }),
+    align:          z.enum(['start', 'center']).default('start'),
+  }),
+
+  /**
+   * The page's own masthead content (its `headerBand` region), drawn inside the
+   * site's masthead where this block sits. A page without one draws nothing here.
+   */
+  mastheadPage: z.object({}),
 
   richText: z.object({
     /** ProseMirror JSON, same shape as `articles.body`. Edited with the Composer. */
@@ -1957,6 +1989,8 @@ export const DEFAULT_LAYOUTS: Record<CoreTemplateKey, LayoutDocument> = {
           backgroundAngle: 120,
         }), children: [
           node('h-band-logo', 'logo', { showWordmark: true }),
+          // What the page on screen puts in the masthead (a store's hero, say).
+          node('h-band-page', 'mastheadPage'),
           // The account menu holds the icons; the avatar is drawn after them.
           { ...node('h-user', 'userMenu'), children: [
             node('h-mod', 'modTool'),

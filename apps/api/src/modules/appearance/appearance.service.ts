@@ -1,6 +1,6 @@
 import { prisma } from "../../infrastructure/db.js";
 import postcss from "postcss";
-import { HEARTH_DEFAULT_TOKENS, XEC, SCOPE_SELECTOR, fontRootDecls, fontBodyRule, colourwaySchema, type Colourway, type TokenMap, type TokenSet, type ThemeScope, type ScopedTokens, type ScopedTokenSet } from "@xentium/contracts";
+import { HEARTH_DEFAULT_TOKENS, XEC, SCOPE_SELECTOR, isPageScope, scopeSelector as tokenScopeSelector, fontRootDecls, fontBodyRule, colourwaySchema, type Colourway, type TokenMap, type TokenSet, type ThemeScope, type ScopedTokens, type ScopedTokenSet } from "@xentium/contracts";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
 // Appearance reads bypass the settings TTL cache on purpose: a client refetching
 // /css right after a cross-process style publish must never get stale tokens.
@@ -842,12 +842,14 @@ export const appearanceService = {
     const ROOT_PREFIX  = ":root";
     const SITE_MIRROR  = ".xt-site-tokens";
 
-    // global → the root; a region scope → that region's selector under the root.
-    // Returns null for a scope this build does not know, and the caller SKIPS it —
-    // a `.xttheme` naming a scope from a newer build must not recolour the whole site.
+    // global → the root; a page → the root while that page is shown; a region scope →
+    // that region's selector under the root. Returns null for a scope this build does
+    // not know, and the caller SKIPS it — a `.xttheme` naming a scope from a newer
+    // build must not recolour the whole site.
     const selectorFor = (scope: string): string | null => {
       const root = `${ROOT_PREFIX}, ${SITE_MIRROR}`;
       if (scope === "global") return root;
+      if (isPageScope(scope)) return tokenScopeSelector(scope);
       const desc = SCOPE_SELECTOR[scope as ThemeScope];
       if (!desc) return null;
       if (desc === ":root") return root;
@@ -860,7 +862,7 @@ export const appearanceService = {
     const fontExtras = fontRootDecls({ family, weight, size });
 
     const parts: string[] = [];
-    // global first, so region scopes can override it.
+    // global first, so page and region scopes can override it.
     const scopes = ["global", ...Object.keys(tokens).filter((s) => s !== "global")];
     for (const scope of scopes) {
       let body = tokens[scope] ? decls(tokens[scope]!) : "";

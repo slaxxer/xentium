@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { AcpIcon, navIcon } from "../pages/acpIcons";
 import { XentiumMark } from "../../../components/XentiumMark";
-import { childMatches, type NavItem } from "../useAcpNav";
+import { activeChild, childMatches, type NavItem } from "../useAcpNav";
 
 // Two-tier horizontal ACP nav (the redesign default). Tier 1 = brand + primary
 // menu (groups open a dropdown of their pages; leaf items navigate directly).
@@ -56,8 +56,8 @@ function PrimaryCell({ item, active, openKey, setOpenKey }: {
       {isOpen && (
         <div className="hnav__drop">
           <div className="hnav__droplabel">{t(item.label)}</div>
-          {item.children.map((c) => {
-            const act = childMatches(c, path);
+          {item.children.map((c, _i, all) => {
+            const act = c === activeChild(all, path);
             return (
               <Link key={c.to} to={c.to} className={`hnav__dropitem${act ? " is-active" : ""}`} onClick={() => setOpenKey(null)}>
                 <span className="hnav__dropic">{navIcon(item)}</span>
@@ -111,8 +111,8 @@ export function HorizontalNav({ nav }: { nav: NavItem[] }) {
           </div>
           <span className="hctx__div" />
           <div className="hctx__tabs acp-scroll">
-            {section.children.map((c) => {
-              const act = childMatches(c, path);
+            {section.children.map((c, _i, all) => {
+              const act = c === activeChild(all, path);
               return (
                 <Link key={c.to} to={c.to} className={`hctx__tab${act ? " is-active" : ""}`}>
                   {t(c.label)}

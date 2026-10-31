@@ -751,7 +751,24 @@ export function ProfilePage() {
     staleTime: 60_000,
   });
 
-  const pluginTabs = slotRegistry.getProfileTabs();
+  /**
+   * Plugin tabs and stats that ask, per profile, whether they belong on it
+   * (`shownFor`). Hidden until they answer, so nothing appears and then vanishes.
+   */
+  const [pluginShown, setPluginShown] = useState<Record<string, boolean>>({});
+  useEffect(() => {
+    if (!profile?.id) return;
+    setPluginShown({});
+    const asking = [...slotRegistry.getProfileTabs(), ...slotRegistry.getProfileStats()].filter((s) => s.shownFor);
+    for (const s of asking) {
+      s.shownFor!(profile.id)
+        .then((yes) => setPluginShown((prev) => ({ ...prev, [s.id]: yes })))
+        .catch(() => setPluginShown((prev) => ({ ...prev, [s.id]: false })));
+    }
+  }, [profile?.id]);
+  const shown = (s: { id: string; shownFor?: unknown }) => !s.shownFor || pluginShown[s.id] === true;
+
+  const pluginTabs = slotRegistry.getProfileTabs().filter(shown);
   // The Warnings tab: the member's own, and staff's. Nobody else learns it exists —
   // the server refuses them too (GET /users/:id/standing), this only spares the button.
   const isStaffViewer = userCan(viewer, "moderation.warn.manage");
@@ -765,11 +782,11 @@ export function ProfilePage() {
   ];
 
   // Plugin profile stats — hooks MUST be before any early returns
-  const pluginStatSlots = slotRegistry.getProfileStats();
+  const pluginStatSlots = slotRegistry.getProfileStats().filter(shown);
   const [pluginStatValues, setPluginStatValues] = useState<Record<string, number>>({});
   useEffect(() => {
     if (!profile?.id) return;
-    pluginStatSlots.forEach((s) => {
+    slotRegistry.getProfileStats().forEach((s) => {
       s.fetchValue(profile.id)
         .then((val) => setPluginStatValues((prev) => ({ ...prev, [s.id]: val })));
     });

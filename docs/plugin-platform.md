@@ -225,6 +225,49 @@ Each change is announced as an event: `<your id>.<name>.created`, `.updated`, `.
 Your own routes (`ctx.registerRoutes`) answer first, so you can replace any of these
 endpoints for something special and leave the rest to core.
 
+## Your own database client
+
+A small plugin is fine with resources and a few SQL queries through `host.prisma`. A
+plugin the size of an application (a shop, a file base) is easier to get right with a
+typed client of its own: Prisma, Drizzle, Kysely or plain `pg`. Run it on `host.pg`,
+the site's own connection pool (a node-postgres `Pool`), so your plugin shares core's
+connections instead of opening more:
+
+```ts
+import type { Pool } from "pg";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaClient } from "./generated/prisma/client.js";   // generated from YOUR schema
+
+export function storeDb(host: PluginHost) {
+  return new PrismaClient({ adapter: new PrismaPg(host.pg as Pool) });
+}
+```
+
+Three rules:
+
+- **Your SQL migrations still create the tables.** The client's schema only describes
+  them, with every model mapped to your prefixed table (`@@map("mg_photos")`). Never run
+  the client's own migration commands against a site.
+- **Keep the two in step.** Change a migration, change the schema in the same commit.
+- **Don't close the pool.** It belongs to the site. `host.pg` is missing on a core older
+  than 1.0.0, so check for it if you support one.
+
+Verifying a webhook or a signed request? `req.rawBody` holds the exact JSON body bytes
+as they arrived. Hash those, never `JSON.stringify(req.body)`: re-serialising gives
+different bytes and the signature never matches.
+
+## Sensitive changes
+
+Some changes must not be made by a stolen session alone: where a member's money goes,
+the address their mail goes to. Ask again:
+
+- `host.middleware.requireStepUp` on the route: a member with two-factor sign-in on is
+  asked for a fresh code (the browser prompts and repeats the request). Mount it after
+  `requireAuth` and before any upload parser.
+- `host.auth.verifyPassword(userId, password)` in the handler, for their current
+  password. `host.auth.hasPassword(userId)` says whether they have one at all (a member
+  who only signs in through Google or GitHub doesn't).
+
 ## Settings
 
 Declare your settings as a schema. Core stores them, fills in defaults, checks every save and
@@ -352,6 +395,22 @@ date field's visibility allows the viewer (guests see fewer), and never someone 
 viewer or whom the viewer blocked. It is the only way your plugin should learn a birthday.
 `canSee` gives the same answer the profile page acts on.
 
+### Groups
+
+```ts
+const customers = await host.groups.ensure({ key: "customer", name: "Customer", badgeColor: "#c8a24a", nameGlow: true });
+await host.groups.add(userId, customers);
+await host.groups.remove(userId, customers);
+```
+
+`ensure` creates a group your plugin needs the first time, with the name and badge you
+give it, and returns its id after that. Pass `permissions: ["my-plugin.publish"]` and the
+new group holds them; that happens once, when it is created, so an admin who takes one away
+later is never overruled. A group can't be made holding `admin.access`. From then on the group is the
+admin's: they rename or recolour it in ACP → Groups and `ensure` never overwrites it. Its
+badge and name colour show wherever core draws group badges. `add` refuses any group that
+holds `admin.access`: a plugin never makes someone an administrator.
+
 `host.time` works in the site's time zone from ACP → System Settings. When the site shows
 each visitor their own zone, there is no site zone on the server and these use UTC.
 
@@ -417,6 +476,18 @@ your UI into core's: profile tabs, Account and Privacy sections, ACP settings se
 header next to the notification bell, the member menu, and site-wide overlays. Call
 `registerPluginMeta({ pluginId })` first, so everything you register is removed when the
 plugin is disabled.
+
+**Only on some profiles.** A profile tab or stat can say whether it belongs on a profile:
+give it `shownFor: (userId) => Promise<boolean>` and it appears only where that answers
+true (a publisher's listings, say, and not on everyone else's profile). Without it, every
+profile has it. Account tabs and member menu items take the same `shownFor`, asked about the
+signed-in member: an "Invoices" tab only for someone who has invoices. An entry is hidden
+until it answers, and an account tab opened by its link waits for the answer.
+
+**A count in the ACP menu.** `registerAcpBadge({ id, path, count })` puts a number beside
+one of your ACP pages (the `path` you gave `registerAcpPage`) while `count()` answers more
+than zero, and a dot on your section's icon in the rail. It is asked every minute while the
+ACP is open, so keep it cheap, and answer 0 for an admin it doesn't concern.
 
 **Your field on the sign-up form.** `registerRegistrationField` puts a field of yours on the
 sign-up form. Its value travels as `addons["<your id>"]` to your `registration.validate`

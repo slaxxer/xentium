@@ -33,6 +33,17 @@ const KNOWN: Record<string, string> = {
 /** Codes whose server message is the point (a guard's own wording, a lockout's retry window). */
 const SERVER_WORDED = new Set(["XEC-AUTH-1030", "XEC-AUTH-1031", "XEC-AUTH-1032", "XEC-AUTH-1040"]);
 
+/** Inside the authenticator-code step. */
+export function totpErrorText(t: TFunction, e: ApiErr): string {
+  switch (e.code) {
+    case "XEC-AUTH-1070": return t("door.err.totpWrong");
+    case "XEC-AUTH-1071": return t("door.err.totpUsed");
+    case "XEC-AUTH-1072": return t("door.err.totpLocked");
+    case "XEC-AUTH-1073": return t("door.err.totpExpired");
+    default: return errorText(t, e, "door.err.totpWrong");
+  }
+}
+
 /** Inside a PIN step, "invalid credentials" can only mean the PIN. */
 export function pinErrorText(t: TFunction, e: ApiErr): string {
   return e.code === "XEC-AUTH-1001" ? t("door.err.pinWrong") : errorText(t, e, "door.err.pinWrong");

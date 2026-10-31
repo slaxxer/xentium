@@ -6,7 +6,6 @@ export const XEC = {
   // API
   API_VALIDATION: "XEC-API-4001",
   API_FORBIDDEN: "XEC-API-4003",
-  API_DEMO_LOCKED: "XEC-API-4031",
   API_ENCODED_BODY: "XEC-API-4150",
   API_NOT_FOUND: "XEC-API-4004",
   API_CONFLICT: "XEC-API-4009",
@@ -34,6 +33,13 @@ export const XEC = {
   AUTH_OAUTH_EMAIL_TAKEN: "XEC-AUTH-1061", // provider email belongs to an existing, unlinked account
   AUTH_OAUTH_UNAVAILABLE: "XEC-AUTH-1062", // provider not configured / disabled
   AUTH_LAST_SIGNIN_METHOD: "XEC-AUTH-1063", // removing it would leave no way to sign in
+  AUTH_2FA_CODE_INVALID: "XEC-AUTH-1070",  // authenticator or recovery code is wrong
+  AUTH_2FA_CODE_USED: "XEC-AUTH-1071",     // right code, already spent (wait for the next one)
+  AUTH_2FA_LOCKED: "XEC-AUTH-1072",        // too many wrong codes for this account (429)
+  AUTH_2FA_STEP_EXPIRED: "XEC-AUTH-1073",  // the sign-in waited too long for its code
+  AUTH_2FA_REQUIRED: "XEC-AUTH-1074",      // this account must turn on two-factor sign-in first
+  AUTH_STEP_UP_REQUIRED: "XEC-AUTH-1075",  // confirm this action with a code (X-Xentium-OTP)
+  AUTH_2FA_STATE: "XEC-AUTH-1076",         // already on / not on / setup not started
   AUTH_INVITE_REQUIRED: "XEC-AUTH-1020",
   AUTH_INVITE_INVALID: "XEC-AUTH-1021",
   AUTH_BETA_REQUIRED: "XEC-AUTH-1030",

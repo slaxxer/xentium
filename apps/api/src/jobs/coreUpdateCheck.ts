@@ -58,7 +58,7 @@ export interface CoreUpdateCache {
   via: string | null;
 }
 
-/** `https://plugins.xentium.org/api/v1` → the core endpoint on the same protocol version. */
+/** `https://app.xentium.org/api/p/xentium-store/v1` → the core endpoint on the same protocol version. */
 function coreLatestUrl(from: string): string {
   const base = env.LICENSE_SERVER_URL.replace(/\/+$/, "");
   return `${base}/core/latest?channel=stable&from=${encodeURIComponent(from)}`;

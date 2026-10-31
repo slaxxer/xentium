@@ -2,11 +2,12 @@ import type { RequestHandler } from "express";
 import { prisma } from "../../infrastructure/db.js";
 import { verifyAccess } from "../../modules/auth/auth.tokens.js";
 import { isAccessTokenRevoked } from "../../modules/auth/session-revocation.js";
-import { expandImplied, type PermissionKey } from "@xentium/contracts";
+import { CorePermissions, expandImplied, type PermissionKey } from "@xentium/contracts";
 import { permissionCache } from "../../modules/permissions/permission.cache.js";
 import { XentiumError } from "../errors/XentiumError.js";
 import { XEC } from "../errors/xec.js";
 import { unauthenticatedError, invalidTokenError } from "./requireAuth.js";
+import { assertTwoFactorIfRequired } from "../../modules/auth/twoFactor.service.js";
 
 /**
  * Verify the Bearer access token AND enforce the revocation denylist — these
@@ -67,6 +68,23 @@ export function requirePermission(key: PermissionKey): RequestHandler {
     const effective = await loadEffective(userId);
 
     if (!effective.includes(key)) throw permissionDeniedError([key]);
+    if (key === CorePermissions.ADMIN_ACCESS) await assertTwoFactorIfRequired(userId, effective);
+
+    req.userId = userId;
+    req.sessionId = sessionId;
+    next();
+  };
+}
+
+/** Grants access only if the user holds EVERY one of the given keys (admin.access + a page's own, say). */
+export function requireAllPermissions(...keys: PermissionKey[]): RequestHandler {
+  return async (req, _res, next) => {
+    const { userId, sessionId } = await authedUserId(req.headers.authorization);
+    const effective = await loadEffective(userId);
+
+    const missing = keys.filter((k) => !effective.includes(k));
+    if (missing.length) throw permissionDeniedError(missing);
+    if (keys.includes(CorePermissions.ADMIN_ACCESS)) await assertTwoFactorIfRequired(userId, effective);
 
     req.userId = userId;
     req.sessionId = sessionId;
@@ -81,6 +99,7 @@ export function requireAnyPermission(...keys: PermissionKey[]): RequestHandler {
     const effective = await loadEffective(userId);
 
     if (!keys.some((k) => effective.includes(k))) throw permissionDeniedError(keys);
+    if (keys.includes(CorePermissions.ADMIN_ACCESS)) await assertTwoFactorIfRequired(userId, effective);
 
     req.userId = userId;
     req.sessionId = sessionId;
@@ -106,4 +125,5 @@ export async function hasPermission(userId: string, key: PermissionKey): Promise
 export async function assertPermission(userId: string, key: PermissionKey): Promise<void> {
   const effective = await loadEffective(userId);
   if (!effective.includes(key)) throw permissionDeniedError([key]);
+  if (key === CorePermissions.ADMIN_ACCESS) await assertTwoFactorIfRequired(userId, effective);
 }

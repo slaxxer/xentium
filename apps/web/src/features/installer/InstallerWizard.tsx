@@ -41,7 +41,7 @@ import {
   faClock,
   faLanguage,
 } from "@fortawesome/free-solid-svg-icons";
-import type { MarketplaceListing } from "@xentium/contracts";
+import { INSTALL_TWO_FACTOR_GROUPS, type MarketplaceListing } from "@xentium/contracts";
 import { installerApi, setInstallToken, type LinkStart } from "./installer.api.js";
 import "../../styles/installer.scss";
 import { XentiumMark } from "../../components/XentiumMark";
@@ -227,6 +227,8 @@ export function InstallerWizard() {
 
   // ── Step 5: admin ──────────────────────────────────────────────────────────
   const [admin, setAdmin] = useState({ email: "", username: "", password: "", confirm: "" });
+  // Who must use two-factor sign-in. Administrators are ticked to start with.
+  const [tfaGroups, setTfaGroups] = useState<(typeof INSTALL_TWO_FACTOR_GROUPS)[number][]>(["admin"]);
   const [pwVisible, setPwVisible] = useState(false);
 
   // ── Step 6/7: install + done ───────────────────────────────────────────────
@@ -638,6 +640,7 @@ export function InstallerWizard() {
         email: admin.email.trim(),
         username: admin.username.trim(),
         password: admin.password,
+        twoFactorGroups: tfaGroups,
       });
       // The one authenticated installer route is the add-on download below.
       setInstallToken(accessToken);
@@ -1391,6 +1394,27 @@ export function InstallerWizard() {
             </div>
           </div>
         </div>
+
+        <div className="inst-box inst-tfa">
+          <div className="inst-box__body">
+            <div className="inst-tfa__head">
+              <strong>{t("admin.tfa_title")}</strong>
+              <span className="hint">{t("admin.tfa_desc")}</span>
+            </div>
+            {INSTALL_TWO_FACTOR_GROUPS.map((key) => (
+              <label className="inst-tfa__row" key={key}>
+                <input
+                  type="checkbox"
+                  checked={tfaGroups.includes(key)}
+                  onChange={(e) => setTfaGroups((g) => e.target.checked ? [...g, key] : g.filter((k) => k !== key))}
+                />
+                <span>{t(`admin.tfa_groups.${key}`)}</span>
+              </label>
+            ))}
+            {tfaGroups.includes("admin") && <span className="hint">{t("admin.tfa_admin_note")}</span>}
+            {tfaGroups.includes("member") && <span className="hint">{t("admin.tfa_member_note")}</span>}
+          </div>
+        </div>
       </>
     );
   }
@@ -1406,6 +1430,7 @@ export function InstallerWizard() {
     const adminRows: [string, string][] = [
       [t("admin.email"), admin.email || "—"],
       [t("admin.username"), admin.username || "—"],
+      [t("admin.tfa_title"), tfaGroups.length ? INSTALL_TWO_FACTOR_GROUPS.filter((k) => tfaGroups.includes(k)).map((k) => t(`admin.tfa_groups.${k}`)).join(", ") : t("finalize.none")],
       [t("finalize.marketplace"), addons?.connected ? (addons.accountRef ?? t("addons.linked_generic")) : t("addons.not_linked")],
     ];
 

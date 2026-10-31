@@ -1,4 +1,8 @@
 import { expect, type APIRequestContext, type Page } from "@playwright/test";
+import crypto from "node:crypto";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 /** Accounts used across the suite. The admin is created by 01-install. */
 export const ADMIN = {
@@ -29,12 +33,78 @@ export const PNG_1x1 = Buffer.from(
   "base64",
 );
 
+/**
+ * The admin's authenticator. Admins must use two-factor sign-in, so 01-install
+ * turns it on and every later admin sign-in answers with a code, like a person
+ * would. The secret and the last step spent live in a file because specs share
+ * nothing else; a code works once, so the next one waits for a fresh step.
+ */
+const TOTP_FILE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../test-results/.admin-totp.json");
+type TotpState = { secret: string; lastStep: number };
+const readTotp = (): TotpState | null => {
+  try { return JSON.parse(fs.readFileSync(TOTP_FILE, "utf8")) as TotpState; } catch { return null; }
+};
+const writeTotp = (state: TotpState) => {
+  fs.mkdirSync(path.dirname(TOTP_FILE), { recursive: true });
+  fs.writeFileSync(TOTP_FILE, JSON.stringify(state));
+};
+
+function base32Decode(input: string): Buffer {
+  const B32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+  let bits = 0, value = 0;
+  const out: number[] = [];
+  for (const ch of input.replace(/=+$/, "").toUpperCase()) {
+    value = (value << 5) | B32.indexOf(ch);
+    bits += 5;
+    if (bits >= 8) { out.push((value >>> (bits - 8)) & 0xff); bits -= 8; }
+  }
+  return Buffer.from(out);
+}
+
+function codeAt(secret: string, step: number): string {
+  const counter = Buffer.alloc(8);
+  counter.writeBigUInt64BE(BigInt(step));
+  const mac = crypto.createHmac("sha1", base32Decode(secret)).update(counter).digest();
+  const offset = mac[mac.length - 1]! & 0x0f;
+  return String((mac.readUInt32BE(offset) & 0x7fffffff) % 1_000_000).padStart(6, "0");
+}
+
+/** Remember a fresh secret (two-factor was just set up). */
+export function setAdminTotpSecret(secret: string) { writeTotp({ secret, lastStep: 0 }); }
+
+/** The next unspent code: this step's, or the next one's (the server allows one step of drift). */
+export async function nextAdminCode(): Promise<string> {
+  const state = readTotp();
+  if (!state) throw new Error("The admin has no authenticator yet (01-install sets it up).");
+  const here = Math.floor(Date.now() / 30_000);
+  let step = Math.max(here, state.lastStep + 1);
+  if (step > here + 1) {
+    await new Promise((r) => setTimeout(r, (step - 1) * 30_000 - Date.now() + 500));
+  }
+  writeTotp({ ...state, lastStep: step });
+  return codeAt(state.secret, step);
+}
+
+/**
+ * The admin's API token, reused while it is young: every fresh sign-in needs an
+ * unused authenticator code, and running out of them means waiting up to 30 s
+ * per sign-in, which a test with an API and a UI sign-in cannot afford.
+ */
+const ADMIN_TOKEN_TTL_MS = 10 * 60_000;
+let adminToken: { token: string; at: number } | null = null;
+
 /** Log in via the API and return the access token (Bearer for API-level calls). */
 export async function apiLogin(request: APIRequestContext, email: string, password: string): Promise<string> {
+  if (email === ADMIN.email && adminToken && Date.now() - adminToken.at < ADMIN_TOKEN_TTL_MS) return adminToken.token;
   const res = await request.post("/api/auth/login", { data: { email, password } });
   expect(res.ok(), `login failed for ${email}: ${res.status()}`).toBeTruthy();
   const json = await res.json();
-  return json.accessToken as string;
+  if (!json.requiresTotp) return json.accessToken as string;
+  const step = await request.post("/api/auth/login/2fa", { data: { ticket: json.ticket, code: await nextAdminCode() } });
+  expect(step.ok(), `two-factor step failed for ${email}: ${step.status()}`).toBeTruthy();
+  const token = (await step.json()).accessToken as string;
+  if (email === ADMIN.email) adminToken = { token, at: Date.now() };
+  return token;
 }
 
 /** Register a user straight through the API (dev email-code bypass). Idempotent
@@ -89,6 +159,15 @@ export async function uiLogin(page: Page, email: string, password: string) {
   await f.password.fill(password);
   await f.submit.click();
   await expect(f.password).toHaveCount(0, { timeout: 20_000 });
+  if (email === ADMIN.email && readTotp()) {
+    // The code step: six boxes that move along as you type.
+    const digits = page.locator(".dw-digits input");
+    await expect(digits.first()).toBeVisible({ timeout: 15_000 });
+    await digits.first().click();
+    await page.keyboard.type(await nextAdminCode());
+    await page.locator(".dw-form button.dw-btn--primary").click();
+    await expect(digits).toHaveCount(0, { timeout: 20_000 });
+  }
 }
 
 /** Assert the session is live: an authenticated user is redirected away from /login. */

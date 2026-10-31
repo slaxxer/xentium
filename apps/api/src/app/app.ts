@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import pinoHttp from 'pino-http';
+import { requestMeter } from '../shared/metrics/systemMetrics.js';
 import path from 'node:path';
 import { env, isProd } from '../config/env.js';
 import { XENTIUM_VERSION } from '../config/version.js';
@@ -25,7 +26,6 @@ import { badgesAdminRouter, badgesPublicRouter } from "../modules/badges/badges.
 import { siteService, type FeatureKey } from "../modules/site/site.service.js";
 import { requireFeature } from "../shared/middleware/requireFeature.js";
 import { maintenanceRouter } from "../modules/maintenance/maintenance.routes.js";
-import { demoGuard } from "../shared/middleware/demoGuard.js";
 import { maintenanceGuard } from "../shared/middleware/maintenanceGuard.js";
 import { activityRouter, activityAdminRouter } from "../modules/activity/activity.routes.js";
 import { acpActivityLogger } from "../shared/middleware/acpActivityLogger.js";
@@ -86,9 +86,18 @@ export function createApp(): Express {
 
   // Before every parser, core's and any plugin's: no compressed bodies (CVE-2026-111497).
   app.use(rejectEncodedBodies);
-  app.use(express.json({ limit: '4mb', inflate: false }));
+  // `rawBody`: the exact bytes, for whatever verifies a signature over them — a payment
+  // provider's webhook, or a signed request from another server. Re-serialising the
+  // parsed body would not give the same bytes, so the hash would never match.
+  app.use(express.json({
+    limit: '4mb',
+    inflate: false,
+    verify: (req, _res, buf) => { (req as express.Request).rawBody = buf; },
+  }));
   app.use(cookieParser(env.COOKIE_SECRET));
   app.use(pinoHttp({ transport: isProd ? undefined : { target: 'pino-pretty' } }));
+  // Request rate + latency for ACP → About (in memory, last 80 s).
+  app.use(requestMeter);
 
   // Coarse per-IP API limiter (§26). Prod-only; installer/health/meta exempt.
   app.use(globalApiLimiter);
@@ -226,7 +235,6 @@ export function createApp(): Express {
 
   app.use(installGuard);
   app.use(maintenanceGuard);
-  app.use(demoGuard);
   // Signed in with a legal document still to accept: only auth, the legal pages and
   // the public chrome answer until it is accepted.
   app.use("/api", legalGate);
@@ -287,7 +295,7 @@ export function createApp(): Express {
         select: {
           id: true, label: true, url: true, position: true,
           isActive: true, isSystem: true, openInNewTab: true, visibility: true,
-          placement: true,
+          placement: true, parentId: true,
         },
       });
       // Hide core section links whose feature flag is off (Home/Articles/Members).
@@ -299,7 +307,15 @@ export function createApp(): Express {
         const feature = urlFeature[i.url];
         return !feature || config.features[feature];
       });
-      res.json(visible);
+      // Links under another (its dropdown) ride on their parent as `children`, in
+      // position order; a child whose parent is hidden or gone is not shown.
+      const top = visible.filter((i) => !i.parentId);
+      const ids = new Set(top.map((i) => i.id));
+      res.json(top.map(({ parentId: _p, ...item }) => ({
+        ...item,
+        children: visible.filter((c) => c.parentId === item.id && ids.has(c.parentId))
+          .map(({ parentId: _c, ...child }) => child),
+      })));
     } catch (err) {
       next(err);
     }

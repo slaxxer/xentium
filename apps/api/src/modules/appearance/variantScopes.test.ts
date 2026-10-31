@@ -238,3 +238,21 @@ describe("per-theme token layers", () => {
     expect(await appearanceService.getDraftStatus("")).toMatchObject({ pending: false });
   });
 });
+
+describe("page scopes (per-page design)", () => {
+  it("emits a page bucket on the document root while that page is shown", async () => {
+    const css = await appearanceService.buildCSS(
+      tokens({ global: { "--c-bg": "#ffffff" }, "page.forum.index": { "--c-bg": "#101820" } }), { key: "" },
+    );
+    expect(css).toContain(':root[data-xt-page="forum.index"] {\n  --c-bg: #101820;');
+    expect(css.indexOf("#ffffff")).toBeLessThan(css.indexOf("#101820"));
+  });
+
+  it("skips a page scope whose key is not a template key", async () => {
+    const css = await appearanceService.buildCSS(
+      tokens({ 'page.x"] , body': { "--c-bg": "#abcdef" } }), { key: "" },
+    );
+    expect(css).not.toContain("#abcdef");
+  });
+});
+

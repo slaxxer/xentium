@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { ACP_NAV, ACP_NAV_INDEX, isNavItemActive, activeNavSection, navItemId } from "./useAcpNav";
+import { ACP_NAV, ACP_NAV_INDEX, isNavItemActive, activeNavSection, navItemId, pluginSections, activeChild } from "./useAcpNav";
 
 /**
  * The topbar breadcrumb and command palette used to keep their own copy of the
@@ -142,5 +142,43 @@ describe("isNavItemActive", () => {
 
   it("falls back to the first section for an unknown route", () => {
     expect(activeNavSection(ACP_NAV, "/admin/nowhere")).toBe(ACP_NAV[0]);
+  });
+});
+
+describe("pluginSections", () => {
+  const page = (label: string, group?: string) =>
+    ({ section: "Store", label, path: `/admin/store/${label.toLowerCase()}`, pluginId: "xentium-store", ...(group ? { group } : {}) });
+
+  it("keeps a plugin's groups together, in the order they were first registered", () => {
+    const out = pluginSections([page("Overview"), page("Orders", "Sales"), page("Listings", "Catalog"), page("Payouts", "Sales")]);
+    expect(out.Store!.map((c) => [c.label, c.group])).toEqual([
+      ["Overview", undefined], ["Orders", "Sales"], ["Payouts", "Sales"], ["Listings", "Catalog"],
+    ]);
+  });
+
+  it("leaves a section without groups as registered", () => {
+    const out = pluginSections([page("B"), page("A")]);
+    expect(out.Store!.map((c) => c.label)).toEqual(["B", "A"]);
+    expect(out.Store!.every((c) => c.group === undefined)).toBe(true);
+  });
+});
+
+describe("activeChild", () => {
+  const store = [
+    { label: "Overview", to: "/admin/store" },
+    { label: "Orders", to: "/admin/store/orders" },
+    { label: "Customers", to: "/admin/store/customers" },
+  ];
+
+  it("lights the most specific entry, not a section root that prefixes every page", () => {
+    expect(activeChild(store, "/admin/store")?.label).toBe("Overview");
+    expect(activeChild(store, "/admin/store/orders")?.label).toBe("Orders");
+    expect(activeChild(store, "/admin/store/customers/abc")?.label).toBe("Customers");
+  });
+
+  it("counts a page reached through an entry (within) as that entry", () => {
+    const themes = [{ label: "Themes", to: "/admin/themes", within: [{ to: "/admin/theme-studio", label: "Studio" }] }];
+    expect(activeChild(themes, "/admin/theme-studio")?.label).toBe("Themes");
+    expect(activeChild(themes, "/admin/users")).toBeUndefined();
   });
 });

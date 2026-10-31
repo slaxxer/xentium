@@ -199,7 +199,17 @@
       "good": "Bon",
       "strong": "Fort"
     },
-    "username_placeholder": "Administrateur"
+    "username_placeholder": "Administrateur",
+    "tfa_title": "Connexion à deux facteurs",
+    "tfa_desc": "Quels groupes doivent utiliser une application d'authentification ? Rien de coché : chacun décide. Vous pourrez le modifier plus tard dans ACP → Paramètres → Connexion.",
+    "tfa_groups": {
+      "admin": "Administrateurs",
+      "supermod": "Supermods",
+      "moderator": "Modérateurs",
+      "member": "Membres"
+    },
+    "tfa_admin_note": "On vous demandera de la configurer juste après l'installation.",
+    "tfa_member_note": "Tous les membres, y compris ceux qui s'inscriront plus tard, devront la configurer."
   },
   "finalize": {
     "title": "Quand vous voulez",

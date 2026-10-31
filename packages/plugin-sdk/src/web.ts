@@ -51,6 +51,16 @@ export interface SlotRegistry {
   registerProfileTab(slot: { id: string; label: string; component: HostComponent<{ profileId: string; profileUsername: string; isOwn: boolean }> }): void;
   /** A section in the member's own Account page. */
   registerAccountSection(slot: { id: string; label: string; component: HostComponent }): void;
+  /**
+   * A tab of its own on the member's Account page (`/account?tab=<id>`), listed after
+   * core's tabs under `group` (tabs sharing a group are listed together). `id` is
+   * namespaced (`store.licences`); `permission` hides it from members without it.
+   * Pair it with `registerUserMenuItem({ to: "/account?tab=<id>" })` for a shortcut.
+   */
+  registerAccountTab(slot: {
+    id: string; label: string; component: HostComponent;
+    icon?: unknown; group?: string; order?: number; permission?: string; keywords?: string;
+  }): void;
   /** A section in Account → Privacy. */
   registerPrivacySection(slot: { id: string; component: HostComponent }): void;
   /** A section in ACP → Settings. */

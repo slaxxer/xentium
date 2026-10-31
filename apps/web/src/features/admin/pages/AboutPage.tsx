@@ -6,6 +6,13 @@ import { AcpIcon } from "./acpIcons";
 import "./acpSystem.scss";
 import "./AboutPage.scss";
 
+interface SystemMetrics {
+  cpu: { percent: number; cores: number };
+  memory: { percent: number; usedMb: number; totalMb: number };
+  queue: { waiting: number; active: number; delayed: number; failed: number };
+  requests: { perSec: number; avgMs: number | null; history: number[] };
+}
+
 interface HealthData {
   status: string;
   version?: string;
@@ -27,14 +34,15 @@ const RESOURCES: { key: string; icon: string; href: string }[] = [
   { key: "github",      icon: "github",    href: "https://github.com/slaxxer/xentium" },
   // Every release publishes its notes as a GitHub release (release.yml).
   { key: "changelog",   icon: "changelog", href: "https://github.com/slaxxer/xentium/releases" },
-  { key: "marketplace", icon: "bag",       href: "https://plugins.xentium.org/" },
+  { key: "marketplace", icon: "bag",       href: "https://app.xentium.org/store" },
 ];
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 const loadColor = (v: number) =>
   v >= 85 ? "var(--c-danger)" : v >= 65 ? "var(--c-warn)" : "var(--c-accent)";
 
-function formatUptime(s: number) {
+function formatUptime(seconds: number) {
+  const s = Math.floor(seconds);
   const d = Math.floor(s / 86400);
   const h = Math.floor((s % 86400) / 3600);
   const m = Math.floor((s % 3600) / 60);
@@ -118,31 +126,19 @@ export function AboutPage() {
     return () => clearInterval(id);
   }, []);
 
-  // NOTE: CPU / memory / queue / throughput / latency are sample figures animated
-  // client-side — there is no host-metrics endpoint yet (see redesign README).
-  const [cpu, setCpu]         = useState(34);
-  const [mem, setMem]         = useState(58);
-  const [queue, setQueue]     = useState(22);
-  const [pending, setPending] = useState(12);
-  const [rps, setRps]         = useState(46);
-  const [latency, setLatency] = useState(38);
-  const [spark, setSpark]     = useState<number[]>(
-    () => Array.from({ length: 40 }, (_, i) => 40 + Math.sin(i / 3) * 12 + Math.random() * 8),
-  );
-
-  useEffect(() => {
-    const tick = setInterval(() => {
-      setCpu((v) => clamp(v + (Math.random() - 0.5) * 16, 12, 88));
-      setMem((v) => clamp(v + (Math.random() - 0.5) * 7, 44, 74));
-      setQueue((v) => clamp(v + (Math.random() - 0.5) * 22, 4, 70));
-      setPending((v) => clamp(Math.round(v + (Math.random() - 0.5) * 8), 0, 40));
-      const r = clamp(46 + (Math.random() - 0.5) * 30, 18, 92);
-      setRps(Math.round(r));
-      setLatency(Math.round(clamp(38 + (Math.random() - 0.5) * 26, 14, 90)));
-      setSpark((p) => [...p.slice(1), r]);
-    }, 1800);
-    return () => clearInterval(tick);
-  }, []);
+  // Measured on the server (GET /admin/system/metrics): the host's CPU and memory,
+  // core's job queues, and this API process's requests over the last 80 s.
+  const { data: m } = useQuery<SystemMetrics>({
+    queryKey: ["acp-system-metrics"],
+    queryFn: () => api.get("/admin/system/metrics"),
+    refetchInterval: 2_000,
+  });
+  const cpu = m?.cpu.percent ?? 0;
+  const mem = m?.memory.percent ?? 0;
+  const pending = m ? m.queue.waiting + m.queue.delayed : 0;
+  const rps = m?.requests.perSec ?? 0;
+  const latency = m?.requests.avgMs;
+  const spark = m && m.requests.history.length > 1 ? m.requests.history : [0, 0];
 
   const online = !!health;
   const isOk   = health?.status === "ok";
@@ -213,7 +209,7 @@ export function AboutPage() {
               </div>
               <div className="ab-dl__row">
                 <span className="ab-dl__k">{t("about.dl.latency")}</span>
-                <span className="ab-dl__v">{latency} ms</span>
+                <span className="ab-dl__v">{latency == null ? "—" : `${latency} ms`}</span>
               </div>
             </div>
           </div>
@@ -227,11 +223,18 @@ export function AboutPage() {
             <span className="ab-card__aside">{t("about.updatesEvery2s")}</span>
           </div>
           <div className="ab-health__grid">
-            <Gauge label={t("about.gauge.cpu")} value={cpu} sub={t("about.gauge.vcpu")} />
-            <Gauge label={t("about.gauge.memory")} value={mem} sub={t("about.gauge.memUsage", { used: Math.round((mem / 100) * 2048) })} />
+            <Gauge label={t("about.gauge.cpu")} value={cpu} sub={t("about.gauge.vcpu", { count: m?.cpu.cores ?? 0 })} />
             <Gauge
-              label={t("about.gauge.queue")} value={queue} sub={t("about.gauge.jobsPending", { count: pending })}
-              color={queue >= 65 ? "var(--c-warn)" : "var(--c-accent2)"}
+              label={t("about.gauge.memory")} value={mem}
+              sub={t("about.gauge.memUsage", { used: m?.memory.usedMb ?? 0, total: m?.memory.totalMb ?? 0 })}
+            />
+            {/* A count, not a share: the ring fills as jobs pile up (full at 100). */}
+            <Gauge
+              label={t("about.gauge.queue")} value={pending} suffix=""
+              sub={m?.queue.failed
+                ? t("about.gauge.jobsFailed", { count: m.queue.failed })
+                : t("about.gauge.jobsRunning", { count: m?.queue.active ?? 0 })}
+              color={m?.queue.failed ? "var(--c-warn)" : pending >= 65 ? "var(--c-warn)" : "var(--c-accent2)"}
             />
           </div>
           <Spark data={spark} />

@@ -78,7 +78,7 @@ export interface AnnouncementCache {
 
 const SEVERITIES: AnnouncementSeverity[] = ["info", "important", "critical"];
 
-/** `https://plugins.xentium.org/api/v1` → the broadcast endpoint beside it. */
+/** `https://app.xentium.org/api/p/xentium-store/v1` → the broadcast endpoint beside it. */
 function announcementsUrl(): string {
   return `${env.LICENSE_SERVER_URL.replace(/\/+$/, "")}/announcements`;
 }

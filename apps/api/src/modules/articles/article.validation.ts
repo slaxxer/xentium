@@ -74,3 +74,9 @@ export const hideArticleSchema = z.object({ hidden: z.boolean() });
 export type CreateArticleInput = z.infer<typeof createArticleSchema>;
 export type UpdateArticleInput = z.infer<typeof updateArticleSchema>;
 export type ListArticlesQuery = z.infer<typeof listArticlesQuerySchema>;
+
+export const articleRevisionParamSchema = z.object({
+  id: z.string().cuid2(),
+  // ArticleRevision ids are Prisma cuid() (v1), not cuid2.
+  revisionId: z.string().cuid(),
+});

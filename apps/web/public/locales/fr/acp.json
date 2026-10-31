@@ -45,7 +45,9 @@
     "members": "Membres",
     "editor": "Éditeur",
     "groupSetup": "Configuration",
-    "groupLogs": "Journaux"
+    "groupLogs": "Journaux",
+    "waiting_one": "{{count}} en attente",
+    "waiting_other": "{{count}} en attente"
   },
   "sidebar": {
     "adminPanel": "Panneau d'administration",
@@ -57,7 +59,10 @@
     "sections": "Sections",
     "expandPanel": "Déplier le panneau",
     "collapsePanel": "Replier le panneau",
-    "dockPanel": "Garder le panneau ouvert"
+    "dockPanel": "Garder le panneau ouvert",
+    "twoFactorTitle": "Activez la connexion en deux étapes",
+    "twoFactorBody": "Votre groupe doit utiliser la connexion en deux étapes pour ouvrir le panneau d’administration. Activez-la dans les paramètres de votre compte, puis revenez.",
+    "twoFactorAction": "Ouvrir les paramètres du compte"
   },
   "topbar": {
     "breadcrumbRoot": "Panneau d'administration",
@@ -531,9 +536,11 @@
       "cpu": "Processeur",
       "memory": "Mémoire",
       "queue": "File d'attente",
-      "vcpu": "4 vCPU",
-      "memUsage": "{{used}} / 2048 Mo",
-      "jobsPending": "{{count}} tâches en attente"
+      "vcpu": "{{count}} vCPU",
+      "memUsage": "{{used}} / {{total}} Mo",
+      "jobsPending": "{{count}} tâches en attente",
+      "jobsRunning": "{{count}} en cours",
+      "jobsFailed": "{{count}} en échec"
     },
     "throughput": "Débit des requêtes",
     "reqPerSec": "{{count}} req/s",
@@ -861,12 +868,6 @@
         "desc": "L'utilisateur authentifié n'a pas la permission d'effectuer cette action.",
         "cause": "Clé de permission manquante pour la ressource demandée.",
         "fix": "Vérifiez que le groupe de l'utilisateur dispose de la permission requise dans ACP → Membres → Permissions."
-      },
-      "XEC-API-4031": {
-        "msg": "Désactivé dans la démo",
-        "desc": "Cette installation fonctionne en mode démo, qui refuse les actions qui exécuteraient du code sur le serveur, enverraient des e-mails ou bloqueraient les autres visiteurs.",
-        "cause": "DEMO_MODE=true dans l'environnement du serveur.",
-        "fix": "Rien à corriger sur une démo. Sur votre propre installation, laissez DEMO_MODE non défini."
       },
       "XEC-API-4150": {
         "msg": "Requête compressée refusée",
@@ -1251,6 +1252,48 @@
         "desc": "Un filtre d'un plugin installé a arrêté cette action.",
         "cause": "Un plugin a enregistré une vérification (par exemple à l'inscription ou à l'enregistrement d'un contenu) qui a refusé cette saisie.",
         "fix": "Lisez le message affiché au membre ; il vient du plugin. Pour changer la règle, voyez les réglages de ce plugin ou désactivez-le."
+      },
+      "XEC-AUTH-1070": {
+        "msg": "Code en deux étapes incorrect",
+        "desc": "Le code d’authentification ou de récupération ne correspond pas.",
+        "cause": "Le code a été mal saisi, appartient à un autre compte, ou l’horloge du téléphone est très décalée.",
+        "fix": "Saisissez le code actuel de l’application. Si les codes ne correspondent jamais, vérifiez que l’heure du téléphone est réglée automatiquement."
+      },
+      "XEC-AUTH-1071": {
+        "msg": "Code en deux étapes déjà utilisé",
+        "desc": "Le code était correct, mais il a déjà été utilisé.",
+        "cause": "Chaque code ne fonctionne qu’une fois, et le même code a été saisi deux fois en 30 secondes.",
+        "fix": "Attendez le code suivant dans l’application."
+      },
+      "XEC-AUTH-1072": {
+        "msg": "Trop de codes en deux étapes",
+        "desc": "Trop de codes incorrects ont été saisis pour ce compte.",
+        "cause": "Dix codes incorrects en 15 minutes bloquent les vérifications en deux étapes du compte.",
+        "fix": "Attendez 15 minutes. Si le téléphone est perdu, un administrateur peut réinitialiser la connexion en deux étapes dans ACP → Utilisateurs."
+      },
+      "XEC-AUTH-1073": {
+        "msg": "Étape en deux étapes expirée",
+        "desc": "La connexion a attendu trop longtemps son code.",
+        "cause": "L’étape du code dure cinq minutes et cinq codes incorrects.",
+        "fix": "Reconnectez-vous."
+      },
+      "XEC-AUTH-1074": {
+        "msg": "Connexion en deux étapes requise",
+        "desc": "Ce compte doit utiliser la connexion en deux étapes avant que le panneau d’administration ne s’ouvre.",
+        "cause": "Un groupe du compte détient « Doit utiliser la connexion en deux étapes » (ACP → Permissions).",
+        "fix": "Activez la connexion en deux étapes dans Compte → Sécurité."
+      },
+      "XEC-AUTH-1075": {
+        "msg": "Confirmer avec un code",
+        "desc": "Cette action demande un nouveau code de l’application d’authentification.",
+        "cause": "Attribuer des permissions, installer du code et des actions similaires le redemandent, même connecté.",
+        "fix": "Saisissez le code quand il est demandé. Un code couvre cinq minutes."
+      },
+      "XEC-AUTH-1076": {
+        "msg": "État de la connexion en deux étapes",
+        "desc": "La connexion en deux étapes n’est pas dans l’état requis par cette demande.",
+        "cause": "Elle est déjà activée, déjà désactivée, ou sa configuration n’a pas été lancée.",
+        "fix": "Rechargez la page et réessayez."
       }
     },
     "memberPlaceholder": "Membre (facultatif)",
@@ -2869,7 +2912,7 @@
     "copyFrom": "Copier depuis…",
     "copyTitle": "Copier les permissions de",
     "copyNote": "Remplace le brouillon de ce groupe. Rien ne change avant l'enregistrement.",
-    "adminWarning": "ouvre le panneau d'administration, et la plupart de ses pages ne vérifient rien d'autre. Ce groupe peut piloter le site quoi que disent les interrupteurs ci-dessous.",
+    "adminWarning": "ouvre le panneau d'administration. Beaucoup de ses pages (paramètres, apparence, journaux) ne vérifient rien d'autre : ce groupe peut donc modifier l'essentiel du site, quels que soient les interrupteurs ci-dessous.",
     "search": "Rechercher des permissions",
     "filter": {
       "all": "Toutes",
@@ -3033,7 +3076,20 @@
     "toastClosed": "Commentaires fermés",
     "toastReopened": "Commentaires rouverts",
     "toastHidden": "Article masqué",
-    "toastShown": "Article de nouveau visible"
+    "toastShown": "Article de nouveau visible",
+    "history": {
+      "menu": "Historique des versions",
+      "title": "Historique des versions",
+      "lede": "Versions enregistrées de « {{title}} », de la plus récente à la plus ancienne. La restauration conserve le texte actuel comme version : vous pouvez donc l'annuler ici.",
+      "loading": "Chargement des versions…",
+      "empty": "Aucune version enregistrée pour l'instant. Une version est conservée à chaque enregistrement d'un article publié.",
+      "by": "par {{user}}",
+      "newest": "La plus récente",
+      "restore": "Restaurer",
+      "ask": "Restaurer cette version ?",
+      "restored": "Version restaurée",
+      "close": "Fermer"
+    }
   },
   "legal": {
     "eyebrow": "Contenu",
@@ -3145,7 +3201,10 @@
       "public": "public",
       "members": "membres",
       "groups": "groupes"
-    }
+    },
+    "fieldParent": "Afficher sous",
+    "parentNone": "Dans la barre",
+    "parentLocked": "Des liens sont placés sous celui-ci, il reste donc dans la barre."
   },
   "categories": {
     "title": "Catégories d'articles",
@@ -3433,7 +3492,13 @@
     "deviceCookies_other": "Cookies d'appareil · {{n}}",
     "copyFullId": "Copier l'ID complet",
     "showLess": "Afficher moins",
-    "onlineNow": "En ligne"
+    "onlineNow": "En ligne",
+    "twoFactorReset": "Réinitialiser la connexion en deux étapes",
+    "actTwoFactorSub": "Activée depuis le {{date}}. Pour quelqu’un qui a perdu son téléphone et ses codes de récupération.",
+    "twoFactorResetTitle": "Réinitialiser la connexion en deux étapes ?",
+    "twoFactorResetText": "Cela désactive la connexion en deux étapes de {{name}} et le déconnecte partout. Il se connecte avec son mot de passe et peut la réactiver. Ne le faites que si vous êtes sûr que c’est bien lui qui le demande.",
+    "twoFactorResetSelf": "Désactivez la vôtre dans les paramètres de votre compte.",
+    "toastTwoFactorReset": "Connexion en deux étapes réinitialisée pour {{name}}."
   },
   "styleEditor": {
     "fontSiteDefault": "Par défaut (Bricolage Grotesque + Figtree)",
@@ -3491,8 +3556,8 @@
     "toastRemoved": "Supprimé.",
     "toastDraft": "Brouillon enregistré — publiez pour l'appliquer en direct.",
     "toastReset": "Apparence réinitialisée — hérite du design de base.",
-    "resetTitle": "Réinitialiser l'apparence au design de base ?",
-    "resetText": "Restaure les jetons de thème et polices par défaut, et efface votre CSS personnalisé pour le clair et le sombre. Ceci est irréversible.",
+    "resetTitle": "Réinitialiser les couleurs, polices et CSS ?",
+    "resetText": "Vos couleurs, polices et CSS personnalisé pour ce thème sont supprimés tout de suite, et il affiche ce que livre le thème (Core : l'apparence intégrée). C'est irréversible. Les mises en page ne changent pas : « Réinitialiser le thème » en haut couvre tout.",
     "reset": "Réinitialiser",
     "loading": "Chargement…",
     "logoText": "Texte du logo (repli quand aucune image)",
@@ -3759,7 +3824,14 @@
       "700": "Gras",
       "800": "Extra-gras",
       "900": "Noir"
-    }
+    },
+    "pageDesign": "Design de la page",
+    "pageWholeSite": "Tout le site",
+    "pageOnly": "Seulement {{page}}",
+    "pageOnlyHint": "Vous modifiez seulement {{page}} : chaque couleur et taille changée ici s’applique uniquement à cette page, en-tête et pied de page compris.",
+    "pageSiteHint": "Vous modifiez tout le site. Passez à la page pour lui donner un style propre.",
+    "pagesWithLook": "Pages avec leur propre style",
+    "pageScope": "Page : {{page}}"
   },
   "layoutEditor": {
     "structure": "Structure",
@@ -3837,7 +3909,9 @@
       "branding": "Retiré : c’est désormais la barre du pied de page.",
       "articleCategories": "Les catégories avec leur nombre d'articles. Un clic filtre l'index.",
       "articleTrending": "Les articles les plus aimés et commentés des derniers jours.",
-      "articleTags": "Les tags les plus utilisés. Un clic filtre l'index."
+      "articleTags": "Les tags les plus utilisés. Un clic filtre l'index.",
+      "buttons": "Jusqu'à deux boutons de lien, l'appel à l'action d'une bande ou d'un bandeau.",
+      "mastheadPage": "Où le contenu de bandeau propre à une page (un hero) apparaît dans le bandeau du site."
     },
     "catalogueTitle": "Ajouter un bloc à {{region}}",
     "catalogueNote": "Les blocs proviennent d'un catalogue fixe : une mise en page ne peut jamais exécuter de code. Rien n'est en ligne tant que vous ne publiez pas.",
@@ -3942,11 +4016,13 @@
       "header": "En-tête",
       "main": "Corps",
       "aside": "Aside",
-      "footer": "Pied"
+      "footer": "Pied",
+      "headerBand": "Bandeau"
     },
     "pageRegion": {
       "main": "Corps",
-      "aside": "Colonne latérale"
+      "aside": "Colonne latérale",
+      "headerBand": "Bandeau"
     },
     "pageChromeHint": "Une page, c'est un corps et une colonne à côté. L'en-tête et le pied sont des modèles à part, identiques sur chaque page — cliquez sur l'un d'eux dans l'aperçu pour l'organiser.",
     "asideHint": "Se place à côté du corps, et en dessous sur un écran étroit.",
@@ -4490,7 +4566,8 @@
       "magic_link": "Lien de connexion",
       "email_verify": "Vérification de l'e-mail",
       "email_change": "Changement d'e-mail",
-      "smtp_test": "Test SMTP"
+      "smtp_test": "Test SMTP",
+      "security_alert": "Alerte de sécurité"
     },
     "onThisPage": "Sur cette page",
     "server": {
@@ -5132,7 +5209,17 @@
     "publishHint": "Met en ligne ensemble les modifications de mise en page et de style de ce thème.",
     "published": "{{layouts}} mises en page publiées{{styles}}.",
     "withStyles": " ainsi que les modifications de style",
-    "nothingPending": "Rien à publier."
+    "nothingPending": "Rien à publier.",
+    "reset": "Réinitialiser le thème",
+    "resetHint": "Remettre tout le thème tel qu'il est livré, en brouillon à publier",
+    "resetTitle": "Réinitialiser {{theme}} ?",
+    "resetBody": "Chaque mise en page de page, d'en-tête ou de pied de page que vous avez modifiée, la mise en page du site, les couleurs, la police et le CSS personnalisé reviennent à ce que livre {{theme}}. C'est préparé en brouillon : vérifiez l'aperçu, puis publiez. Après publication, l'Historique peut rétablir votre version. Le logo et l'identité visuelle restent.",
+    "resetBodyCore": "Chaque mise en page de page, d'en-tête ou de pied de page que vous avez modifiée, la mise en page du site, les couleurs, la police et le CSS personnalisé reviennent aux valeurs intégrées. C'est préparé en brouillon : vérifiez l'aperçu, puis publiez. Après publication, l'Historique peut rétablir votre version. Le logo et l'identité visuelle restent.",
+    "resetConfirm": "Réinitialiser le thème",
+    "resetCancel": "Annuler",
+    "resetStaged": "Valeurs par défaut en brouillon. Vérifiez l'aperçu, puis publiez.",
+    "resetNothing": "Ce thème est déjà tel qu'il est livré.",
+    "coreName": "Core"
   },
   "savebar": {
     "region": "Modifications non enregistrées",
@@ -5336,6 +5423,14 @@
               "md": "Moyen",
               "lg": "Grand"
             }
+          },
+          "align": {
+            "title": "Aligner les colonnes",
+            "enum": {
+              "start": "Haut",
+              "center": "Centre",
+              "end": "Bas"
+            }
           }
         }
       },
@@ -5409,6 +5504,9 @@
           },
           "level": {
             "title": "Niveau"
+          },
+          "lede": {
+            "title": "Texte en dessous"
           }
         }
       },
@@ -5982,6 +6080,35 @@
             "title": "Combien de tags"
           }
         }
+      },
+      "buttons": {
+        "label": "Boutons",
+        "props": {
+          "primaryLabel": {
+            "title": "Bouton principal"
+          },
+          "primaryHref": {
+            "title": "Le bouton principal mène à",
+            "description": "Un chemin comme /forum, ou une URL complète."
+          },
+          "secondaryLabel": {
+            "title": "Second bouton",
+            "description": "Laissez vide pour un seul bouton."
+          },
+          "secondaryHref": {
+            "title": "Le second bouton mène à"
+          },
+          "align": {
+            "title": "Alignement",
+            "enum": {
+              "start": "Gauche",
+              "center": "Centre"
+            }
+          }
+        }
+      },
+      "mastheadPage": {
+        "label": "Bandeau de cette page"
       }
     },
     "jobs": {
@@ -6107,13 +6234,12 @@
       }
     },
     "domains": {
-      "System": "Système",
       "Administration": "Administration",
-      "Users": "Utilisateurs",
-      "Articles": "Articles",
       "Moderation": "Modération",
-      "Messaging": "Messagerie",
-      "Extensions": "Extensions"
+      "Members": "Membres",
+      "Articles": "Articles",
+      "Comments": "Commentaires",
+      "Messaging": "Messagerie"
     },
     "permissions": {
       "admin.access": "Accéder au panneau d'administration",
@@ -6159,7 +6285,8 @@
       "plugin.enable": "Activer et désactiver des extensions",
       "system.tasks.manage": "Gérer les tâches planifiées",
       "emoji.manage": "Gérer les emojis",
-      "system.update": "Mettre à jour Xentium depuis l'ACP"
+      "system.update": "Mettre à jour Xentium depuis l'ACP",
+      "account.twofactor.required": "Doit utiliser la connexion en deux étapes"
     }
   },
   "emojis": {
@@ -6207,5 +6334,15 @@
     "subtitle": "Les réglages proposés par cette extension. Les changements s'appliquent à l'enregistrement.",
     "general": "Général",
     "unavailable": "Cette extension n'a pas de réglages ici, ou elle est désactivée."
+  },
+  "twoFactorPolicy": {
+    "title": "Connexion à deux facteurs",
+    "desc": "Les groupes activés ici doivent utiliser une application d'authentification. Leurs membres sont invités à l'activer sur chaque page, et le panneau d'administration leur reste fermé tant qu'ils ne l'ont pas fait. Les autres peuvent l'activer dans leur compte.",
+    "required": "Obligatoire",
+    "optional": "Facultatif",
+    "members_one": "{{count}} membre",
+    "members_other": "{{count}} membres",
+    "toggle": "Exiger la connexion à deux facteurs pour {{group}}",
+    "lockoutWarning": "Vous n'avez pas encore activé la connexion à deux facteurs. Après l'enregistrement, le panneau d'administration vous sera fermé jusqu'à ce que vous le fassiez (Compte → Sécurité)."
   }
 }

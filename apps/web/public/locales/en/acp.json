@@ -45,7 +45,9 @@
     "members": "Members",
     "editor": "Editor",
     "groupSetup": "Setup",
-    "groupLogs": "Logs"
+    "groupLogs": "Logs",
+    "waiting_one": "{{count}} waiting",
+    "waiting_other": "{{count}} waiting"
   },
   "sidebar": {
     "adminPanel": "Admin Panel",
@@ -57,7 +59,10 @@
     "sections": "Sections",
     "expandPanel": "Expand panel",
     "collapsePanel": "Collapse panel",
-    "dockPanel": "Keep panel open"
+    "dockPanel": "Keep panel open",
+    "twoFactorTitle": "Turn on two-factor sign-in",
+    "twoFactorBody": "Your group must use two-factor sign-in to open the admin panel. Turn it on in your account settings, then come back.",
+    "twoFactorAction": "Open account settings"
   },
   "topbar": {
     "breadcrumbRoot": "Admin Panel",
@@ -531,9 +536,11 @@
       "cpu": "CPU",
       "memory": "Memory",
       "queue": "Queue",
-      "vcpu": "4 vCPU",
-      "memUsage": "{{used}} / 2048 MB",
-      "jobsPending": "{{count}} jobs pending"
+      "vcpu": "{{count}} vCPU",
+      "memUsage": "{{used}} / {{total}} MB",
+      "jobsPending": "{{count}} jobs pending",
+      "jobsRunning": "{{count}} running",
+      "jobsFailed": "{{count}} failed"
     },
     "throughput": "Request throughput",
     "reqPerSec": "{{count}} req/s",
@@ -861,12 +868,6 @@
         "desc": "The authenticated user does not have permission to perform this action.",
         "cause": "Missing permission key for the requested resource.",
         "fix": "Ensure the user's group has the required permission assigned in ACP → Members → Permissions."
-      },
-      "XEC-API-4031": {
-        "msg": "Disabled in the Demo",
-        "desc": "This install runs in demo mode, which refuses actions that would run code on the server, send mail, or lock other visitors out.",
-        "cause": "DEMO_MODE=true in the server's environment.",
-        "fix": "Nothing to fix on a demo. On your own install, leave DEMO_MODE unset."
       },
       "XEC-API-4150": {
         "msg": "Compressed Request Refused",
@@ -1251,6 +1252,48 @@
         "desc": "An installed plugin's filter stopped this action.",
         "cause": "A plugin registered a check (for example on sign-up or on saving content) and it refused this input.",
         "fix": "Read the message shown to the member; it comes from the plugin. To change the rule, see that plugin's settings, or disable it."
+      },
+      "XEC-AUTH-1070": {
+        "msg": "Wrong Two-factor Code",
+        "desc": "The authenticator or recovery code did not match.",
+        "cause": "The code was mistyped, belongs to another account, or the phone's clock is far off.",
+        "fix": "Type the current code from the app. If codes never match, check the phone's time is set automatically."
+      },
+      "XEC-AUTH-1071": {
+        "msg": "Two-factor Code Already Used",
+        "desc": "That code was right, but it was already used.",
+        "cause": "Each code works once, and the same code was typed twice within 30 seconds.",
+        "fix": "Wait for the next code in the app."
+      },
+      "XEC-AUTH-1072": {
+        "msg": "Too Many Two-factor Codes",
+        "desc": "Too many wrong codes were typed for this account.",
+        "cause": "Ten wrong codes within 15 minutes lock two-factor checks for the account.",
+        "fix": "Wait 15 minutes. An admin can reset two-factor sign-in in ACP → Users if the phone is lost."
+      },
+      "XEC-AUTH-1073": {
+        "msg": "Two-factor Step Expired",
+        "desc": "The sign-in waited too long for its code.",
+        "cause": "The code step lasts five minutes and five wrong codes.",
+        "fix": "Sign in again."
+      },
+      "XEC-AUTH-1074": {
+        "msg": "Two-factor Sign-in Required",
+        "desc": "This account must use two-factor sign-in before the admin panel opens.",
+        "cause": "A group the account is in holds \"Must use two-factor sign-in\" (ACP → Permissions).",
+        "fix": "Turn on two-factor sign-in in Account → Security."
+      },
+      "XEC-AUTH-1075": {
+        "msg": "Confirm With a Code",
+        "desc": "This action asks for a fresh code from the authenticator app.",
+        "cause": "Handing out permissions, installing code and similar actions ask again, even when signed in.",
+        "fix": "Enter the code when asked. One code covers five minutes."
+      },
+      "XEC-AUTH-1076": {
+        "msg": "Two-factor State",
+        "desc": "Two-factor sign-in is not in the state this request needs.",
+        "cause": "It is already on, already off, or its setup was not started.",
+        "fix": "Reload the page and try again."
       }
     },
     "memberPlaceholder": "Member (optional)",
@@ -2869,7 +2912,7 @@
     "copyFrom": "Copy from…",
     "copyTitle": "Copy permissions from",
     "copyNote": "Replaces this group's draft. Nothing changes until you save.",
-    "adminWarning": "opens the admin panel, and most of its pages check nothing else. This group can run the site whatever the toggles below say.",
+    "adminWarning": "opens the admin panel. Many of its pages (settings, appearance, logs) check nothing else, so this group can change most of the site whatever the toggles below say.",
     "search": "Search permissions",
     "filter": {
       "all": "All",
@@ -3033,7 +3076,20 @@
     "toastClosed": "Comments closed",
     "toastReopened": "Comments open again",
     "toastHidden": "Article hidden",
-    "toastShown": "Article shown again"
+    "toastShown": "Article shown again",
+    "history": {
+      "menu": "Version history",
+      "title": "Version history",
+      "lede": "Saved versions of “{{title}}”, newest first. Restoring keeps the current text as a version, so you can undo it here.",
+      "loading": "Loading versions…",
+      "empty": "No saved versions yet. A version is kept each time a published article is saved.",
+      "by": "by {{user}}",
+      "newest": "Newest",
+      "restore": "Restore",
+      "ask": "Restore this version?",
+      "restored": "Version restored",
+      "close": "Close"
+    }
   },
   "legal": {
     "eyebrow": "Content",
@@ -3272,7 +3328,10 @@
       "public": "public",
       "members": "members",
       "groups": "groups"
-    }
+    },
+    "fieldParent": "Show under",
+    "parentNone": "In the bar",
+    "parentLocked": "Links sit under this one, so it stays in the bar."
   },
   "categories": {
     "title": "Article Categories",
@@ -3560,7 +3619,13 @@
     "deviceCookies_other": "Device cookies · {{n}}",
     "copyFullId": "Copy full ID",
     "showLess": "Show less",
-    "onlineNow": "Online"
+    "onlineNow": "Online",
+    "twoFactorReset": "Reset two-factor sign-in",
+    "actTwoFactorSub": "On since {{date}}. For someone who lost their phone and their recovery codes.",
+    "twoFactorResetTitle": "Reset two-factor sign-in?",
+    "twoFactorResetText": "This turns off two-factor sign-in for {{name}} and signs them out everywhere. They sign in with their password and can turn it on again. Only do this when you are sure it is really them asking.",
+    "twoFactorResetSelf": "Turn your own off in your account settings.",
+    "toastTwoFactorReset": "Two-factor sign-in reset for {{name}}."
   },
   "styleEditor": {
     "fontSiteDefault": "Site default (Bricolage Grotesque + Figtree)",
@@ -3618,8 +3683,8 @@
     "toastRemoved": "Removed.",
     "toastDraft": "Draft saved — publish to apply it live.",
     "toastReset": "Appearance reset — inheriting the core design.",
-    "resetTitle": "Reset appearance to the core design?",
-    "resetText": "Restores the default theme tokens and fonts, and clears your custom CSS for both light and dark. This cannot be undone.",
+    "resetTitle": "Reset colours, fonts and CSS?",
+    "resetText": "Your colours, fonts and custom CSS for this theme are removed straight away, and it shows what the theme ships (Core: the built-in look). This cannot be undone. Layouts are not affected: Reset theme at the top covers everything.",
     "reset": "Reset",
     "loading": "Loading…",
     "logoText": "Logo Text (fallback when no image is set)",
@@ -3886,7 +3951,14 @@
       "700": "Bold",
       "800": "Extra bold",
       "900": "Black"
-    }
+    },
+    "pageDesign": "Page design",
+    "pageWholeSite": "Whole site",
+    "pageOnly": "Only {{page}}",
+    "pageOnlyHint": "Editing {{page}} only: every colour and size you change here applies on this page alone, header and footer included.",
+    "pageSiteHint": "Editing the whole site. Switch to the page to give it a look of its own.",
+    "pagesWithLook": "Pages with their own look",
+    "pageScope": "Page: {{page}}"
   },
   "layoutEditor": {
     "structure": "Structure",
@@ -3964,7 +4036,9 @@
       "branding": "Retired: now the footer bar.",
       "articleCategories": "Categories with article counts. Clicking one filters the index.",
       "articleTrending": "The most liked and discussed articles of the last days.",
-      "articleTags": "The tags used most. Clicking one filters the index."
+      "articleTags": "The tags used most. Clicking one filters the index.",
+      "buttons": "Up to two link buttons, the call to action for a band or a masthead.",
+      "mastheadPage": "Where a page's own masthead content (a hero) appears inside the site's masthead."
     },
     "catalogueTitle": "Add a block to {{region}}",
     "catalogueNote": "Blocks come from a fixed catalogue, so a layout can never run code. Nothing goes live until you publish.",
@@ -4069,11 +4143,13 @@
       "header": "Header",
       "main": "Body",
       "aside": "Aside",
-      "footer": "Footer"
+      "footer": "Footer",
+      "headerBand": "Masthead"
     },
     "pageRegion": {
       "main": "Body",
-      "aside": "Aside"
+      "aside": "Aside",
+      "headerBand": "Masthead"
     },
     "pageChromeHint": "A page is a body and a rail beside it. The header and footer are their own templates, the same on every page — click one in the preview to arrange it.",
     "asideHint": "Sits beside the body, and under it on a narrow screen.",
@@ -4617,7 +4693,8 @@
       "magic_link": "Sign-in link",
       "email_verify": "Verify email",
       "email_change": "Email change",
-      "smtp_test": "SMTP test"
+      "smtp_test": "SMTP test",
+      "security_alert": "Security alert"
     },
     "onThisPage": "On this page",
     "server": {
@@ -5259,7 +5336,17 @@
     "publishHint": "Puts this theme's layout and style changes live together.",
     "published": "Published {{layouts}} layouts{{styles}}.",
     "withStyles": " and the style changes",
-    "nothingPending": "Nothing to publish."
+    "nothingPending": "Nothing to publish.",
+    "reset": "Reset theme",
+    "resetHint": "Put this whole theme back to what it ships, as a draft you publish",
+    "resetTitle": "Reset {{theme}} to its defaults?",
+    "resetBody": "Every page and header or footer layout you changed, the site layout, the colours, the font and the custom CSS go back to what {{theme}} ships. This is staged as a draft: check it in the preview, then Publish. After publishing, History can bring your version back. The logo and branding stay.",
+    "resetBodyCore": "Every page and header or footer layout you changed, the site layout, the colours, the font and the custom CSS go back to the built-in defaults. This is staged as a draft: check it in the preview, then Publish. After publishing, History can bring your version back. The logo and branding stay.",
+    "resetConfirm": "Reset theme",
+    "resetCancel": "Cancel",
+    "resetStaged": "Defaults staged. Check the preview, then Publish.",
+    "resetNothing": "This theme is already as it ships.",
+    "coreName": "Core"
   },
   "savebar": {
     "region": "Unsaved changes",
@@ -5336,6 +5423,14 @@
               "md": "Medium",
               "lg": "Large"
             }
+          },
+          "align": {
+            "title": "Line up tracks",
+            "enum": {
+              "start": "Top",
+              "center": "Centre",
+              "end": "Bottom"
+            }
           }
         }
       },
@@ -5409,6 +5504,9 @@
           },
           "level": {
             "title": "Level"
+          },
+          "lede": {
+            "title": "Text under it"
           }
         }
       },
@@ -5982,6 +6080,35 @@
             "title": "How many tags"
           }
         }
+      },
+      "buttons": {
+        "label": "Buttons",
+        "props": {
+          "primaryLabel": {
+            "title": "Main button"
+          },
+          "primaryHref": {
+            "title": "Main button links to",
+            "description": "A path like /forum, or a full URL."
+          },
+          "secondaryLabel": {
+            "title": "Second button",
+            "description": "Leave empty for one button."
+          },
+          "secondaryHref": {
+            "title": "Second button links to"
+          },
+          "align": {
+            "title": "Alignment",
+            "enum": {
+              "start": "Left",
+              "center": "Centre"
+            }
+          }
+        }
+      },
+      "mastheadPage": {
+        "label": "This page's masthead"
       }
     },
     "jobs": {
@@ -6107,13 +6234,12 @@
       }
     },
     "domains": {
-      "System": "System",
       "Administration": "Administration",
-      "Users": "Users",
-      "Articles": "Articles",
       "Moderation": "Moderation",
-      "Messaging": "Messaging",
-      "Extensions": "Extensions"
+      "Members": "Members",
+      "Articles": "Articles",
+      "Comments": "Comments",
+      "Messaging": "Messaging"
     },
     "permissions": {
       "admin.access": "Access the admin panel",
@@ -6159,7 +6285,8 @@
       "plugin.enable": "Enable & disable plugins",
       "system.tasks.manage": "Manage scheduled tasks",
       "emoji.manage": "Manage emojis",
-      "system.update": "Update Xentium from the ACP"
+      "system.update": "Update Xentium from the ACP",
+      "account.twofactor.required": "Must use two-factor sign-in"
     }
   },
   "emojis": {
@@ -6207,5 +6334,15 @@
     "subtitle": "Settings this add-on offers. Changes apply once you save.",
     "general": "General",
     "unavailable": "This add-on has no settings here, or it is turned off."
+  },
+  "twoFactorPolicy": {
+    "title": "Two-factor sign-in",
+    "desc": "Groups switched on here must use an authenticator app. Their members are asked to turn it on on every page, and the admin panel stays closed to them until they do. Everyone else can turn it on in their account.",
+    "required": "Required",
+    "optional": "Optional",
+    "members_one": "{{count}} member",
+    "members_other": "{{count}} members",
+    "toggle": "Require two-factor sign-in for {{group}}",
+    "lockoutWarning": "You haven't turned on two-factor sign-in yourself. After saving, the admin panel closes to you until you do (Account → Security)."
   }
 }

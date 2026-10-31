@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink, Link, useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { FontAwesomeIcon } from "../components/Icon";
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { slotRegistry } from "../plugins/slotRegistry";
+import { useShownFor } from "../plugins/useShownFor";
 import {
   faGear,
   faChevronDown,
@@ -28,6 +29,8 @@ import { useRegistrationStatus } from "../hooks/useRegistrationStatus";
 import { api } from "../lib/api";
 import { LayoutRegion } from "../layout/LayoutRenderer";
 import { useLayoutDocument } from "../layout/useLayout";
+import { usePageBand } from "../layout/siteFrame";
+import { HEADER_BAND_REGION, type BlockNode, type LayoutDocument } from "@xentium/contracts";
 import { RankBadge } from "../components/RankBadge";
 import { ModShield } from "../features/modcp/ModShield";
 import { SignInMenu } from "../features/auth/doorway/SignInMenu";
@@ -44,7 +47,12 @@ interface NavItem {
   openInNewTab: boolean;
   visibility: string; // "public" | "members" | "groups"
   placement?: string; // "navbar" | "footer"
+  /** Links in this item's dropdown (one level; ACP → Navigation or a plugin's registerNavItem). */
+  children?: NavItem[];
 }
+
+const visibleTo = (isAuthenticated: boolean) => (item: NavItem) =>
+  item.visibility === "public" || (item.visibility === "members" && isAuthenticated);
 
 /** Core system routes get a localized label; a plugin's link translates through its
  *  `host.nav` text until an admin renames it; custom links use their DB label. */
@@ -60,11 +68,10 @@ function useNavItems(isAuthenticated: boolean) {
     queryFn: () => api.get("/nav-items"),
     staleTime: 60_000,
   });
-  return data.filter(item =>
-    item.placement !== "footer" &&
-    (item.visibility === "public" ||
-      (item.visibility === "members" && isAuthenticated)),
-  );
+  const can = visibleTo(isAuthenticated);
+  return data
+    .filter((item) => item.placement !== "footer" && can(item))
+    .map((item) => ({ ...item, children: (item.children ?? []).filter(can) }));
 }
 
 /** The ACP entry, for whoever holds the key every ACP route requires. */
@@ -79,6 +86,9 @@ export function UserDropdown({ user }: { user: NonNullable<ReturnType<typeof use
   const menuRef = useRef<HTMLDivElement>(null);
   // Self badge in the nav respects the user's badge-visibility choice.
   const primaryGroup = topGroups(user.visibleGroups, (g) => g.displayOrder, 1)[0];
+  // Plugin entries that only some members get (`shownFor`), asked once per member.
+  const menuItems = slotRegistry.getUserMenuItems();
+  const menuAsked = useShownFor(menuItems, user.id);
 
   useEffect(() => {
     if (!open) return;
@@ -158,7 +168,7 @@ export function UserDropdown({ user }: { user: NonNullable<ReturnType<typeof use
             {t("nav.accountSettings")}
           </Link>
           {/* Plugin entries (Membership, …): plain links styled like core's own. */}
-          {slotRegistry.getUserMenuItems().map((item) => (
+          {menuItems.filter(menuAsked.shown).map((item) => (
             <Link key={item.id} to={item.to} className="pub-nav__dropdown-item" onClick={() => setOpen(false)}>
               {item.icon ? <FontAwesomeIcon icon={item.icon as IconDefinition} /> : null}
               {item.label}
@@ -328,6 +338,9 @@ export function NavPrimaryLinks() {
               ? t(SYSTEM_NAV_I18N[item.url]!)
               : pluginNavLabel(item.url, item.label);
             return (
+              (item.children?.length ?? 0) > 0 && !isExternal && !item.openInNewTab ? (
+                <NavDropdownLink key={item.id} item={item} label={navLabel} />
+              ) : (
               <li key={item.id}>
                 {isExternal || item.openInNewTab ? (
                   <a
@@ -345,9 +358,63 @@ export function NavPrimaryLinks() {
                   <NavLink to={item.url}>{navLabel}</NavLink>
                 )}
               </li>
+              )
             );
           })}
         </ul>
+  );
+}
+
+/**
+ * A navbar link with links under it (ACP → Navigation, or a plugin's dropdown).
+ * The label still goes to its own page; hovering opens the dropdown, and the caret
+ * button opens it from the keyboard. Closes on a click outside, Escape, leaving
+ * the link, and when the page changes. Drawn with the user menu's dropdown classes,
+ * so it follows the same "Menus & dropdowns" tokens.
+ */
+function NavDropdownLink({ item, label }: { item: NavItem; label: string }) {
+  const { t } = useTranslation("common");
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLLIElement>(null);
+  const closing = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { pathname, search } = useLocation();
+  useEffect(() => { setOpen(false); }, [pathname, search]);
+  /* Leaving closes after a moment, not at once: a mouse path that cuts a corner on
+     its way to an item must not close the list under it. */
+  const cancelClose = () => { if (closing.current) { clearTimeout(closing.current); closing.current = null; } };
+  const show = () => { cancelClose(); setOpen(true); };
+  const hide = () => { cancelClose(); closing.current = setTimeout(() => setOpen(false), 180); };
+  useEffect(() => cancelClose, []);
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) setOpen(false); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("mousedown", onDown); document.removeEventListener("keydown", onKey); };
+  }, [open]);
+
+  return (
+    <li ref={ref} className="pub-nav__has-menu" onMouseEnter={show} onMouseLeave={hide}>
+      <NavLink to={item.url}>{label}</NavLink>
+      <button type="button" className="pub-nav__menu-caret" aria-expanded={open} aria-haspopup="menu"
+        aria-label={t("nav.openMenu", { label })}
+        // A mouse click or a tap only ever OPENS: hovering (or the tap's own
+        // mouseenter) has opened it already, and toggling would close it again.
+        // The keyboard (detail 0) toggles.
+        onClick={(e) => { cancelClose(); setOpen((o) => (e.detail === 0 ? !o : true)); }}>
+        <FontAwesomeIcon icon={faChevronDown} />
+      </button>
+      {open && (
+        <div className="pub-nav__dropdown pub-nav__dropdown--nav xt-pop" role="menu">
+          {item.children!.map((c) => (
+            <NavLink key={c.id} role="menuitem" to={c.url} className="pub-nav__dropdown-item">
+              {pluginNavLabel(c.url, c.label)}
+            </NavLink>
+          ))}
+        </div>
+      )}
+    </li>
   );
 }
 
@@ -397,7 +464,12 @@ export function NavMobileMenu({ tools }: { tools?: React.ReactNode }) {
                 {item.openInNewTab && <FontAwesomeIcon icon={faArrowUpRightFromSquare} />}
               </a>
             ) : (
-              <NavLink key={item.id} to={item.url} end={item.url === "/"}>{labelOf(item)}</NavLink>
+              <Fragment key={item.id}>
+                <NavLink to={item.url} end={item.url === "/"}>{labelOf(item)}</NavLink>
+                {item.children?.map((c) => (
+                  <NavLink key={c.id} to={c.url} className="pub-nav__sheet-sub">{labelOf(c)}</NavLink>
+                ))}
+              </Fragment>
             ))}
           </nav>
           {tools && <div className="pub-nav__sheet-tools">{tools}</div>}
@@ -425,11 +497,29 @@ export function NavMobileMenu({ tools }: { tools?: React.ReactNode }) {
  *
  * The ACP topbar is deliberately NOT composable — see the amendment.
  */
+/** True when a SHOWN masthead holds the page's masthead block. */
+function mastheadDrawsPage(doc: LayoutDocument): boolean {
+  const walk = (nodes: BlockNode[]): boolean => nodes.some((n) =>
+    n.type === "header"
+      ? n.props?.showMasthead !== false && (n.children ?? []).some((c) => c.type === "mastheadPage")
+      : walk(n.children ?? []));
+  return walk(doc.regions.header ?? []);
+}
+
 export function PubNav() {
   const layout = useLayoutDocument("chrome.header");
+  // The page's own band (a hero), when its template declares one. A masthead with
+  // "This page's masthead" in it draws it there; otherwise it goes under the header.
+  const band = usePageBand();
+  const inMasthead = useMemo(() => mastheadDrawsPage(layout), [layout]);
   return (
     <div className="pub-head">
       <LayoutRegion document={layout} region="header" />
+      {band && !inMasthead && (
+        <div className="xt-header-band">
+          <LayoutRegion document={band.document} region={HEADER_BAND_REGION} context={band.context} />
+        </div>
+      )}
     </div>
   );
 }

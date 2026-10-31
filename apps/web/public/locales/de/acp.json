@@ -45,7 +45,9 @@
     "members": "Mitglieder",
     "editor": "Editor",
     "groupSetup": "Einrichtung",
-    "groupLogs": "Protokolle"
+    "groupLogs": "Protokolle",
+    "waiting_one": "{{count}} wartet",
+    "waiting_other": "{{count}} warten"
   },
   "sidebar": {
     "adminPanel": "Admin-Bereich",
@@ -57,7 +59,10 @@
     "sections": "Bereiche",
     "expandPanel": "Leiste ausklappen",
     "collapsePanel": "Leiste einklappen",
-    "dockPanel": "Leiste offen lassen"
+    "dockPanel": "Leiste offen lassen",
+    "twoFactorTitle": "Zwei-Faktor-Anmeldung einschalten",
+    "twoFactorBody": "Deine Gruppe muss die Zwei-Faktor-Anmeldung nutzen, um den Adminbereich zu öffnen. Schalte sie in deinen Kontoeinstellungen ein und komm dann zurück.",
+    "twoFactorAction": "Kontoeinstellungen öffnen"
   },
   "topbar": {
     "breadcrumbRoot": "Admin-Bereich",
@@ -531,9 +536,11 @@
       "cpu": "CPU",
       "memory": "Arbeitsspeicher",
       "queue": "Warteschlange",
-      "vcpu": "4 vCPU",
-      "memUsage": "{{used}} / 2048 MB",
-      "jobsPending": "{{count}} Aufgaben ausstehend"
+      "vcpu": "{{count}} vCPU",
+      "memUsage": "{{used}} / {{total}} MB",
+      "jobsPending": "{{count}} Aufgaben ausstehend",
+      "jobsRunning": "{{count}} laufen",
+      "jobsFailed": "{{count}} fehlgeschlagen"
     },
     "throughput": "Anfragedurchsatz",
     "reqPerSec": "{{count}} Anf./s",
@@ -861,12 +868,6 @@
         "desc": "Der angemeldete Benutzer hat keine Berechtigung für diese Aktion.",
         "cause": "Der Berechtigungsschlüssel für die angeforderte Ressource fehlt.",
         "fix": "Stelle sicher, dass die Gruppe des Benutzers die nötige Berechtigung unter ACP → Mitglieder → Berechtigungen zugewiesen hat."
-      },
-      "XEC-API-4031": {
-        "msg": "In der Demo deaktiviert",
-        "desc": "Diese Installation läuft im Demo-Modus. Er verweigert Aktionen, die Code auf dem Server ausführen, E-Mails senden oder andere Besucher aussperren würden.",
-        "cause": "DEMO_MODE=true in der Serverumgebung.",
-        "fix": "In einer Demo gibt es nichts zu beheben. Auf deiner eigenen Installation lässt du DEMO_MODE weg."
       },
       "XEC-API-4150": {
         "msg": "Komprimierte Anfrage abgelehnt",
@@ -1251,6 +1252,48 @@
         "desc": "Ein Filter eines installierten Plugins hat diese Aktion gestoppt.",
         "cause": "Ein Plugin hat eine Prüfung registriert (etwa bei der Registrierung oder beim Speichern von Inhalten), die diese Eingabe abgelehnt hat.",
         "fix": "Lies die Meldung, die dem Mitglied gezeigt wird; sie stammt vom Plugin. Um die Regel zu ändern, sieh in die Einstellungen dieses Plugins oder deaktiviere es."
+      },
+      "XEC-AUTH-1070": {
+        "msg": "Falscher Zwei-Faktor-Code",
+        "desc": "Der Authenticator- oder Wiederherstellungscode passt nicht.",
+        "cause": "Der Code wurde vertippt, gehört zu einem anderen Konto, oder die Uhr des Handys geht stark falsch.",
+        "fix": "Gib den aktuellen Code aus der App ein. Passen die Codes nie, prüfe, ob die Uhrzeit des Handys automatisch gestellt wird."
+      },
+      "XEC-AUTH-1071": {
+        "msg": "Zwei-Faktor-Code schon verwendet",
+        "desc": "Der Code war richtig, wurde aber schon verwendet.",
+        "cause": "Jeder Code funktioniert nur einmal, und derselbe Code wurde innerhalb von 30 Sekunden zweimal eingegeben.",
+        "fix": "Warte auf den nächsten Code in der App."
+      },
+      "XEC-AUTH-1072": {
+        "msg": "Zu viele Zwei-Faktor-Codes",
+        "desc": "Für dieses Konto wurden zu viele falsche Codes eingegeben.",
+        "cause": "Zehn falsche Codes innerhalb von 15 Minuten sperren die Zwei-Faktor-Prüfung für das Konto.",
+        "fix": "Warte 15 Minuten. Ist das Handy verloren, kann ein Admin die Zwei-Faktor-Anmeldung unter ACP → Benutzer zurücksetzen."
+      },
+      "XEC-AUTH-1073": {
+        "msg": "Zwei-Faktor-Schritt abgelaufen",
+        "desc": "Die Anmeldung hat zu lange auf ihren Code gewartet.",
+        "cause": "Der Code-Schritt gilt fünf Minuten und fünf falsche Codes lang.",
+        "fix": "Melde dich erneut an."
+      },
+      "XEC-AUTH-1074": {
+        "msg": "Zwei-Faktor-Anmeldung erforderlich",
+        "desc": "Dieses Konto muss die Zwei-Faktor-Anmeldung nutzen, bevor sich der Adminbereich öffnet.",
+        "cause": "Eine Gruppe des Kontos hat „Muss die Zwei-Faktor-Anmeldung nutzen“ (ACP → Berechtigungen).",
+        "fix": "Schalte die Zwei-Faktor-Anmeldung unter Konto → Sicherheit ein."
+      },
+      "XEC-AUTH-1075": {
+        "msg": "Mit einem Code bestätigen",
+        "desc": "Diese Aktion fragt nach einem frischen Code aus der Authenticator-App.",
+        "cause": "Berechtigungen vergeben, Code installieren und ähnliche Aktionen fragen erneut, auch wenn man angemeldet ist.",
+        "fix": "Gib den Code ein, wenn danach gefragt wird. Ein Code gilt für fünf Minuten."
+      },
+      "XEC-AUTH-1076": {
+        "msg": "Zwei-Faktor-Status",
+        "desc": "Die Zwei-Faktor-Anmeldung ist nicht in dem Zustand, den diese Anfrage braucht.",
+        "cause": "Sie ist schon an, schon aus, oder die Einrichtung wurde nicht gestartet.",
+        "fix": "Lade die Seite neu und versuch es erneut."
       }
     },
     "memberPlaceholder": "Mitglied (optional)",
@@ -2869,7 +2912,7 @@
     "copyFrom": "Kopieren von…",
     "copyTitle": "Berechtigungen kopieren von",
     "copyNote": "Ersetzt den Entwurf dieser Gruppe. Erst beim Speichern ändert sich etwas.",
-    "adminWarning": "öffnet das Admin-Panel, und die meisten seiner Seiten prüfen nichts weiter. Diese Gruppe kann die Seite steuern, egal was die Schalter unten sagen.",
+    "adminWarning": "öffnet das Admin-Panel. Viele seiner Seiten (Einstellungen, Aussehen, Protokolle) prüfen nichts weiter, daher kann diese Gruppe den Großteil der Seite ändern, egal was die Schalter unten sagen.",
     "search": "Berechtigungen suchen",
     "filter": {
       "all": "Alle",
@@ -3033,7 +3076,20 @@
     "toastClosed": "Kommentare geschlossen",
     "toastReopened": "Kommentare wieder offen",
     "toastHidden": "Artikel ausgeblendet",
-    "toastShown": "Artikel wieder sichtbar"
+    "toastShown": "Artikel wieder sichtbar",
+    "history": {
+      "menu": "Versionsverlauf",
+      "title": "Versionsverlauf",
+      "lede": "Gespeicherte Versionen von „{{title}}“, neueste zuerst. Beim Wiederherstellen bleibt der aktuelle Text als Version erhalten, du kannst es hier also rückgängig machen.",
+      "loading": "Versionen werden geladen…",
+      "empty": "Noch keine gespeicherten Versionen. Bei jedem Speichern eines veröffentlichten Artikels wird eine Version angelegt.",
+      "by": "von {{user}}",
+      "newest": "Neueste",
+      "restore": "Wiederherstellen",
+      "ask": "Diese Version wiederherstellen?",
+      "restored": "Version wiederhergestellt",
+      "close": "Schließen"
+    }
   },
   "legal": {
     "eyebrow": "Inhalte",
@@ -3145,7 +3201,10 @@
       "public": "öffentlich",
       "members": "Mitglieder",
       "groups": "Gruppen"
-    }
+    },
+    "fieldParent": "Anzeigen unter",
+    "parentNone": "In der Leiste",
+    "parentLocked": "Unter diesem Link liegen andere, deshalb bleibt er in der Leiste."
   },
   "categories": {
     "title": "Artikelkategorien",
@@ -3433,7 +3492,13 @@
     "deviceCookies_other": "Geräte-Cookies · {{n}}",
     "copyFullId": "Vollständige ID kopieren",
     "showLess": "Weniger anzeigen",
-    "onlineNow": "Online"
+    "onlineNow": "Online",
+    "twoFactorReset": "Zwei-Faktor-Anmeldung zurücksetzen",
+    "actTwoFactorSub": "Aktiv seit {{date}}. Für jemanden, der Handy und Wiederherstellungscodes verloren hat.",
+    "twoFactorResetTitle": "Zwei-Faktor-Anmeldung zurücksetzen?",
+    "twoFactorResetText": "Damit wird die Zwei-Faktor-Anmeldung für {{name}} ausgeschaltet und das Konto überall abgemeldet. Die Anmeldung geht dann mit dem Passwort, und sie kann wieder eingeschaltet werden. Mach das nur, wenn du sicher bist, dass die Person wirklich selbst fragt.",
+    "twoFactorResetSelf": "Schalte deine eigene in deinen Kontoeinstellungen aus.",
+    "toastTwoFactorReset": "Zwei-Faktor-Anmeldung für {{name}} zurückgesetzt."
   },
   "styleEditor": {
     "fontSiteDefault": "Standard (Bricolage Grotesque + Figtree)",
@@ -3491,8 +3556,8 @@
     "toastRemoved": "Entfernt.",
     "toastDraft": "Entwurf gespeichert — veröffentlichen, um ihn live anzuwenden.",
     "toastReset": "Erscheinungsbild zurückgesetzt — erbt das Kern-Design.",
-    "resetTitle": "Erscheinungsbild auf das Kern-Design zurücksetzen?",
-    "resetText": "Stellt die Standard-Theme-Token und -Schriften wieder her und löscht dein eigenes CSS für Hell und Dunkel. Dies kann nicht rückgängig gemacht werden.",
+    "resetTitle": "Farben, Schriften und CSS zurücksetzen?",
+    "resetText": "Deine Farben, Schriften und dein eigenes CSS für dieses Theme werden sofort entfernt, und es zeigt, was das Theme mitbringt (Core: das eingebaute Aussehen). Das lässt sich nicht rückgängig machen. Layouts bleiben unberührt: „Theme zurücksetzen“ oben erfasst alles.",
     "reset": "Zurücksetzen",
     "loading": "Wird geladen…",
     "logoText": "Logo-Text (Fallback, wenn kein Bild gesetzt ist)",
@@ -3759,7 +3824,14 @@
       "700": "Fett",
       "800": "Extrafett",
       "900": "Schwarz"
-    }
+    },
+    "pageDesign": "Seitendesign",
+    "pageWholeSite": "Ganze Seite",
+    "pageOnly": "Nur {{page}}",
+    "pageOnlyHint": "Du bearbeitest nur {{page}}: Jede Farbe und Größe, die du hier änderst, gilt nur auf dieser Seite, Kopf- und Fußzeile eingeschlossen.",
+    "pageSiteHint": "Du bearbeitest die ganze Seite. Wechsle zur einzelnen Seite, um ihr ein eigenes Aussehen zu geben.",
+    "pagesWithLook": "Seiten mit eigenem Aussehen",
+    "pageScope": "Seite: {{page}}"
   },
   "layoutEditor": {
     "structure": "Struktur",
@@ -3837,7 +3909,9 @@
       "branding": "Ausgemustert: jetzt die Footer-Leiste.",
       "articleCategories": "Kategorien mit Artikelanzahl. Ein Klick filtert die Übersicht.",
       "articleTrending": "Die meistgelikten und meistdiskutierten Artikel der letzten Tage.",
-      "articleTags": "Die meistgenutzten Tags. Ein Klick filtert die Übersicht."
+      "articleTags": "Die meistgenutzten Tags. Ein Klick filtert die Übersicht.",
+      "buttons": "Bis zu zwei Link-Schaltflächen, der Aufruf zum Handeln für ein Band oder einen Kopfbereich.",
+      "mastheadPage": "Wo der eigene Kopfbereich einer Seite (ein Hero) im Kopfbereich der Website erscheint."
     },
     "catalogueTitle": "Block zu {{region}} hinzufügen",
     "catalogueNote": "Blöcke stammen aus einem festen Katalog, daher kann ein Layout niemals Code ausführen. Nichts wird live, bevor du veröffentlichst.",
@@ -3942,11 +4016,13 @@
       "header": "Header",
       "main": "Body",
       "aside": "Aside",
-      "footer": "Footer"
+      "footer": "Footer",
+      "headerBand": "Kopfbereich"
     },
     "pageRegion": {
       "main": "Inhalt",
-      "aside": "Seitenleiste"
+      "aside": "Seitenleiste",
+      "headerBand": "Kopfbereich"
     },
     "pageChromeHint": "Eine Seite besteht aus Inhalt und einer Seitenleiste daneben. Header und Footer sind eigene Vorlagen und auf jeder Seite gleich — klicke einen in der Vorschau an, um ihn zu bearbeiten.",
     "asideHint": "Steht neben dem Inhalt, auf schmalen Bildschirmen darunter.",
@@ -4490,7 +4566,8 @@
       "magic_link": "Anmeldelink",
       "email_verify": "E-Mail bestätigen",
       "email_change": "E-Mail-Änderung",
-      "smtp_test": "SMTP-Test"
+      "smtp_test": "SMTP-Test",
+      "security_alert": "Sicherheitshinweis"
     },
     "onThisPage": "Auf dieser Seite",
     "server": {
@@ -5132,7 +5209,17 @@
     "publishHint": "Stellt die Layout- und Stiländerungen dieses Themes gemeinsam live.",
     "published": "{{layouts}} Layouts veröffentlicht{{styles}}.",
     "withStyles": " und die Stiländerungen",
-    "nothingPending": "Nichts zu veröffentlichen."
+    "nothingPending": "Nichts zu veröffentlichen.",
+    "reset": "Theme zurücksetzen",
+    "resetHint": "Das ganze Theme auf seinen Auslieferungszustand zurücksetzen, als Entwurf zum Veröffentlichen",
+    "resetTitle": "{{theme}} auf die Standards zurücksetzen?",
+    "resetBody": "Jedes geänderte Seiten-, Kopf- und Fußbereich-Layout, das Seitenlayout, die Farben, die Schrift und das eigene CSS gehen auf das zurück, was {{theme}} mitbringt. Das wird als Entwurf vorgemerkt: prüf es in der Vorschau und veröffentliche dann. Nach dem Veröffentlichen holt der Verlauf deine Version zurück. Logo und Branding bleiben.",
+    "resetBodyCore": "Jedes geänderte Seiten-, Kopf- und Fußbereich-Layout, das Seitenlayout, die Farben, die Schrift und das eigene CSS gehen auf die eingebauten Standards zurück. Das wird als Entwurf vorgemerkt: prüf es in der Vorschau und veröffentliche dann. Nach dem Veröffentlichen holt der Verlauf deine Version zurück. Logo und Branding bleiben.",
+    "resetConfirm": "Theme zurücksetzen",
+    "resetCancel": "Abbrechen",
+    "resetStaged": "Standards vorgemerkt. Prüf die Vorschau, dann veröffentlichen.",
+    "resetNothing": "Dieses Theme ist bereits im Auslieferungszustand.",
+    "coreName": "Core"
   },
   "savebar": {
     "region": "Ungespeicherte Änderungen",
@@ -5336,6 +5423,14 @@
               "md": "Mittel",
               "lg": "Groß"
             }
+          },
+          "align": {
+            "title": "Spalten ausrichten",
+            "enum": {
+              "start": "Oben",
+              "center": "Mitte",
+              "end": "Unten"
+            }
           }
         }
       },
@@ -5409,6 +5504,9 @@
           },
           "level": {
             "title": "Ebene"
+          },
+          "lede": {
+            "title": "Text darunter"
           }
         }
       },
@@ -5982,6 +6080,35 @@
             "title": "Wie viele Tags"
           }
         }
+      },
+      "buttons": {
+        "label": "Schaltflächen",
+        "props": {
+          "primaryLabel": {
+            "title": "Hauptschaltfläche"
+          },
+          "primaryHref": {
+            "title": "Hauptschaltfläche führt zu",
+            "description": "Ein Pfad wie /forum oder eine vollständige URL."
+          },
+          "secondaryLabel": {
+            "title": "Zweite Schaltfläche",
+            "description": "Leer lassen für eine Schaltfläche."
+          },
+          "secondaryHref": {
+            "title": "Zweite Schaltfläche führt zu"
+          },
+          "align": {
+            "title": "Ausrichtung",
+            "enum": {
+              "start": "Links",
+              "center": "Mitte"
+            }
+          }
+        }
+      },
+      "mastheadPage": {
+        "label": "Kopfbereich dieser Seite"
       }
     },
     "jobs": {
@@ -6107,13 +6234,12 @@
       }
     },
     "domains": {
-      "System": "System",
       "Administration": "Administration",
-      "Users": "Benutzer",
-      "Articles": "Artikel",
       "Moderation": "Moderation",
-      "Messaging": "Nachrichten",
-      "Extensions": "Erweiterungen"
+      "Members": "Mitglieder",
+      "Articles": "Artikel",
+      "Comments": "Kommentare",
+      "Messaging": "Nachrichten"
     },
     "permissions": {
       "admin.access": "Admin-Bereich aufrufen",
@@ -6159,7 +6285,8 @@
       "plugin.enable": "Plugins aktivieren & deaktivieren",
       "system.tasks.manage": "Geplante Aufgaben verwalten",
       "emoji.manage": "Emojis verwalten",
-      "system.update": "Xentium im ACP aktualisieren"
+      "system.update": "Xentium im ACP aktualisieren",
+      "account.twofactor.required": "Muss die Zwei-Faktor-Anmeldung nutzen"
     }
   },
   "emojis": {
@@ -6207,5 +6334,15 @@
     "subtitle": "Einstellungen, die dieses Add-on anbietet. Änderungen gelten, sobald du speicherst.",
     "general": "Allgemein",
     "unavailable": "Dieses Add-on hat hier keine Einstellungen, oder es ist ausgeschaltet."
+  },
+  "twoFactorPolicy": {
+    "title": "Zwei-Faktor-Anmeldung",
+    "desc": "Hier eingeschaltete Gruppen müssen eine Authenticator-App nutzen. Ihre Mitglieder werden auf jeder Seite gebeten, sie einzuschalten, und das Admin-Panel bleibt für sie geschlossen, bis sie es tun. Alle anderen können sie in ihrem Konto einschalten.",
+    "required": "Pflicht",
+    "optional": "Freiwillig",
+    "members_one": "{{count}} Mitglied",
+    "members_other": "{{count}} Mitglieder",
+    "toggle": "Zwei-Faktor-Anmeldung für {{group}} verlangen",
+    "lockoutWarning": "Du hast die Zwei-Faktor-Anmeldung selbst noch nicht eingeschaltet. Nach dem Speichern ist das Admin-Panel für dich geschlossen, bis du es tust (Konto → Sicherheit)."
   }
 }

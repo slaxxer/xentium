@@ -6,6 +6,8 @@ declare namespace Express {
     userId?: string;
     /** Set alongside userId; identifies the access token's session. */
     sessionId?: string;
+    /** The exact JSON body bytes as received (set by the JSON parser), for signature checks. */
+    rawBody?: Buffer;
   }
 
   namespace Multer {

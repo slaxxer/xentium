@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import { loginSchema, checkInviteSchema, pinStepSchema, magicLinkRequestSchema, magicLinkConsumeSchema, registerSchema, sendCodeSchema, checkAvailabilitySchema, requestPasswordResetSchema, confirmPasswordResetSchema } from "./auth.validation.js";
+import { loginSchema, checkInviteSchema, pinStepSchema, totpStepSchema, magicLinkRequestSchema, magicLinkConsumeSchema, registerSchema, sendCodeSchema, checkAvailabilitySchema, requestPasswordResetSchema, confirmPasswordResetSchema } from "./auth.validation.js";
 import { login, register, sendRegistrationCode, checkAvailability, requestPasswordReset, confirmPasswordReset } from "./auth.service.js";
 import { rotateSession, revokeSession } from "./auth.tokens.js";
 import { getRequestMeta } from "../../shared/http/requestMeta.js";
@@ -15,7 +15,7 @@ import { effectivePermissions } from "../../shared/middleware/requirePermission.
 import { legalService } from "../legal/legal.service.js";
 import { bustLegalGate } from "../legal/legalGate.js";
 import { z } from "zod";
-import { LEGAL_DOCUMENTS } from "@xentium/contracts";
+import { CorePermissions, LEGAL_DOCUMENTS } from "@xentium/contracts";
 
 
 
@@ -25,7 +25,7 @@ function uaOf(req: Request): string | null {
   return Array.isArray(raw) ? raw[0] ?? null : (raw ?? null);
 }
 
-import { completePinStep, isStaffUser, respondSignIn } from "./auth.signin.js";
+import { completePinStep, completeTotpStep, isStaffUser, respondSignIn } from "./auth.signin.js";
 import { consumeMagicLink, requestMagicLink } from "./magicLink.service.js";
 import { requestLocaleHint } from "../../shared/i18n/serverText.js";
 
@@ -106,6 +106,7 @@ export async function loginHandler(req: Request, res: Response) {
     });
   }
   if ("requiresPin" in result) return res.status(200).json({ requiresPin: true });
+  if ("requiresTotp" in result) return res.status(200).json({ requiresTotp: true, ticket: result.ticket });
 
   /**
    * Plugin gates decide whether this identity may come in RIGHT NOW.
@@ -171,6 +172,13 @@ export async function pinStepHandler(req: Request, res: Response) {
   respondSignIn(res, result);
 }
 
+/** The authenticator-code step of any sign-in (password, link, provider). */
+export async function totpStepHandler(req: Request, res: Response) {
+  const { ticket, code } = totpStepSchema.parse(req.body);
+  const meta = getRequestMeta(req, res);
+  respondSignIn(res, await completeTotpStep(ticket, code, { ...meta, cookies: (req.signedCookies ?? {}) as Record<string, string> }));
+}
+
 export async function refreshHandler(req: Request, res: Response) {
   // Guest refresh attempts + expired sessions fire constantly — persist:false.
   const raw = req.cookies?.[REFRESH_COOKIE_NAME];
@@ -233,6 +241,7 @@ export async function meHandler(req: Request, res: Response) {
       likeCountReceived: true,
       createdAt: true,
       loginPinEnabled: true,
+      totpEnabledAt: true,
       dobDisplay: true,
       preferredLocale: true,
       hiddenBadges: true,
@@ -264,9 +273,15 @@ export async function meHandler(req: Request, res: Response) {
   // Documents this member must accept before going on: never accepted (imported, or
   // made by an admin or a sign-in provider), or asked again for their group. The site
   // sends them to each one in turn (LegalConsentGate).
-  const { legalAcceptedAt: _accepted, ...rest } = user;
+  const { legalAcceptedAt: _accepted, totpEnabledAt, ...rest } = user;
   const pendingLegal = await legalService.pendingFor(user.id);
-  res.json({ user: { ...rest, avatar: resolveAvatar(user.avatar), permissions, pendingLegal, needsLegalConsent: pendingLegal.length > 0 } });
+  // `required` comes from ACP → Permissions; the browser asks for setup on every page
+  // until it is on (the ACP refuses them anyway).
+  const twoFactor = {
+    enabled: totpEnabledAt !== null,
+    required: permissions.includes(CorePermissions.ACCOUNT_TWO_FACTOR_REQUIRED),
+  };
+  res.json({ user: { ...rest, avatar: resolveAvatar(user.avatar), permissions, twoFactor, pendingLegal, needsLegalConsent: pendingLegal.length > 0 } });
 }
 
 const legalConsentSchema = z.object({ keys: z.array(z.enum(LEGAL_DOCUMENTS)).max(LEGAL_DOCUMENTS.length).optional() });
