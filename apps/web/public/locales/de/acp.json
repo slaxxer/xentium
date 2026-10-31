@@ -2912,7 +2912,7 @@
     "copyFrom": "Kopieren von…",
     "copyTitle": "Berechtigungen kopieren von",
     "copyNote": "Ersetzt den Entwurf dieser Gruppe. Erst beim Speichern ändert sich etwas.",
-    "adminWarning": "öffnet das Admin-Panel, und die meisten seiner Seiten prüfen nichts weiter. Diese Gruppe kann die Seite steuern, egal was die Schalter unten sagen.",
+    "adminWarning": "öffnet das Admin-Panel. Viele seiner Seiten (Einstellungen, Aussehen, Protokolle) prüfen nichts weiter, daher kann diese Gruppe den Großteil der Seite ändern, egal was die Schalter unten sagen.",
     "search": "Berechtigungen suchen",
     "filter": {
       "all": "Alle",
@@ -3076,7 +3076,20 @@
     "toastClosed": "Kommentare geschlossen",
     "toastReopened": "Kommentare wieder offen",
     "toastHidden": "Artikel ausgeblendet",
-    "toastShown": "Artikel wieder sichtbar"
+    "toastShown": "Artikel wieder sichtbar",
+    "history": {
+      "menu": "Versionsverlauf",
+      "title": "Versionsverlauf",
+      "lede": "Gespeicherte Versionen von „{{title}}“, neueste zuerst. Beim Wiederherstellen bleibt der aktuelle Text als Version erhalten, du kannst es hier also rückgängig machen.",
+      "loading": "Versionen werden geladen…",
+      "empty": "Noch keine gespeicherten Versionen. Bei jedem Speichern eines veröffentlichten Artikels wird eine Version angelegt.",
+      "by": "von {{user}}",
+      "newest": "Neueste",
+      "restore": "Wiederherstellen",
+      "ask": "Diese Version wiederherstellen?",
+      "restored": "Version wiederhergestellt",
+      "close": "Schließen"
+    }
   },
   "legal": {
     "eyebrow": "Inhalte",
@@ -6221,13 +6234,12 @@
       }
     },
     "domains": {
-      "System": "System",
       "Administration": "Administration",
-      "Users": "Benutzer",
-      "Articles": "Artikel",
       "Moderation": "Moderation",
-      "Messaging": "Nachrichten",
-      "Extensions": "Erweiterungen"
+      "Members": "Mitglieder",
+      "Articles": "Artikel",
+      "Comments": "Kommentare",
+      "Messaging": "Nachrichten"
     },
     "permissions": {
       "admin.access": "Admin-Bereich aufrufen",

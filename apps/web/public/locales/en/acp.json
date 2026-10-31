@@ -2912,7 +2912,7 @@
     "copyFrom": "Copy from…",
     "copyTitle": "Copy permissions from",
     "copyNote": "Replaces this group's draft. Nothing changes until you save.",
-    "adminWarning": "opens the admin panel, and most of its pages check nothing else. This group can run the site whatever the toggles below say.",
+    "adminWarning": "opens the admin panel. Many of its pages (settings, appearance, logs) check nothing else, so this group can change most of the site whatever the toggles below say.",
     "search": "Search permissions",
     "filter": {
       "all": "All",
@@ -3076,7 +3076,20 @@
     "toastClosed": "Comments closed",
     "toastReopened": "Comments open again",
     "toastHidden": "Article hidden",
-    "toastShown": "Article shown again"
+    "toastShown": "Article shown again",
+    "history": {
+      "menu": "Version history",
+      "title": "Version history",
+      "lede": "Saved versions of “{{title}}”, newest first. Restoring keeps the current text as a version, so you can undo it here.",
+      "loading": "Loading versions…",
+      "empty": "No saved versions yet. A version is kept each time a published article is saved.",
+      "by": "by {{user}}",
+      "newest": "Newest",
+      "restore": "Restore",
+      "ask": "Restore this version?",
+      "restored": "Version restored",
+      "close": "Close"
+    }
   },
   "legal": {
     "eyebrow": "Content",
@@ -6221,13 +6234,12 @@
       }
     },
     "domains": {
-      "System": "System",
       "Administration": "Administration",
-      "Users": "Users",
-      "Articles": "Articles",
       "Moderation": "Moderation",
-      "Messaging": "Messaging",
-      "Extensions": "Extensions"
+      "Members": "Members",
+      "Articles": "Articles",
+      "Comments": "Comments",
+      "Messaging": "Messaging"
     },
     "permissions": {
       "admin.access": "Access the admin panel",

@@ -2912,7 +2912,7 @@
     "copyFrom": "Copiar de…",
     "copyTitle": "Copiar permissões de",
     "copyNote": "Substitui o rascunho deste grupo. Nada muda até você salvar.",
-    "adminWarning": "abre o painel de administração, e a maioria das suas páginas não verifica mais nada. Este grupo pode comandar o site, digam o que disserem os interruptores abaixo.",
+    "adminWarning": "abre o painel de administração. Muitas das suas páginas (definições, aparência, registos) não verificam mais nada, por isso este grupo pode alterar a maior parte do site, digam o que disserem os interruptores abaixo.",
     "search": "Pesquisar permissões",
     "filter": {
       "all": "Todas",
@@ -3076,7 +3076,20 @@
     "toastClosed": "Comentários fechados",
     "toastReopened": "Comentários abertos de novo",
     "toastHidden": "Artigo oculto",
-    "toastShown": "Artigo visível de novo"
+    "toastShown": "Artigo visível de novo",
+    "history": {
+      "menu": "Histórico de versões",
+      "title": "Histórico de versões",
+      "lede": "Versões guardadas de “{{title}}”, da mais recente para a mais antiga. Ao restaurar, o texto atual fica guardado como versão, por isso pode desfazê-lo aqui.",
+      "loading": "A carregar versões…",
+      "empty": "Ainda não há versões guardadas. É guardada uma sempre que um artigo publicado é guardado.",
+      "by": "por {{user}}",
+      "newest": "Mais recente",
+      "restore": "Restaurar",
+      "ask": "Restaurar esta versão?",
+      "restored": "Versão restaurada",
+      "close": "Fechar"
+    }
   },
   "legal": {
     "eyebrow": "Conteúdo",
@@ -6221,13 +6234,12 @@
       }
     },
     "domains": {
-      "System": "Sistema",
       "Administration": "Administração",
-      "Users": "Utilizadores",
-      "Articles": "Artigos",
       "Moderation": "Moderação",
-      "Messaging": "Mensagens",
-      "Extensions": "Extensões"
+      "Members": "Membros",
+      "Articles": "Artigos",
+      "Comments": "Comentários",
+      "Messaging": "Mensagens"
     },
     "permissions": {
       "admin.access": "Aceder ao painel de administração",

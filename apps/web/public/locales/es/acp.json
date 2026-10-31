@@ -2912,7 +2912,7 @@
     "copyFrom": "Copiar de…",
     "copyTitle": "Copiar permisos de",
     "copyNote": "Sustituye el borrador de este grupo. Nada cambia hasta que guardes.",
-    "adminWarning": "abre el panel de administración, y la mayoría de sus páginas no comprueban nada más. Este grupo puede dirigir el sitio digan lo que digan los interruptores de abajo.",
+    "adminWarning": "abre el panel de administración. Muchas de sus páginas (ajustes, apariencia, registros) no comprueban nada más, así que este grupo puede cambiar casi todo el sitio, digan lo que digan los interruptores de abajo.",
     "search": "Buscar permisos",
     "filter": {
       "all": "Todos",
@@ -3076,7 +3076,20 @@
     "toastClosed": "Comentarios cerrados",
     "toastReopened": "Comentarios abiertos de nuevo",
     "toastHidden": "Artículo oculto",
-    "toastShown": "Artículo visible de nuevo"
+    "toastShown": "Artículo visible de nuevo",
+    "history": {
+      "menu": "Historial de versiones",
+      "title": "Historial de versiones",
+      "lede": "Versiones guardadas de «{{title}}», de la más reciente a la más antigua. Al restaurar, el texto actual se guarda como versión, así que puedes deshacerlo aquí.",
+      "loading": "Cargando versiones…",
+      "empty": "Aún no hay versiones guardadas. Se guarda una cada vez que se guarda un artículo publicado.",
+      "by": "por {{user}}",
+      "newest": "Más reciente",
+      "restore": "Restaurar",
+      "ask": "¿Restaurar esta versión?",
+      "restored": "Versión restaurada",
+      "close": "Cerrar"
+    }
   },
   "legal": {
     "eyebrow": "Contenido",
@@ -6221,13 +6234,12 @@
       }
     },
     "domains": {
-      "System": "Sistema",
       "Administration": "Administración",
-      "Users": "Usuarios",
-      "Articles": "Artículos",
       "Moderation": "Moderación",
-      "Messaging": "Mensajería",
-      "Extensions": "Extensiones"
+      "Members": "Miembros",
+      "Articles": "Artículos",
+      "Comments": "Comentarios",
+      "Messaging": "Mensajería"
     },
     "permissions": {
       "admin.access": "Acceder al panel de administración",

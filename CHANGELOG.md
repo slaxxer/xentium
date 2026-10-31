@@ -17,6 +17,9 @@ can no longer reach it (see Upgrading).
 - **Sensitive changes ask for a fresh code:** handing out permissions and groups, changing
   someone's account, installing, enabling or deleting add-ons, store connections, core
   updates and sign-in providers. One code covers five minutes.
+- **Managing plugins follows the ACP's two-factor rule.** The plugin routes checked only
+  "Manage plugins", so an admin who must use two-factor sign-in could still install and
+  enable plugins without it. They now need "Access the admin panel" as well.
 - Ten wrong codes lock an account's codes for 15 minutes. You get an email when
   two-factor is turned on or off, a recovery code is used or new codes are made, and
   admins are told when an account that must use it turns it off. ACP → Users can reset
@@ -45,6 +48,17 @@ can no longer reach it (see Upgrading).
 
 ### Fixed
 
+- **Permissions do what they say.** Eight permissions changed nothing before: managing
+  user accounts, banning from the user page, progression, moderation settings, installing
+  and enabling plugins, and viewing and restoring article versions. Each one now guards
+  its page or action. Administrators hold them all, so nothing changes for them; a group
+  you gave only "Access the admin panel" now needs them too.
+- **ACP → Permissions is sorted by what a permission is for:** Administration (everything
+  inside the admin panel), Moderation, Members, Articles, Comments, Messaging, then
+  add-ons.
+- **Restore an article version.** ACP → Content → Articles → ⋯ → Version history lists
+  every saved version and puts one back with Restore. The replaced text stays in the list,
+  so a restore can be undone.
 - **Navbar dropdowns couldn't be clicked**, and the arrow sat outside the link. The whole
   link is one button now, and the menu stays open while you move to it.
 - **In the ACP menu**, a section's overview and one of its pages could both look selected.

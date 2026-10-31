@@ -2912,7 +2912,7 @@
     "copyFrom": "Copier depuis…",
     "copyTitle": "Copier les permissions de",
     "copyNote": "Remplace le brouillon de ce groupe. Rien ne change avant l'enregistrement.",
-    "adminWarning": "ouvre le panneau d'administration, et la plupart de ses pages ne vérifient rien d'autre. Ce groupe peut piloter le site quoi que disent les interrupteurs ci-dessous.",
+    "adminWarning": "ouvre le panneau d'administration. Beaucoup de ses pages (paramètres, apparence, journaux) ne vérifient rien d'autre : ce groupe peut donc modifier l'essentiel du site, quels que soient les interrupteurs ci-dessous.",
     "search": "Rechercher des permissions",
     "filter": {
       "all": "Toutes",
@@ -3076,7 +3076,20 @@
     "toastClosed": "Commentaires fermés",
     "toastReopened": "Commentaires rouverts",
     "toastHidden": "Article masqué",
-    "toastShown": "Article de nouveau visible"
+    "toastShown": "Article de nouveau visible",
+    "history": {
+      "menu": "Historique des versions",
+      "title": "Historique des versions",
+      "lede": "Versions enregistrées de « {{title}} », de la plus récente à la plus ancienne. La restauration conserve le texte actuel comme version : vous pouvez donc l'annuler ici.",
+      "loading": "Chargement des versions…",
+      "empty": "Aucune version enregistrée pour l'instant. Une version est conservée à chaque enregistrement d'un article publié.",
+      "by": "par {{user}}",
+      "newest": "La plus récente",
+      "restore": "Restaurer",
+      "ask": "Restaurer cette version ?",
+      "restored": "Version restaurée",
+      "close": "Fermer"
+    }
   },
   "legal": {
     "eyebrow": "Contenu",
@@ -6221,13 +6234,12 @@
       }
     },
     "domains": {
-      "System": "Système",
       "Administration": "Administration",
-      "Users": "Utilisateurs",
-      "Articles": "Articles",
       "Moderation": "Modération",
-      "Messaging": "Messagerie",
-      "Extensions": "Extensions"
+      "Members": "Membres",
+      "Articles": "Articles",
+      "Comments": "Commentaires",
+      "Messaging": "Messagerie"
     },
     "permissions": {
       "admin.access": "Accéder au panneau d'administration",
